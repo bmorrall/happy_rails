@@ -6,6 +6,9 @@ remote_theme: just-the-docs/just-the-docs@v0.10.1
 repository: bmorrall/happy_rails
 branch: main
 
+# Build pages as folders, e.g. /guide/mailers/, so relative links between pages resolve.
+permalink: pretty
+
 plugins:
   - jekyll-remote-theme
   - jekyll-seo-tag
