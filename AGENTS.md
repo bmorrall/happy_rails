@@ -77,6 +77,14 @@ bundle exec jekyll serve
 
 Then open http://localhost:4000/happy_rails/.
 
+Check the links between pages. CI runs the same check on every push and pull request:
+
+```sh
+cd docs
+bundle exec jekyll build --baseurl ""
+bundle exec htmlproofer _site --disable-external
+```
+
 List the sections that are still empty:
 
 ```sh

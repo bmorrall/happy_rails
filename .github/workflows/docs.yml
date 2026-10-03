@@ -1,0 +1,32 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs
+    env:
+      BUNDLE_GEMFILE: ${{ github.workspace }}/docs/Gemfile
+    steps:
+      - uses: actions/checkout@v4
+
+      # Reads the Ruby version from .tool-versions in the repo root.
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      # An empty baseurl makes the theme's absolute links, e.g. /guide/, resolve inside _site.
+      - name: Build site
+        run: bundle exec jekyll build --baseurl ""
+        env:
+          JEKYLL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Checks internal links and #anchors. External links are skipped so the build doesn't depend on other sites.
+      - name: Check links
+        run: bundle exec htmlproofer _site --disable-external
