@@ -36,6 +36,8 @@ applyTo: "app/controllers/**/*.rb,config/routes.rb,spec/requests/**/*.rb,spec/fe
 - Compare secrets with `ActiveSupport::SecurityUtils.secure_compare`, never `==`, e.g. `authenticate_or_request_with_http_token { |token, _options| ActiveSupport::SecurityUtils.secure_compare(token, Rails.application.credentials.api_token) }`.
 - Only accept credentials over HTTPS, e.g. `config.force_ssl = true` in production.
 - In request specs, give every action's `describe` block at least one scenario for an unauthenticated user, e.g. `context "when not signed in"` that expects a redirect to `new_user_session_path`, or `context "without an access token"` that expects `have_http_status(:unauthorized)` for an API.
+- Handle each `rescue_from` with a private method passed with `with:`. Name the method `handle_` followed by the error's name without the `Error` suffix, e.g. `rescue_from ActiveRecord::RecordNotFound, with: :handle_record_not_found`. Never pass a block to `rescue_from`.
+- To handle an error differently in a subclass, override its `handle_` method and call `super` for the default, e.g. `handle_not_authorized` in `Posts::BaseController`.
 - Use Pundit to authorise requests. Follow the Pundit instructions for how to write each check.
 - Start every action with an authorisation check on its first line, before it loads more data, changes a record or renders anything, e.g. the check comes before `@post.update(post_params)` in `update`.
 - Leave a blank line after the authorisation check, unless it is the only line in the action, e.g. a blank line between the check and `@post.update(post_params)` in `update`.

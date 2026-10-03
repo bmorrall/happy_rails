@@ -553,6 +553,24 @@ RSpec.describe "Api::V1::Posts" do
 end
 ```
 
+## Rescuing errors
+
+When you rescue an error with `rescue_from`, pass `with:` and the name of a private method. Start the name with `handle_`, then add the error's name without the `Error` suffix, e.g. `handle_record_not_found` for `ActiveRecord::RecordNotFound`. Don't pass a block.
+
+A named method is easy to find, and every handler starts the same way. A subclass can also override it to handle the error its own way, and call `super` for the default. You can't do that with a block. See [Pundit: Unauthorised requests](../gems/pundit/#unauthorised-requests) for an example.
+
+```ruby
+class ApplicationController < ActionController::Base
+  rescue_from ActiveRecord::RecordNotFound, with: :handle_record_not_found
+
+  private
+
+  def handle_record_not_found
+    # ...
+  end
+end
+```
+
 ## Authorization
 
 Use [Pundit](../gems/pundit/) to authorise requests. It is the default choice for any app with user accounts. The rules below apply whichever gem you use. See [Pundit: Controllers](../gems/pundit/#controllers) for how to write each check with Pundit.

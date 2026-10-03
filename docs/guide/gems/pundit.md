@@ -13,7 +13,7 @@ Authorisation with [Pundit](https://github.com/varvet/pundit).
 
 Put Pundit's setup in a `PunditAuthorization` concern, in `app/controllers/concerns/pundit_authorization.rb`, and include it in `ApplicationController`. All of the setup is then in one file. See [Directory Layout: Concerns](../../directory-layout/#gem-setup).
 
-The concern includes Pundit and adds its `verify_authorized` check, so every controller requires it by default. It raises an error when an action finishes without calling `authorize`, so a missing check fails in your specs rather than leaving the action open. See [Controllers](#controllers) below for how each action calls `authorize` or opts out.
+The concern includes Pundit and adds its `verify_authorized` check, so every controller requires it by default. It raises an error when an action finishes without calling `authorize`, so a missing check fails in your specs rather than leaving the action open. See [Controllers](#controllers) below for how each action calls `authorize` or opts out, and [Unauthorised requests](#unauthorised-requests) for what happens when a check fails.
 
 Leave out Devise's own controllers, because you can't add checks to their actions.
 
@@ -25,6 +25,14 @@ module PunditAuthorization
     include Pundit::Authorization
 
     after_action :verify_authorized, unless: :devise_controller?
+
+    rescue_from Pundit::NotAuthorizedError, with: :handle_not_authorized
+  end
+
+  private
+
+  def handle_not_authorized
+    redirect_to root_url, alert: "You are not authorized to perform this action."
   end
 end
 ```
@@ -125,6 +133,52 @@ module Posts
     # POST /posts/:post_id/comments
     def create
       authorize Comment
+    end
+  end
+end
+```
+
+### Unauthorised requests
+
+When a check fails, Pundit raises `Pundit::NotAuthorizedError`. Rescue it in the `PunditAuthorization` concern with a `handle_not_authorized` method, as in [Controllers: Rescuing errors](../../controllers/#rescuing-errors). Redirect to the root page with an alert. The root page is one every user can see, so the redirect never fails its own check.
+
+```ruby
+module PunditAuthorization
+  extend ActiveSupport::Concern
+
+  included do
+    # ...
+
+    rescue_from Pundit::NotAuthorizedError, with: :handle_not_authorized
+  end
+
+  private
+
+  def handle_not_authorized
+    redirect_to root_url, alert: "You are not authorized to perform this action."
+  end
+end
+```
+
+In a nested resource's `BaseController`, override `handle_not_authorized`. When the parent record is set and the user can see it, redirect to the parent instead. A user who may read a post but not comment on it goes back to the post, not to the root page. Otherwise call `super`, e.g. when the user can't see the post at all.
+
+The `elsif` is optional. It redirects to the parent's index when the user can't see the parent but can see the list, e.g. a post that was unpublished. Keep `super` as the last case.
+
+```ruby
+module Posts
+  class BaseController < ApplicationController
+    # ...
+
+    private
+
+    def handle_not_authorized
+      if @post && policy(@post).show?
+        redirect_to @post, alert: "You are not authorized to perform this action."
+      elsif policy(Post).index?
+        redirect_to posts_url, alert: "You are not authorized to perform this action."
+      else
+        super
+      end
     end
   end
 end
