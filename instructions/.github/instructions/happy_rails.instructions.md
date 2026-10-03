@@ -20,12 +20,17 @@ Follow these rules for all changes. Area-specific rules are in `.github/instruct
 - Use only the roles, groups and personas the app already has. Never add one that the task does not ask for.
 - Treat a signed-in user with no role as the User persona, and a visitor who has not signed in as the Guest persona.
 - Rank the app's persona groups from most access to least, with the Users group and then the Guest last. Personas inside each group also have a fixed rank. Take the ranks from the app, e.g. the order of persona contexts in its existing specs.
+- Only add a persona with more than one role when it changes the outcome, compared with the persona with only its highest role.
 - Put a persona with more than one role in the group of its highest role, straight after the persona with only that role.
 - When you add or change an action, cover what each persona may do, and on which records. Include a persona who may act on some records but not this one, e.g. a user who did not create the record.
+- In request and feature specs, do not cover a persona whose role plays no part in the action. The User persona covers it, and so does the policy spec.
 - List personas in rank order everywhere: in permission checks, and in request and feature specs.
 
 ## Project layout
 
+- Group the code for one feature in a concern when it could be shared with other classes or removed all at once later. Name the concern after what it does, and put it in `app/models/concerns/` or `app/controllers/concerns/`.
+- When only one class uses the code, write it in a `concerning` block in that class instead of a separate concern file, e.g. `concerning :Publishing do` in `Post`, with the `published` scope and `publish` method inside it.
+- Put every `include`, callback and helper a gem adds to a base class in one concern named after the gem's module, and include that concern in the base class, e.g. `PunditAuthorization` in `app/controllers/concerns/pundit_authorization.rb` with `include Pundit::Authorization` and `after_action :verify_authorized`, included in `ApplicationController`.
 - TODO: List where each kind of code belongs.
 
 ## Before you finish

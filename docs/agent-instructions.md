@@ -43,7 +43,7 @@ The area files are:
 | --- | --- |
 | `happy_rails.instructions.md` | `**` |
 | `happy_models.instructions.md` | `app/models/**` |
-| `happy_controllers.instructions.md` | `app/controllers/**`, `config/routes.rb` |
+| `happy_controllers.instructions.md` | `app/controllers/**`, `config/routes.rb`, `spec/requests/**`, `spec/features/**` |
 | `happy_views.instructions.md` | `app/views/**`, `app/helpers/**`, `app/javascript/**` |
 | `happy_jobs.instructions.md` | `app/jobs/**`, `app/mailers/**` |
 

@@ -32,6 +32,8 @@ If you change an `applyTo` glob, also update the "Applies to" table in `docs/age
 
 - Write for a Rails developer reading the site. Explain the rule and the reason for it in short paragraphs.
 - Follow each rule with a code example. Use `Post` and `Comment` (`PostsController`, `Posts::CommentsController`) as the example resources, so examples on different pages fit together.
+- Keep each example focused on the rule being discussed. Leave out setup that the rule doesn't need, e.g. persona contexts and `sign_in` in a spec about params. Replace code that isn't the focus with a `# ...` comment, e.g. the save and redirect in an action that shows the authorisation check.
+- When you add a rule, only change examples on other pages if they contradict it. Don't add every convention to every example.
 - When a rule affects the code and its specs, show the code first, then the spec.
 - Write routes in the Rails scaffold format with param names, e.g. `GET /posts/:id`.
 - Keep the Jekyll front matter (`title`, `parent`, `nav_order`) as it is.

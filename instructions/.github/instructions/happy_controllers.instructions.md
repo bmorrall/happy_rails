@@ -1,11 +1,53 @@
 ---
-applyTo: "app/controllers/**/*.rb,config/routes.rb"
+applyTo: "app/controllers/**/*.rb,config/routes.rb,spec/requests/**/*.rb,spec/features/**/*.rb"
 ---
 
 # Controllers and routes
 
-- TODO: Keep controllers RESTful: how to handle non-CRUD actions.
-- TODO: Strong parameters style.
-- TODO: How to authenticate and authorise requests.
-- TODO: How to write routes.
-- TODO: How to test controllers and routes.
+- Define RESTful actions in this order: `index`, `show`, `new`, `edit`, `create`, `update`, `destroy`. Leave out actions the resource does not need, but keep the rest in this order.
+- Put a comment above each action with its route, in the Rails scaffold format with param names instead of example values, e.g. `# GET /posts/:id`.
+- In `spec/requests`, name the top-level block after the controller's resource, e.g. `RSpec.describe "Posts"` for `PostsController`. Inside it, write one `describe` block for each route comment, in the same order as the controller. Name each block with its route, e.g. `describe "GET /posts/:id"`.
+- Only set instance variables in an action, or in a callback whose name starts with `set_`, e.g. `before_action :set_post` with `@post = Post.find(params[:id])` in `set_post`. Never set them in other private methods, other callbacks, or memoised readers, e.g. `@post ||= Post.find(params[:id])`.
+- In an action that changes a record, e.g. `create` or `update`, write the happy case first in an `if` and the failure case in the `else`, e.g. `if @post.save` then `redirect_to @post`, else the failure.
+- When an action fails and shows a form again, render it with `status: :unprocessable_entity`, e.g. `render :new, status: :unprocessable_entity` in `PostsController#create`. When there is no form to show, redirect instead, e.g. `redirect_to @post, alert: "Post could not be published."` in `Posts::PublicationsController#create`.
+- Follow the app's existing flash message pattern in every controller. Read other controllers before writing a message, and copy their keys and wording, e.g. `notice: "Post was created."` if the app already uses `notice: "Comment was created."`. Use the same key for every success and the same key for every failure, e.g. `notice` and `alert`.
+- Set a flash when an action redirects, e.g. `redirect_to @post, notice: "Post was updated."`. Do not set a flash when the action renders a form again, because the form's errors explain the failure.
+- Put controllers for a nested resource in a module named after the parent controller, e.g. `Posts::CommentsController` in `app/controllers/posts/comments_controller.rb`. In `config/routes.rb`, put them in a `scope module: :posts` block inside `resources :posts`.
+- Each nested module has a `BaseController`, e.g. `Posts::BaseController`, with a `before_action` that loads the parent record and checks the current user can see it, e.g. `set_post`. Nested controllers inherit from it and do not load the parent themselves. The base controller has no actions or routes.
+- Do not let the base controller's check on the parent count as the nested action's own check. Each nested action still starts with its own authorisation check, e.g. `Posts::CommentsController#create` checks that the user may create a comment, not only that they can see `@post`.
+- Name request specs for nested controllers after the full controller name, e.g. `RSpec.describe "Posts::Comments"` in `spec/requests/posts/comments_spec.rb`. Route comments and `describe` names use the parent's param, e.g. `GET /posts/:post_id/comments`.
+- Avoid custom actions on resource controllers. Instead, add a new controller with a `create` action, using the nested module and `BaseController` pattern, e.g. `Posts::PublicationsController < BaseController` with `# POST /posts/:post_id/publication`, routed with `resource :publication, only: :create` inside `scope module: :posts`, instead of a `publish` action on `PostsController`.
+- If a controller has custom actions, put them below the standard actions in alphabetical order, each with a route comment, e.g. `duplicate` then `preview` after `destroy`. Order their `describe` blocks in the request spec the same way.
+- Each controller has a default format for its use case (HTML for pages, JSON for APIs). Leave the default format out of route comments and `describe` names.
+- When an action responds to another format, add a route comment with the format extension below the default route, e.g. `# GET /posts/:id.json`. Add a matching `describe "GET /posts/:id.json"` block directly after the default format's block.
+- When an action responds with a Turbo Stream, keep its HTML response too, and put `format.html` first in the `respond_to` block, e.g. `format.html { redirect_to @post }` before `format.turbo_stream` in `Posts::CommentsController#create`.
+- Do not add a route comment for a Turbo Stream response, because Turbo uses the `Accept` header and the URL does not change. In the request spec, add a `context "with a Turbo Stream"` inside the route's `describe` block, and send `headers: { "Accept" => Mime[:turbo_stream].to_s }` in that context.
+- Nest a resource's params under its singular name, e.g. `post` for `PostsController` and `comment` for `Posts::CommentsController`.
+- If the app uses Pundit, put the main app's permitted attributes in the policy and have `post_params` call Pundit, following the Pundit instructions. Use the `require` and `permit` rules below in apps without Pundit, and in controllers for other APIs, e.g. `Api::V1::PostsController`.
+- Read params in a private method named after the resource, using `params.require` with the singular name and `permit` with an explicit list of attributes, e.g. `post_params` returns `params.require(:post).permit(:title, :body)`. Never use `permit!` or permit a whole hash.
+- In request specs, send params nested under the singular name, e.g. `post posts_path, params: { post: { title: "Hello" } }`.
+- When actions accept different attributes, replace the params method with one method per action, named with a `_for_<action>` suffix, e.g. `post_params_for_create` and `post_params_for_update`. Do not keep a plain `post_params` next to them.
+- Write each action's permit list in full, even if attributes repeat, e.g. `post_params_for_create` permits `:title, :body, :slug` and `post_params_for_update` permits `:title, :body`. Do not build one list from another.
+- Always use a gem or a built-in Rails authentication method to authenticate requests, e.g. `http_basic_authenticate_with`. Never write a custom solution.
+- Put the authentication check in `ApplicationController`, e.g. `before_action :authenticate_user!`, never in individual controllers. To make an action public, use `skip_before_action` with an `only:` list of just those actions, e.g. `skip_before_action :authenticate_user!, only: %i[index show]` in `PostsController`.
+- Use Devise to authenticate users who sign in.
+- When an API authenticates differently, put its check in the top-most controller that every API controller inherits from, e.g. `before_action :authenticate` in `Api::V1::BaseController`, with `Api::V1::PostsController < BaseController`.
+- When you use a built-in Rails authentication method, keep usernames, passwords and tokens in Rails credentials or environment variables, never in code, e.g. `Rails.application.credentials.api_token`.
+- Compare secrets with `ActiveSupport::SecurityUtils.secure_compare`, never `==`, e.g. `authenticate_or_request_with_http_token { |token, _options| ActiveSupport::SecurityUtils.secure_compare(token, Rails.application.credentials.api_token) }`.
+- Only accept credentials over HTTPS, e.g. `config.force_ssl = true` in production.
+- In request specs, give every action's `describe` block at least one scenario for an unauthenticated user, e.g. `context "when not signed in"` that expects a redirect to `new_user_session_path`, or `context "without an access token"` that expects `have_http_status(:unauthorized)` for an API.
+- Use Pundit to authorise requests. Follow the Pundit instructions for how to write each check.
+- Start every action with an authorisation check on its first line, before it loads more data, changes a record or renders anything, e.g. the check comes before `@post.update(post_params)` in `update`.
+- Leave a blank line after the authorisation check, unless it is the only line in the action, e.g. a blank line between the check and `@post.update(post_params)` in `update`.
+- Make every controller require an authorisation check by default. Set this up once in `ApplicationController`, never in individual controllers.
+- When an action needs no authorisation check, opt out on the action's first line, e.g. in `PagesController#about`. Never opt out for the whole controller, because that also covers actions added later.
+- Keep routes RESTful. Model a custom action as a resource of its own whenever you can.
+- Give every `resources` and `resource` call an `only:` list that matches the controller's actions, e.g. `resources :posts, only: %i[index show]`. Never use `except:`. Leave `only:` off only when the controller has all seven standard actions.
+- Declare routes with `resources`, `resource`, `namespace` and `root`. Never write a path by hand, e.g. `get "posts/:id/preview", to: "posts#preview"`. Route a custom action in a `member` or `collection` block, e.g. `member { get :preview }` inside `resources :posts`.
+- Use a singular `resource` when there is only one of something, e.g. `resource :profile, only: %i[show edit update]` with `# GET /profile`. Still name the controller in the plural, e.g. `ProfilesController`, not `ProfileController`.
+- Use `namespace` when both the URL and the controller module change, e.g. `namespace :api` and `namespace :v1` for `Api::V1::PostsController` with `# GET /api/v1/posts`. Use `scope module:` when only the module changes, e.g. nested resources.
+- Nest resources one level deep at most. Never use `shallow: true`, because `Posts::BaseController` needs `:post_id` in every nested route.
+- Instead of shallow routes, declare the actions on a single nested record as a top-level resource, e.g. `resources :comments, only: %i[index new create]` inside `scope module: :posts`, and `resources :comments, only: %i[show edit update destroy]` at the top level, routed to `CommentsController` with `# GET /comments/:id` and specs in `spec/requests/comments_spec.rb`.
+- Build links and redirects with path helpers or records, e.g. `post_path(@post)` or `redirect_to @post`. Never write a URL as a string.
+- Write a request spec for every controller, at the matching path in `spec/requests`, e.g. `spec/requests/posts_spec.rb` for `PostsController` and `spec/requests/posts/comments_spec.rb` for `Posts::CommentsController`. Write one `describe` block for each action, and one for each format the action responds to, e.g. `describe "GET /posts"` then `describe "GET /posts.json"`.
+- Write at least one feature spec in `spec/features` for every controller that serves pages. Between them, the scenarios must cover the happy path of every HTML route in the controller, e.g. `GET /posts`, `GET /posts/new` and `POST /posts` in `scenario "User writes a post"`. A scenario may cover routes from more than one controller. This rule does not cover routes that only serve another format, e.g. `GET /posts.json`, or API controllers, but you may write feature specs for them too.

@@ -29,7 +29,7 @@ Some roles apply to the whole app. A Publishing Manager can publish any post. A 
 Group the personas, and rank the groups from the most access to the least. Each app has its own groups. A publishing app might use these:
 
 1. **App Admins**: run the whole app.
-2. **Editors**: manage other people's content, e.g. a Publishing Manager.
+2. **Editors**: manage other people's content, e.g. a Publishing Manager or a Copy Editor.
 3. **Authors**: manage the posts they wrote.
 4. **Users**: have signed in but have no role.
 
@@ -39,19 +39,22 @@ The **Guest**, a visitor who hasn't signed in, comes last.
 | --- | --- | --- |
 | App Admins | App Admin | Do anything |
 | Editors | Publishing Manager | Publish any post |
+| Editors | Copy Editor | Edit any post |
 | Authors | Author | Edit the posts they wrote |
 | Users | User | Read published posts, comment on them, and write posts |
 | | Guest | Read published posts |
 
 The User and the Guest always come last, because they have the least access.
 
-When a group has more than one persona, rank them inside the group too, e.g. a Publishing Manager before a Copy Editor in the Editors group. Decide the order once, and use the same order every time.
+When a group has more than one persona, rank them inside the group too, e.g. a Publishing Manager before a Copy Editor in the Editors group. Decide the order once, and use the same order every time. Then the existing specs show the order, because their persona contexts follow it.
 
-A persona can have more than one role, e.g. an App Admin who is also the Author of the post. Put it in the group of its highest role, straight after the persona with only that role.
+A persona can have more than one role, e.g. a Copy Editor who is also the Author of the post. Only add one when it changes the outcome, compared with the persona with only its highest role. If only the Author may delete a post, a Copy Editor who wrote the post gets a different answer to one who didn't, so it needs its own scenario. For publishing, it doesn't: neither Copy Editor may publish. Put a persona with more than one role in the group of its highest role, straight after the persona with only that role.
 
 Only add a persona when the app gets a new role. Don't add one to fill out a spec.
 
-Personas make it easier to see which scenarios need covering. For each action, ask what each persona should be able to do, and on which records. The Guest and the User often show the gaps: an action left open by mistake, or one that anyone who signs in can use. A persona who may act, but not on this record, finds the rest, e.g. an Author editing someone else's post.
+Personas make it easier to see which scenarios need covering. For each action, ask what each persona should be able to do, and on which records. The Guest and the User often show the gaps: an action left open by mistake, or one that anyone who signs in can use. A persona who may act, but not on this record, finds the rest, e.g. a User editing a post someone else wrote.
+
+A persona whose role plays no part in the action doesn't need a scenario of its own in request and feature specs. It gets the same answer as the User, so the User's scenario covers it, and so does the policy spec, e.g. a Copy Editor or an Author publishing a post.
 
 ### Keep the ranks
 
@@ -67,4 +70,4 @@ end
 
 ### Personas in specs
 
-For how to write a spec for each persona with RSpec and FactoryBot, see [RSpec and FactoryBot: Personas](../gems/rspec/#personas).
+For how to write persona specs with RSpec and FactoryBot, see [RSpec and FactoryBot: Personas](../gems/rspec/#personas).
