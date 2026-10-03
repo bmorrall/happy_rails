@@ -38,9 +38,9 @@ end
 
 ### Gem setup
 
-Gem setup is a good fit for a concern. Put every `include`, callback and helper a gem adds to a base class in one concern, then include that concern in the base class. All of the gem's setup is then in one file. To remove the gem, delete the file and the line that includes it.
+Gem setup is a good fit for a concern. Put every `include`, callback, error handler and helper a gem adds to a base class in one concern, then include that concern in the base class. All of the gem's setup is then in one file. To remove the gem, delete the file and the line that includes it.
 
-For [Pundit](../gems/pundit/), put `Pundit::Authorization` and its `verify_authorized` check in a `PunditAuthorization` concern, in `app/controllers/concerns/pundit_authorization.rb`. Name the concern after the gem's own module, so it is easy to find.
+For [Pundit](../gems/pundit/), put `Pundit::Authorization`, its `verify_authorized` check and the `rescue_from` for `Pundit::NotAuthorizedError` in a `PunditAuthorization` concern, in `app/controllers/concerns/pundit_authorization.rb`. Name the concern after the gem's own module, so it is easy to find.
 
 ```ruby
 module PunditAuthorization
@@ -50,6 +50,14 @@ module PunditAuthorization
     include Pundit::Authorization
 
     after_action :verify_authorized, unless: :devise_controller?
+
+    rescue_from Pundit::NotAuthorizedError, with: :handle_not_authorized
+  end
+
+  private
+
+  def handle_not_authorized
+    redirect_to root_url, alert: "You are not authorized to perform this action."
   end
 end
 ```
