@@ -39,12 +39,13 @@
 
   /* On wide screens, move the list into a sticky rail to the right of the content.
      The theme centres a 66.5rem sidebar + content block; centre an 82rem block
-     instead, so the 15.5rem rail fits on laptop screens. */
+     instead, so the 15.5rem rail fits on laptop screens. Do this on every page,
+     even one without a rail, so the content doesn't move between pages. */
   @media (min-width: 82rem) {
-    .has-page-toc .side-bar {
+    .side-bar {
       width: calc((100% - 82rem) / 2 + 16.5rem);
     }
-    .has-page-toc .side-bar + .main {
+    .side-bar + .main {
       margin-left: Max(16.5rem, calc((100% - 82rem) / 2 + 16.5rem));
     }
     .page-toc {
@@ -82,7 +83,6 @@
     nav.innerHTML =
       '<div class="page-toc-inner"><p class="page-toc-title" id="page-toc-title">On this page</p><ul></ul></div>';
     var list = nav.querySelector("ul");
-    document.body.classList.add("has-page-toc");
 
     var links = headings.map(function (heading) {
       var item = document.createElement("li");
