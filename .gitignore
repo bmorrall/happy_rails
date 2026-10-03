@@ -1,0 +1,7 @@
+docs/_site/
+docs/.jekyll-cache/
+docs/.jekyll-metadata
+docs/Gemfile.lock
+.bundle/
+vendor/
+.DS_Store
