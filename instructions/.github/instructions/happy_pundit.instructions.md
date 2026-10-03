@@ -18,7 +18,8 @@ applyTo: "app/policies/**/*.rb,app/controllers/**/*.rb,app/views/**,spec/policie
 - Write each action's list in full, even if attributes repeat, e.g. `permitted_attributes_for_create` returns `[:title, :body, :slug]` and `permitted_attributes_for_update` returns `[:title, :body]`. Do not build one list from another.
 - When only some users may change an attribute, add a permission method named `update_<attribute>?` to the policy, e.g. `PostPolicy#update_published?` returns `user.app_admin? || user.publishing_manager?`. In the permitted attributes method, start with the attributes every user may set, then append the restricted attribute when its check is true, e.g. `attributes << :published if update_published?`.
 - Use the policy's permitted attributes only for the main app. In controllers for other APIs, e.g. `Api::V1::PostsController`, define `post_params` with `params.require` and `permit` instead. Reuse the policy's `update_<attribute>?` checks for restricted attributes, e.g. `attributes << :published if policy(@post).update_published?`.
+- Never build a policy for a record in a view, e.g. `policy(@post).update?` or `policy(post).update?` in `app/views/posts/index.html.erb`. Only call `policy` in a view with a class or a symbol, e.g. `policy(Post).new?` or `policy(:admin).index?`.
+- When the app uses Draper, check a record's permissions in a view through its decorator, e.g. `post.can_update?` or `post.can_publish?`.
 - TODO: How to write a policy, e.g. `PostPolicy`.
 - TODO: How to write a policy scope and call `policy_scope` in controllers.
-- TODO: How to check permissions in views.
 - TODO: How to write policy specs.

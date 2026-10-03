@@ -52,7 +52,7 @@ Each [gem](../guide/gems/) has its own file. If your app does not use a gem, del
 | File | Gem | Applies to |
 | --- | --- | --- |
 | `happy_devise.instructions.md` | Devise | `config/initializers/devise.rb`, `config/routes.rb`, `app/models/user.rb`, `app/controllers/users/**`, `app/views/devise/**`, `spec/requests/users/**` |
-| `happy_draper.instructions.md` | Draper | `app/decorators/**`, `app/controllers/**`, `spec/decorators/**` |
+| `happy_draper.instructions.md` | Draper | `app/decorators/**`, `app/controllers/**`, `app/views/**`, `app/helpers/**`, `spec/decorators/**` |
 | `happy_pundit.instructions.md` | Pundit | `app/policies/**`, `app/controllers/**`, `app/views/**`, `spec/policies/**` |
 | `happy_rspec.instructions.md` | RSpec and FactoryBot | `spec/**` |
 | `happy_view_component.instructions.md` | ViewComponent | `app/components/**`, `spec/components/**` |

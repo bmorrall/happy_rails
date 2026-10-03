@@ -294,7 +294,21 @@ end
 
 ## Views
 
-> **TODO:** Describe how you handle this.
+Never build a policy for a record in a view, e.g. `policy(@post).update?` or `policy(post).update?`. A view that loops over records builds a new policy for each check, and the checks end up spread across templates where nothing lists them.
+
+Only call `policy` in a view with a class or a symbol. These checks don't depend on a record, e.g. `policy(Post).index?` for a link to the list, or `policy(:admin).index?` for a headless policy.
+
+```erb
+<% if policy(Post).new? %>
+  <%= link_to "New post", new_post_path %>
+<% end %>
+
+<% if policy(:admin).index? %>
+  <%= link_to "Admin", admin_root_path %>
+<% end %>
+```
+
+When the app uses Draper, check a record's permissions through its decorator, e.g. `post.can_update?` or `post.can_publish?`. See [Draper: Permissions](../draper/#permissions).
 
 ## Testing
 
