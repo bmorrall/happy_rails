@@ -180,6 +180,8 @@ Only pass records in the context, never the current user, the params or other re
 
 ## Associations
 
+### Required associations
+
 Decorate a required association in the decorator with `decorates_association`. The associated record then comes back with its own decorator, so its presentation logic stays in one place.
 
 Don't let the view reach through the association, e.g. `comment.post.published_on`. Delegate the methods the view needs to the decorated association with a prefix, e.g. `comment.post_published_on`. The view then only talks to the record it was given, which keeps the [Law of Demeter](https://en.wikipedia.org/wiki/Law_of_Demeter). The delegated methods are the associated decorator's methods, so the value is formatted the same way on every page.
@@ -195,6 +197,8 @@ end
 ```erb
 <p>On <%= comment.post_title %>, published <%= comment.post_published_on %></p>
 ```
+
+### Optional associations
 
 An optional association can be `nil`, and then a delegate to it raises an error. For an optional association, write the association method yourself instead of using `decorates_association`. Decorate the record when there is one, and fall back to a `NilDecorator` when there isn't. Memoise the result, so every delegate to the association reuses the same decorator, the way `decorates_association` does.
 
@@ -254,6 +258,8 @@ class NilDecorator
   end
 end
 ```
+
+### Has-many associations
 
 For a `has_many` association, only add `decorates_association` when a view uses the whole association, e.g. `decorates_association :comments`.
 
