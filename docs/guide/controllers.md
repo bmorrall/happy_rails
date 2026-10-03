@@ -735,6 +735,95 @@ RSpec.describe "Posts" do
 end
 ```
 
+In each `describe` block, cover every path through the action: the happy path and every sad path. A path is anything the controller decides, e.g. each branch of an `if`, each redirect, and each error the controller rescues. The persona contexts already cover sign-in and authorisation. Inside each context, cover the paths that persona can take.
+
+Write at least one example for each path, but not one for each reason the path is taken. Leave the detailed cases to the model, form and policy specs, e.g. each validation that can stop a post from saving. The request spec needs only one invalid post, e.g. one with a blank title, to show that the controller renders the form again. Then a controller change that drops a branch fails a request spec, and the request specs stay short.
+
+```ruby
+class PostsController < ApplicationController
+  # POST /posts
+  def create
+    @post = Post.new(post_params)
+
+    if @post.save
+      redirect_to @post, notice: "Post was created."
+    else
+      render :new, status: :unprocessable_entity
+    end
+  end
+end
+```
+
+```ruby
+RSpec.describe "Posts" do
+  describe "POST /posts", :aggregate_failures do
+    context "as a user" do
+      let(:user) { create(:user) }
+
+      before { sign_in user }
+
+      it "creates the post" do
+        expect {
+          post posts_path, params: { post: { title: "Hello World" } }
+        }.to change(Post, :count).by(1)
+
+        expect(response).to redirect_to(post_path(Post.last))
+        expect(flash.to_hash).to match("notice" => "Post was created.")
+      end
+
+      it "shows the form again with a blank title" do
+        expect {
+          post posts_path, params: { post: { title: "" } }
+        }.not_to change(Post, :count)
+
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    end
+  end
+end
+```
+
+The paths include branches in the views the action renders, e.g. an `if` in a template or partial that shows a list or an empty message. Write at least one example for each branch, and check the body for what that branch shows.
+
+```erb
+<%# app/views/posts/index.html.erb %>
+<% if @posts.any? %>
+  <%= render @posts %>
+<% else %>
+  <p>No posts yet.</p>
+<% end %>
+```
+
+```ruby
+RSpec.describe "Posts" do
+  describe "GET /posts", :aggregate_failures do
+    context "as a user" do
+      let(:user) { create(:user) }
+
+      before { sign_in user }
+
+      it "lists the posts" do
+        create(:post, title: "Hello World")
+
+        get posts_path
+
+        expect(response).to have_http_status(:ok)
+
+        expect(response.body).to include("Hello World")
+      end
+
+      it "shows a message when there are no posts" do
+        get posts_path
+
+        expect(response).to have_http_status(:ok)
+
+        expect(response.body).to include("No posts yet.")
+      end
+    end
+  end
+end
+```
+
 See [RSpec: Request specs](../gems/rspec/#request-specs) for how to write the contexts inside each block.
 
 Write at least one feature spec for every controller that serves pages. Between them, its scenarios must cover the happy path of every HTML route in the controller. Request specs test each route on its own, but only a feature spec shows that a persona can reach the route through the app and finish the task. A route no scenario visits may have no link or button to it. This doesn't cover routes that only serve other formats, e.g. `GET /posts.json`, or controllers for an API. You can still write feature specs for them, as described in [RSpec: API endpoints](../gems/rspec/#api-endpoints).

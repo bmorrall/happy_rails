@@ -24,7 +24,7 @@ Each convention is written twice: once in the guide for people, and once in the 
 | `docs/guide/gems/rspec.md` | `instructions/.github/instructions/happy_rspec.instructions.md` |
 | `docs/guide/gems/view_component.md` | `instructions/.github/instructions/happy_view_component.instructions.md` |
 
-Every rule in an instruction file must match the guide. Do not add a rule to one side only.
+Every rule in an instruction file must match the guide. Do not add a rule to one side only. The one exception is a rant: a guide-only opinion in a `{: .rant }` callout. Leave rants out of the instruction files.
 
 If you change an `applyTo` glob, also update the "Applies to" table in `docs/agent-instructions.md`. Prefix every instruction file name with `happy_`, so it does not overwrite a reader's own instruction files. If you add or rename an instruction file, also update the tables in `docs/agent-instructions.md` and `instructions/README.md`.
 
@@ -37,6 +37,7 @@ If you change an `applyTo` glob, also update the "Applies to" table in `docs/age
 - When a rule affects the code and its specs, show the code first, then the spec.
 - Write routes in the Rails scaffold format with param names, e.g. `GET /posts/:id`.
 - Keep the Jekyll front matter (`title`, `parent`, `nav_order`) as it is.
+- To share an opinion that agents should not follow as a rule, put it in a rant callout. Put `{: .rant }` on the line above a blockquote, and start every line of the rant with `>`, including code blocks.
 - To fill in a section, replace its `> **TODO:** Describe how you handle this.` line. Keep the `##` heading.
 
 ## Adding a gem
