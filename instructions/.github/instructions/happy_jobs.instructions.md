@@ -1,9 +1,9 @@
 ---
-applyTo: "app/jobs/**/*.rb,app/mailers/**/*.rb"
+applyTo: "app/jobs/**/*.rb,spec/jobs/**/*.rb"
 ---
 
-# Jobs and mailers
+# Jobs
 
 - TODO: What belongs in a job and how to make it safe to retry.
-- TODO: Mailer conventions.
-- TODO: How to test jobs and mailers.
+- TODO: How to schedule recurring jobs.
+- TODO: How to test jobs.

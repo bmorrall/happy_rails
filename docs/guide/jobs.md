@@ -1,18 +1,14 @@
 ---
-title: Jobs and Mailers
+title: Jobs
 parent: The Guide
 nav_order: 6
 ---
 
-# Jobs and Mailers
+# Jobs
 
-Background work and email.
+Background work.
 
 ## Background jobs
-
-> **TODO:** Describe how you handle this.
-
-## Mailers
 
 > **TODO:** Describe how you handle this.
 

@@ -45,7 +45,8 @@ The area files are:
 | `happy_models.instructions.md` | `app/models/**` |
 | `happy_controllers.instructions.md` | `app/controllers/**`, `config/routes.rb`, `spec/requests/**`, `spec/features/**` |
 | `happy_views.instructions.md` | `app/views/**`, `app/helpers/**`, `app/javascript/**` |
-| `happy_jobs.instructions.md` | `app/jobs/**`, `app/mailers/**` |
+| `happy_jobs.instructions.md` | `app/jobs/**`, `spec/jobs/**` |
+| `happy_mailers.instructions.md` | `app/mailers/**`, `app/views/*_mailer/**`, `spec/mailers/**` |
 
 Each [gem](../guide/gems/) has its own file. If your app does not use a gem, delete its file:
 

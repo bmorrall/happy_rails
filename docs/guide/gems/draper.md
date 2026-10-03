@@ -131,6 +131,14 @@ Never call `decorate` in a view or a helper, e.g. `@post.decorate` in a template
 
 Only use Draper for HTML responses. An API endpoint that returns another format, e.g. JSON in `Api::V1`, doesn't use `decorates_assigned` or decorators. Decorator methods return markup for a page, e.g. `h.date_tag`, which an API client can't use.
 
+Don't use Draper in mailers either. A mailer has no request and no signed-in user, so a `can_` check fails, and a decorator's links use `_path` helpers, which give relative URLs that break in an email. In a mailer template, use the plain record and your helpers directly, with `_url` helpers for links. Values still look the same as on the page, because the helpers do the formatting. See [Mailers: Templates](../../mailers/#templates).
+
+```erb
+<%# app/views/post_mailer/published.html.erb %>
+<p><%= link_to @post.title, post_url(@post) %></p>
+<p>Published <%= date_tag(@post.published_at) %></p>
+```
+
 ### Context
 
 Sometimes a decorator needs a record it can't reach from its own record. E.g. at `GET /tags/:tag_id/posts`, a post belongs to many tags, so the post can't tell which tag the page is for. Pass that record in with the `context:` option. In the decorator, read it through a private method named after it, e.g. `tag`, with `context.fetch(:tag)`. `fetch` raises a `KeyError` when a controller forgets to pass the tag, instead of building a broken link from `nil`.
