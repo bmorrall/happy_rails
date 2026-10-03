@@ -26,14 +26,14 @@ curl -sL https://github.com/{{ site.repository }}/archive/refs/heads/{{ site.bra
     "{{ site.repository | split: '/' | last }}-{{ site.branch }}/instructions"
 ```
 
-If your app already has an `AGENTS.md` or `CLAUDE.md`, merge the content in instead of overwriting it.
+The Copilot files are prefixed with `happy_`, so they sit beside your own files in `.github/instructions/` without overwriting them. If your app already has an `AGENTS.md` or `CLAUDE.md`, merge the content in instead of overwriting it.
 
 ## What you get
 
 | File | Read by |
 | --- | --- |
-| [`.github/copilot-instructions.md`](https://github.com/{{ site.repository }}/blob/{{ site.branch }}/instructions/.github/copilot-instructions.md) | GitHub Copilot, for every request |
-| [`.github/instructions/*.instructions.md`](https://github.com/{{ site.repository }}/tree/{{ site.branch }}/instructions/.github/instructions) | GitHub Copilot, for files matching each `applyTo` glob |
+| [`.github/instructions/happy_rails.instructions.md`](https://github.com/{{ site.repository }}/blob/{{ site.branch }}/instructions/.github/instructions/happy_rails.instructions.md) | GitHub Copilot, for every file |
+| [`.github/instructions/happy_*.instructions.md`](https://github.com/{{ site.repository }}/tree/{{ site.branch }}/instructions/.github/instructions) | GitHub Copilot, for files matching each `applyTo` glob |
 | [`AGENTS.md`](https://github.com/{{ site.repository }}/blob/{{ site.branch }}/instructions/AGENTS.md) | Codex, Cursor, Jules and other agents that read `AGENTS.md` |
 | [`CLAUDE.md`](https://github.com/{{ site.repository }}/blob/{{ site.branch }}/instructions/CLAUDE.md) | Claude Code (imports `AGENTS.md`) |
 
@@ -41,7 +41,8 @@ The area files are:
 
 | File | Applies to |
 | --- | --- |
-| `models.instructions.md` | `app/models/**` |
-| `controllers.instructions.md` | `app/controllers/**`, `config/routes.rb` |
-| `views.instructions.md` | `app/views/**`, `app/helpers/**`, `app/javascript/**` |
-| `jobs.instructions.md` | `app/jobs/**`, `app/mailers/**` |
+| `happy_rails.instructions.md` | `**` |
+| `happy_models.instructions.md` | `app/models/**` |
+| `happy_controllers.instructions.md` | `app/controllers/**`, `config/routes.rb` |
+| `happy_views.instructions.md` | `app/views/**`, `app/helpers/**`, `app/javascript/**` |
+| `happy_jobs.instructions.md` | `app/jobs/**`, `app/mailers/**` |

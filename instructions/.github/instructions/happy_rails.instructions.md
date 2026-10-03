@@ -1,3 +1,7 @@
+---
+applyTo: "**"
+---
+
 # Rails conventions
 
 This is a Rails app that follows the Happy Rails conventions:

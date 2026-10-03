@@ -13,15 +13,15 @@ Each convention is written twice: once in the guide for people, and once in the 
 
 | Guide page | Instruction file |
 | --- | --- |
-| `docs/guide/principles.md`, `directory-layout.md`, `tooling.md` | `instructions/.github/copilot-instructions.md` |
-| `docs/guide/models.md` | `instructions/.github/instructions/models.instructions.md` |
-| `docs/guide/controllers.md` | `instructions/.github/instructions/controllers.instructions.md` |
-| `docs/guide/views.md` | `instructions/.github/instructions/views.instructions.md` |
-| `docs/guide/jobs.md` | `instructions/.github/instructions/jobs.instructions.md` |
+| `docs/guide/principles.md`, `directory-layout.md`, `tooling.md` | `instructions/.github/instructions/happy_rails.instructions.md` |
+| `docs/guide/models.md` | `instructions/.github/instructions/happy_models.instructions.md` |
+| `docs/guide/controllers.md` | `instructions/.github/instructions/happy_controllers.instructions.md` |
+| `docs/guide/views.md` | `instructions/.github/instructions/happy_views.instructions.md` |
+| `docs/guide/jobs.md` | `instructions/.github/instructions/happy_jobs.instructions.md` |
 
 Every rule in an instruction file must match the guide. Do not add a rule to one side only.
 
-If you change an `applyTo` glob, also update the "Applies to" table in `docs/agent-instructions.md`. If you add or rename an instruction file, also update the tables in `docs/agent-instructions.md` and `instructions/README.md`.
+If you change an `applyTo` glob, also update the "Applies to" table in `docs/agent-instructions.md`. Prefix every instruction file name with `happy_`, so it does not overwrite a reader's own instruction files. If you add or rename an instruction file, also update the tables in `docs/agent-instructions.md` and `instructions/README.md`.
 
 ## Writing a guide page
 
@@ -42,7 +42,7 @@ Agents read these files without the guide, so each rule must make sense alone.
 - Put rules in the same order as the guide page.
 - When you fill in a topic, replace its `- TODO:` bullet. Keep the TODO bullets for topics that are still empty at the end of the list.
 - Keep the YAML front matter with the `applyTo` glob. List every path the rules cover, including specs, e.g. `spec/requests/**/*.rb` for controllers.
-- Put rules for one area in its `.instructions.md` file. Put only rules that apply to every change in `copilot-instructions.md`.
+- Put rules for one area in its `happy_*.instructions.md` file. Put only rules that apply to every change in `happy_rails.instructions.md`.
 
 ## Style
 
