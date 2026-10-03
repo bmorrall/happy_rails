@@ -188,6 +188,8 @@ Don't let the view reach through the association, e.g. `comment.post.published_o
 
 ```ruby
 class CommentDecorator < ApplicationDecorator
+  ### Post ###
+
   decorates_association :post
 
   delegate :title, :published_on, to: :post, prefix: true
