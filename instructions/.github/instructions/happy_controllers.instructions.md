@@ -8,3 +8,4 @@ applyTo: "app/controllers/**/*.rb,config/routes.rb"
 - TODO: Strong parameters style.
 - TODO: How to authenticate and authorise requests.
 - TODO: How to write routes.
+- TODO: How to test controllers and routes.

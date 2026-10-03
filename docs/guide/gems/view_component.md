@@ -25,6 +25,6 @@ Reusable view code with [ViewComponent](https://viewcomponent.org).
 
 > **TODO:** Describe how you handle this.
 
-## Specs
+## Testing
 
 > **TODO:** Describe how you handle this.

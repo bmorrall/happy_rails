@@ -25,6 +25,6 @@ Presentation logic with [Draper](https://github.com/drapergem/draper).
 
 > **TODO:** Describe how you handle this.
 
-## Specs
+## Testing
 
 > **TODO:** Describe how you handle this.

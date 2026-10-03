@@ -31,3 +31,7 @@ How requests are routed and handled.
 ## Routes
 
 > **TODO:** Describe how you handle this.
+
+## Testing
+
+> **TODO:** Describe how you handle this.

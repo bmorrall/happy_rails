@@ -25,6 +25,6 @@ Authentication with [Devise](https://github.com/heartcombo/devise).
 
 > **TODO:** Describe how you handle this.
 
-## Specs
+## Testing
 
 > **TODO:** Describe how you handle this.

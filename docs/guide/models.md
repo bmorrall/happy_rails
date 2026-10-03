@@ -31,3 +31,7 @@ How models are written and organised.
 ## Business logic
 
 > **TODO:** Describe how you handle this.
+
+## Testing
+
+> **TODO:** Describe how you handle this.

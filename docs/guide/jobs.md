@@ -19,3 +19,7 @@ Background work and email.
 ## Scheduling
 
 > **TODO:** Describe how you handle this.
+
+## Testing
+
+> **TODO:** Describe how you handle this.

@@ -27,3 +27,7 @@ How pages are rendered and made interactive.
 ## CSS and assets
 
 > **TODO:** Describe how you handle this.
+
+## Testing
+
+> **TODO:** Describe how you handle this.

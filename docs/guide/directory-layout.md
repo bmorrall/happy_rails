@@ -23,3 +23,7 @@ What lives where under `app/`, `config/` and `lib/`.
 ## lib and config
 
 > **TODO:** Describe how you handle this.
+
+## Testing
+
+> **TODO:** Describe how you handle this.

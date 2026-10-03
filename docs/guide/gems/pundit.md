@@ -25,6 +25,6 @@ Authorisation with [Pundit](https://github.com/varvet/pundit).
 
 > **TODO:** Describe how you handle this.
 
-## Specs
+## Testing
 
 > **TODO:** Describe how you handle this.

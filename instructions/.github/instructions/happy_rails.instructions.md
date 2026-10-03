@@ -21,3 +21,7 @@ Follow these rules for all changes. Area-specific rules are in `.github/instruct
 ## Before you finish
 
 - TODO: List the commands an agent must run before it says a change is done, e.g. the linter.
+
+## Testing
+
+- TODO: How to test changes to the app.

@@ -8,3 +8,4 @@ applyTo: "app/models/**/*.rb"
 - TODO: Where scopes and query logic go.
 - TODO: When callbacks are allowed.
 - TODO: Where business logic goes.
+- TODO: How to test models.
