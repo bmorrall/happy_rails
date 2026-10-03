@@ -14,3 +14,5 @@ rsync -a --exclude README.md instructions/ /path/to/your-app/
 | `CLAUDE.md` | Claude Code (imports AGENTS.md) |
 
 The Copilot files are prefixed with `happy_`, so they sit beside your own files in `.github/instructions/` without overwriting them. If your app already has an `AGENTS.md` or `CLAUDE.md`, merge the content in instead of overwriting it.
+
+The gem files (`happy_devise`, `happy_draper`, `happy_pundit`, `happy_rspec` and `happy_view_component`) only matter if your app uses that gem. Delete the ones you do not need.

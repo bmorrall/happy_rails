@@ -18,6 +18,11 @@ Each convention is written twice: once in the guide for people, and once in the 
 | `docs/guide/controllers.md` | `instructions/.github/instructions/happy_controllers.instructions.md` |
 | `docs/guide/views.md` | `instructions/.github/instructions/happy_views.instructions.md` |
 | `docs/guide/jobs.md` | `instructions/.github/instructions/happy_jobs.instructions.md` |
+| `docs/guide/gems/devise.md` | `instructions/.github/instructions/happy_devise.instructions.md` |
+| `docs/guide/gems/draper.md` | `instructions/.github/instructions/happy_draper.instructions.md` |
+| `docs/guide/gems/pundit.md` | `instructions/.github/instructions/happy_pundit.instructions.md` |
+| `docs/guide/gems/rspec.md` | `instructions/.github/instructions/happy_rspec.instructions.md` |
+| `docs/guide/gems/view_component.md` | `instructions/.github/instructions/happy_view_component.instructions.md` |
 
 Every rule in an instruction file must match the guide. Do not add a rule to one side only.
 
@@ -32,6 +37,13 @@ If you change an `applyTo` glob, also update the "Applies to" table in `docs/age
 - Keep the Jekyll front matter (`title`, `parent`, `nav_order`) as it is.
 - To fill in a section, replace its `> **TODO:** Describe how you handle this.` line. Keep the `##` heading.
 
+## Adding a gem
+
+- Add a page to `docs/guide/gems/` with `parent: Gems` and `grand_parent: The Guide` in its front matter.
+- Add a matching `happy_<gem>.instructions.md` file, and add both to the table above.
+- Keep gems in alphabetical order: in `nav_order`, in the tables, and in the list in `instructions/README.md`.
+- Keep each gem's rules in its own file, so readers who do not use the gem can delete the file.
+
 ## Writing an instruction file
 
 Agents read these files without the guide, so each rule must make sense alone.
@@ -42,7 +54,7 @@ Agents read these files without the guide, so each rule must make sense alone.
 - Put rules in the same order as the guide page.
 - When you fill in a topic, replace its `- TODO:` bullet. Keep the TODO bullets for topics that are still empty at the end of the list.
 - Keep the YAML front matter with the `applyTo` glob. List every path the rules cover, including specs, e.g. `spec/requests/**/*.rb` for controllers.
-- Put rules for one area in its `happy_*.instructions.md` file. Put only rules that apply to every change in `happy_rails.instructions.md`.
+- Put rules for one area or gem in its `happy_*.instructions.md` file. Put only rules that apply to every change in `happy_rails.instructions.md`.
 
 ## Style
 
