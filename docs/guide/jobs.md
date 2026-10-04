@@ -10,7 +10,39 @@ Background work.
 
 ## Background jobs
 
-> **TODO:** Describe how you handle this.
+Write background jobs with Active Job. Each job inherits from `ApplicationJob`, and the code that needs it calls `perform_later`. Active Job keeps the jobs separate from the queue backend, so you can change the backend without rewriting the jobs.
+
+```ruby
+class NotifySubscribersJob < ApplicationJob
+  def perform(post)
+    # ...
+  end
+end
+```
+
+### Enqueueing after a transaction
+
+Enqueue a job only after the transactions that change its arguments have committed. Active Job passes a record to the job by its ID, and the job loads it again when it runs. A job enqueued inside a transaction could run before the transaction commits. It would not find a new record, or it would see the old values. If the transaction rolls back, the job runs for changes that never happened.
+
+Set `enqueue_after_transaction_commit` in the job class. `perform_later` then waits until the open transactions commit, and drops the job if one rolls back. If no transaction is open, it enqueues the job at once. Callers can then enqueue the job from anywhere, e.g. a callback or a form, and don't have to think about transactions.
+
+```ruby
+class NotifySubscribersJob < ApplicationJob
+  self.enqueue_after_transaction_commit = true
+
+  def perform(post)
+    # ...
+  end
+end
+```
+
+If you can't change the job class, e.g. it comes from a gem, wrap the enqueue in an `ActiveRecord.after_all_transactions_commit` block instead. The block works the same way: it runs after the open transactions commit, never if one rolls back, and at once if no transaction is open.
+
+```ruby
+ActiveRecord.after_all_transactions_commit do
+  NotifySubscribersJob.perform_later(post)
+end
+```
 
 ## Scheduling
 
@@ -18,4 +50,104 @@ Background work.
 
 ## Testing
 
-> **TODO:** Describe how you handle this.
+Test a job the way you test a controller with a request spec. Run it with `perform_now`, and check what it does: the records it changes, the emails it sends, the jobs it enqueues and the requests it makes. Don't stub the models, services or other classes the job calls, e.g. with `allow(NewsletterClient).to receive(:new)`. Then the spec fails when any part of the work breaks, not only the job's own lines.
+
+Name the `describe` block `".perform_now"`, after the method the spec calls, not `"#perform"`.
+
+Stub only the HTTP requests the job makes to other services, and check that it made them. See [WebMock and VCR](../gems/webmock/).
+
+```ruby
+class NotifySubscribersJob < ApplicationJob
+  # ...
+
+  def perform(post)
+    NewsletterClient.new.deliver(post)
+  end
+end
+```
+
+```ruby
+RSpec.describe NotifySubscribersJob do
+  describe ".perform_now" do
+    it "sends the post to the newsletter service" do
+      post = create(:post, title: "Hello World")
+      newsletter_request = stub_request(:post, "https://newsletter.example.com/posts")
+        .with(body: hash_including(title: "Hello World"))
+
+      described_class.perform_now(post)
+
+      expect(newsletter_request).to have_been_requested
+    end
+  end
+end
+```
+
+### Feature specs
+
+Run every job in at least one feature spec. The job spec checks the job on its own. The feature spec checks that the app enqueues it at the right time, with the right arguments, and that the persona gets the result.
+
+Include `ActiveJob::TestHelper` in feature specs, in `spec/support/active_job.rb`. Then wrap the step that enqueues the job in `perform_enqueued_jobs`, so the job runs before the next step.
+
+Put the check for the success message inside the block too, after the click. In a browser, `click_button` can return before the request has finished. Capybara waits for the message to appear, so the block doesn't end before the job is enqueued.
+
+The block also runs any jobs that a job enqueues, as long as they are enqueued before the block ends. A job that enqueues a follow-up job is then covered too.
+
+```ruby
+# spec/support/active_job.rb
+RSpec.configure do |config|
+  config.include ActiveJob::TestHelper, type: :feature
+end
+```
+
+```ruby
+RSpec.feature "Post Publishing" do
+  scenario "Publishing Manager publishes a post" do
+    # GIVEN I am signed in as a Publishing Manager
+    sign_in create(:user, :publishing_manager)
+
+    # AND there is a draft post
+    post = create(:post, title: "Hello World")
+
+    # AND the newsletter service accepts the post
+    newsletter_request = stub_request(:post, "https://newsletter.example.com/posts")
+
+    # WHEN I publish the post
+    visit post_path(post)
+    perform_enqueued_jobs do
+      click_button "Publish"
+
+      # THEN I see that it was published
+      expect(page).to have_css(".notice", text: "Post was published.")
+    end
+
+    # AND the post is sent to the subscribers
+    expect(newsletter_request).to have_been_requested
+  end
+end
+```
+
+A scheduled or maintenance job still needs a feature spec, even though no persona enqueues it. Name the feature after the task, and start the scenario name with the persona who sees the result. Set up the records in the `GIVEN` steps, run the job with `perform_now` in a `WHEN` step, then check what the persona sees. Wrap `perform_now` in `perform_enqueued_jobs` too, so any jobs the task enqueues also run.
+
+```ruby
+RSpec.feature "Draft Cleanup" do
+  scenario "Author no longer sees abandoned drafts" do
+    # GIVEN I am signed in as an Author
+    author = create(:user)
+    sign_in author
+
+    # AND I have a draft I haven't changed for a year
+    create(:post, author: author, title: "Old Idea", updated_at: 1.year.ago)
+
+    # WHEN the draft cleanup runs
+    perform_enqueued_jobs do
+      PurgeAbandonedDraftsJob.perform_now
+    end
+
+    # AND I visit the posts page
+    visit posts_path
+
+    # THEN I don't see the abandoned draft
+    expect(page).not_to have_link("Old Idea")
+  end
+end
+```
