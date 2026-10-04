@@ -148,6 +148,23 @@ RSpec.describe Post do
 end
 ```
 
+Scopes are the exception. A scope queries the database, so its spec needs saved records. Create them with factories, and check the records the scope returns. Comparing the scope's `to_sql` with the query you expect also works, but a spec with records checks the result the scope is for.
+
+```ruby
+RSpec.describe Post do
+  describe ".recent" do
+    it "returns the newest post first" do
+      older_post = create(:post, created_at: 2.days.ago)
+      newer_post = create(:post, created_at: 1.day.ago)
+
+      expect(described_class.recent).to eq([newer_post, older_post])
+    end
+  end
+end
+```
+
+Name the `subject` after the model, e.g. `subject(:post)`, and use `is_expected` where you can. When an example needs a record with different attributes, build it in the example, e.g. `post = described_class.new(title: "A title")`. Don't add a `let`, or another `subject`, for it. The example then shows the record it checks.
+
 Group a model's examples in a `describe` block for each method, named after the method, e.g. `describe "#published?"`. For an association, name the block after the association, e.g. `describe "#author"`, and put the examples for its id attribute, e.g. `author_id`, in the same block. Everything about one method or association is then in one place.
 
 Group the examples for a module in one `describe` block named after the module, e.g. `describe "FriendlyId"`, with a block for each of its methods inside.
@@ -169,7 +186,13 @@ RSpec.describe Post do
   end
 
   describe "#author" do
-    it { is_expected.not_to allow_value(nil).for(:author_id).with_message("must exist", against: :author) }
+    it { is_expected.to belong_to(:author).class_name("User") }
+
+    it "does not allow a banned user" do
+      banned_user = create(:user, :banned)
+
+      expect(post).not_to allow_value(banned_user.id).for(:author_id).with_message("can't be a banned user")
+    end
   end
 
   describe "#published?" do
@@ -188,6 +211,6 @@ RSpec.describe Post do
 end
 ```
 
-Test validations with [Shoulda Matchers](../gems/shoulda_matchers/#validations).
+Test validations and associations with Shoulda Matchers. See [Shoulda Matchers: Validations](../gems/shoulda_matchers/#validations) and [Shoulda Matchers: Associations](../gems/shoulda_matchers/#associations).
 
 > **TODO:** Describe how you handle this.

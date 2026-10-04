@@ -7,7 +7,7 @@ nav_order: 5
 
 # Shoulda Matchers
 
-Validation specs with [Shoulda Matchers](https://github.com/thoughtbot/shoulda-matchers).
+Validation and association specs with [Shoulda Matchers](https://github.com/thoughtbot/shoulda-matchers).
 
 ## Validations
 
@@ -28,3 +28,21 @@ end
 ```
 
 Use the same matchers for validations on [form objects](../../forms/).
+
+## Associations
+
+Test each association with its Shoulda Matchers matcher, e.g. `belong_to`, `have_one` or `have_many`. Add a qualifier for each option the association declares, e.g. `class_name` or `dependent`, so the spec fails if an option changes.
+
+```ruby
+RSpec.describe Post do
+  subject(:post) { described_class.new }
+
+  describe "#author" do
+    it { is_expected.to belong_to(:author).class_name("User") }
+  end
+
+  describe "#comments" do
+    it { is_expected.to have_many(:comments).dependent(:destroy) }
+  end
+end
+```
