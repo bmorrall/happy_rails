@@ -18,7 +18,7 @@ What lives where under `app/`, `config/` and `lib/`.
 
 ## Namespaced classes
 
-Define a class in a namespace inside a `module` block, e.g. `module Posts` and then `class CommentsController`. Don't use the short form, `class Posts::CommentsController`. Inside the block, Ruby looks up constants in `Posts` first, so the class can refer to its neighbours by their short names, e.g. `BaseController`. The short form skips `Posts`, so the same reference fails or finds a different class. The block form is also RuboCop's default for `Style/ClassAndModuleChildren`.
+Define a class in a namespace inside a `module` block, e.g. `module Posts` and then `class CommentsController`. Don't use the short form, `class Posts::CommentsController`. Inside the block, Ruby looks up constants in `Posts` first, so the class can refer to its neighbours by their short names, e.g. `BaseController`. The short form skips `Posts`, so the same reference fails or finds a different class. Enable RuboCop's `Style/ClassAndModuleChildren` to check it. See [Tooling and CI: Nested modules](../tooling/#nested-modules).
 
 ```ruby
 module Posts
