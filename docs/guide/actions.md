@@ -108,4 +108,49 @@ end
 
 ## Testing
 
+### Action specs
+
 > **TODO:** Describe how you handle this.
+
+### Specs for callers
+
+Never stub or mock an action in a request spec or a job spec, e.g. with `allow(Posts::ArchivePost).to receive(:call)` or `expect(Posts::ArchivePost).to receive(:call).with(post)`. To these specs, the action is invisible. Let it run, and check what the controller or job does: the records it changes, the response, the flash and the jobs it enqueues.
+
+An action is a detail of how the controller or job does its work. If the spec checks the result, you can move code into an action, or out of it, without changing the spec. A spec that stubs the action only checks that the action was called. It still passes when the action is broken, or when the action is called with the wrong arguments.
+
+```ruby
+module Posts
+  class ArchivesController < BaseController
+    # POST /posts/:post_id/archive
+    def create
+      # ...
+
+      Posts::ArchivePost.call(@post)
+      redirect_to posts_path, notice: "Post was archived."
+    end
+  end
+end
+```
+
+```ruby
+RSpec.describe "Posts::Archives" do
+  describe "POST /posts/:post_id/archive", :aggregate_failures do
+    # ...
+
+    it "archives the post" do
+      published_post = create(:post)
+      comment = create(:comment, post: published_post)
+
+      expect {
+        post post_archive_path(published_post)
+      }.to change { published_post.reload.archived_at }.from(nil)
+
+      expect(comment.reload).to be_locked
+      expect(response).to redirect_to(posts_path)
+      expect(flash.to_hash).to match("notice" => "Post was archived.")
+    end
+  end
+end
+```
+
+To test how a caller handles the action's `Error`, set up records that make the action fail for real. Don't stub the action to raise it, e.g. with `allow(Posts::ArchivePost).to receive(:call).and_raise(Posts::ArchivePost::Error)`.

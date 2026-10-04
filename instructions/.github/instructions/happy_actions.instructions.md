@@ -15,4 +15,6 @@ applyTo: "app/actions/**/*.rb"
 - Let an error that no caller should handle pass through the action unchanged.
 - When a caller is meant to handle an error, define a custom `Error` class inside the action that inherits from `StandardError`, e.g. `class Error < StandardError; end` in `Posts::ArchivePost`. In `call`, rescue the errors the caller should handle and raise them again as the action's `Error`, e.g. `rescue ActiveRecord::RecordInvalid => e` then `raise Error, e.message`.
 - Rescue an action's `Error` in a form or a job, not in a controller, e.g. `rescue Posts::ArchivePost::Error` then `errors.add(:base, "Post could not be archived.")` and `false` in a form's `submit`.
+- Never stub or mock an action in a request spec or a job spec, e.g. `allow(Posts::ArchivePost).to receive(:call)` or `expect(Posts::ArchivePost).to receive(:call).with(post)`. Let the action run, and check what the controller or job does, e.g. the records it changes, the response, the flash and the jobs it enqueues.
+- To test how a request spec or job spec handles an action's `Error`, set up records that make the action fail for real. Never stub the action to raise it, e.g. `allow(Posts::ArchivePost).to receive(:call).and_raise(Posts::ArchivePost::Error)`.
 - TODO: How to test actions.

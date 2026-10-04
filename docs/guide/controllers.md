@@ -840,7 +840,7 @@ RSpec.describe "Posts" do
 end
 ```
 
-Don't stub the models, forms, services or other classes the action calls, e.g. with `allow_any_instance_of(Post).to receive(:publish)`. Check what the action does instead: the records it changes, the response, the flash and the jobs it enqueues. Then the spec fails when any part of the action breaks, not only the controller's own lines.
+Don't stub the models, forms, actions, services or other classes the action calls, e.g. with `allow_any_instance_of(Post).to receive(:publish)` or `allow(Posts::ArchivePost).to receive(:call)`. Check what the action does instead: the records it changes, the response, the flash and the jobs it enqueues. Then the spec fails when any part of the action breaks, not only the controller's own lines. See [Actions: Specs for callers](../actions/#specs-for-callers).
 
 Check that the action enqueues each job, with its arguments, using `have_enqueued_job`. Don't run the job in the request spec. The job spec checks what the job does, and a feature spec runs it. See [Jobs: Testing](../jobs/#testing).
 
