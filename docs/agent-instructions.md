@@ -42,7 +42,7 @@ The area files are:
 | File | Applies to |
 | --- | --- |
 | `happy_rails.instructions.md` | `**` |
-| `happy_models.instructions.md` | `app/models/**` |
+| `happy_models.instructions.md` | `app/models/**`, `spec/models/**` |
 | `happy_forms.instructions.md` | `app/forms/**`, `spec/forms/**` |
 | `happy_controllers.instructions.md` | `app/controllers/**`, `config/routes.rb`, `spec/requests/**`, `spec/features/**` |
 | `happy_views.instructions.md` | `app/views/**`, `app/helpers/**`, `app/javascript/**` |
@@ -57,4 +57,5 @@ Each [gem](../guide/gems/) has its own file. If your app does not use a gem, del
 | `happy_draper.instructions.md` | Draper | `app/decorators/**`, `app/controllers/**`, `app/views/**`, `app/helpers/**`, `spec/decorators/**` |
 | `happy_pundit.instructions.md` | Pundit | `app/policies/**`, `app/controllers/**`, `app/views/**`, `app/forms/**`, `spec/policies/**` |
 | `happy_rspec.instructions.md` | RSpec and FactoryBot | `spec/**` |
+| `happy_shoulda_matchers.instructions.md` | Shoulda Matchers | `spec/models/**`, `spec/forms/**` |
 | `happy_view_component.instructions.md` | ViewComponent | `app/components/**`, `spec/components/**` |

@@ -2,7 +2,7 @@
 title: ViewComponent
 parent: Gems
 grand_parent: The Guide
-nav_order: 5
+nav_order: 6
 ---
 
 # ViewComponent

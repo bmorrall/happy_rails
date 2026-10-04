@@ -24,6 +24,7 @@ Each convention is written twice: once in the guide for people, and once in the 
 | `docs/guide/gems/draper.md` | `instructions/.github/instructions/happy_draper.instructions.md` |
 | `docs/guide/gems/pundit.md` | `instructions/.github/instructions/happy_pundit.instructions.md` |
 | `docs/guide/gems/rspec.md` | `instructions/.github/instructions/happy_rspec.instructions.md` |
+| `docs/guide/gems/shoulda_matchers.md` | `instructions/.github/instructions/happy_shoulda_matchers.instructions.md` |
 | `docs/guide/gems/view_component.md` | `instructions/.github/instructions/happy_view_component.instructions.md` |
 
 Every rule in an instruction file must match the guide. Do not add a rule to one side only. The one exception is a rant: a guide-only opinion in a `{: .rant }` callout. Leave rants out of the instruction files.

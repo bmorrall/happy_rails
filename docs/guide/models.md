@@ -134,4 +134,60 @@ end
 
 ## Testing
 
+Build the record under test with `described_class.new`, not a factory. Pass only the attributes the example needs. The spec then shows everything the result depends on, and a change to a factory can't break it.
+
+```ruby
+RSpec.describe Post do
+  describe "#published?" do
+    it "is true for a published post" do
+      post = described_class.new(status: :published)
+
+      expect(post).to be_published
+    end
+  end
+end
+```
+
+Group a model's examples in a `describe` block for each method, named after the method, e.g. `describe "#published?"`. For an association, name the block after the association, e.g. `describe "#author"`, and put the examples for its id attribute, e.g. `author_id`, in the same block. Everything about one method or association is then in one place.
+
+Group the examples for a module in one `describe` block named after the module, e.g. `describe "FriendlyId"`, with a block for each of its methods inside.
+
+Order the blocks in three tiers, each in alphabetical order:
+
+1. Class methods and scopes, e.g. `describe ".recent"`
+2. Instance methods, attributes and associations, e.g. `describe "#author"` and `describe "#published?"`
+3. Modules, e.g. `describe "FriendlyId"`
+
+Alphabetical order needs no judgement about which group a method belongs to, e.g. whether `published?` comes from an enum or a method. The tiers follow RSpec's prefixes: `.` for a class method and `#` for an instance method.
+
+```ruby
+RSpec.describe Post do
+  subject(:post) { described_class.new }
+
+  describe ".recent" do
+    # ...
+  end
+
+  describe "#author" do
+    it { is_expected.not_to allow_value(nil).for(:author_id).with_message("must exist", against: :author) }
+  end
+
+  describe "#published?" do
+    # ...
+  end
+
+  describe "FriendlyId" do
+    describe "#should_generate_new_friendly_id?" do
+      it "is true when the title changes" do
+        post = described_class.new(title: "A title")
+
+        expect(post.should_generate_new_friendly_id?).to be(true)
+      end
+    end
+  end
+end
+```
+
+Test validations with [Shoulda Matchers](../gems/shoulda_matchers/#validations).
+
 > **TODO:** Describe how you handle this.
