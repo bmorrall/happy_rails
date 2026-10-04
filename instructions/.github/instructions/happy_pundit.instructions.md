@@ -1,5 +1,5 @@
 ---
-applyTo: "app/policies/**/*.rb,app/controllers/**/*.rb,app/views/**,spec/policies/**/*.rb"
+applyTo: "app/policies/**/*.rb,app/controllers/**/*.rb,app/views/**,app/forms/**/*.rb,spec/policies/**/*.rb"
 ---
 
 # Pundit
@@ -20,6 +20,8 @@ applyTo: "app/policies/**/*.rb,app/controllers/**/*.rb,app/views/**,spec/policie
 - Use the policy's permitted attributes only for the main app. In controllers for other APIs, e.g. `Api::V1::PostsController`, define `post_params` with `params.require` and `permit` instead. Reuse the policy's `update_<attribute>?` checks for restricted attributes, e.g. `attributes << :published if policy(@post).update_published?`.
 - Never build a policy for a record in a view, e.g. `policy(@post).update?` or `policy(post).update?` in `app/views/posts/index.html.erb`. Only call `policy` in a view with a class or a symbol, e.g. `policy(Post).new?` or `policy(:admin).index?`.
 - When the app uses Draper, check a record's permissions in a view through its decorator, e.g. `post.can_update?` or `post.can_publish?`.
+- Give forms Pundit's `policy` and `policy_scope` through a `PunditPolicies` concern in `app/forms/concerns/pundit_policies.rb`, with private `def policy(class_or_resource) = Pundit.policy!(current_user, class_or_resource)` and `def policy_scope(scope) = Pundit.policy_scope!(current_user, scope)`. Add `include PunditPolicies` to `ApplicationForm`.
+- In forms, use `policy` and `policy_scope` to limit choices to what the user may pick, e.g. `collection_for_status` adds `"published"` only when `policy(post).update_published?`.
 - TODO: How to write a policy, e.g. `PostPolicy`.
 - TODO: How to write a policy scope and call `policy_scope` in controllers.
 - TODO: How to write policy specs.

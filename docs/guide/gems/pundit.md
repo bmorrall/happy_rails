@@ -310,6 +310,50 @@ Only call `policy` in a view with a class or a symbol. These checks don't depend
 
 When the app uses Draper, check a record's permissions through its decorator, e.g. `post.can_update?` or `post.can_publish?`. See [Draper: Permissions](../draper/#permissions).
 
+## Forms
+
+Forms check permissions too, e.g. to limit a collection to the choices the user may pick. Give them Pundit's `policy` and `policy_scope` through a `PunditPolicies` concern, in `app/forms/concerns/pundit_policies.rb`, and include it in `ApplicationForm`. See [Forms: Base class](../../forms/#base-class). The methods use the form's `current_user`, the same way the controller helpers do.
+
+```ruby
+module PunditPolicies
+  extend ActiveSupport::Concern
+
+  private
+
+  def policy(class_or_resource)
+    Pundit.policy!(current_user, class_or_resource)
+  end
+
+  def policy_scope(scope)
+    Pundit.policy_scope!(current_user, scope)
+  end
+end
+```
+
+```ruby
+class ApplicationForm
+  include ActiveModel::Model
+  include ActiveModel::Attributes
+  include PunditPolicies
+
+  # ...
+end
+```
+
+```ruby
+class UpdatePostForm < ApplicationForm
+  # ...
+
+  ### Collections ###
+
+  def collection_for_status
+    statuses = ["draft"]
+    statuses << "published" if policy(post).update_published?
+    statuses
+  end
+end
+```
+
 ## Testing
 
 > **TODO:** Describe how you handle this.
