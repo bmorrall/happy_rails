@@ -128,7 +128,36 @@ end
 
 ## Forms
 
-> **TODO:** Describe how you handle this.
+Prefer to build a form with `form_with`, and pass it a model or a form object as `model:`. `form_with` then works out the URL, the method and the param key from the model, fills each field with the model's value, and lets you show its errors. If the form needs its own attributes or validations, pass a form object instead of the model. See [Forms](../forms/).
+
+If your app uses Simple Form, build forms with `simple_form_for` instead, in the same way. See [Simple Form](../gems/simple_form/).
+
+```erb
+<%# app/views/posts/new.html.erb %>
+<%= form_with model: @post do |form| %>
+  <%= form.label :title %>
+  <%= form.text_field :title %>
+  <%= form.submit %>
+<% end %>
+```
+
+```erb
+<%# app/views/posts/new.html.erb %>
+<%= form_with model: @create_post_form do |form| %>
+  <%# ... %>
+<% end %>
+```
+
+Avoid `form_for` and `form_tag`, which `form_with` replaces. Avoid `form_with` with only a `url:` or a `scope:`, too. You then have to set the URL, the method and each field's value by hand.
+
+```erb
+<%# app/views/posts/new.html.erb %>
+<%= form_with url: posts_path, scope: :post do |form| %>
+  <%= form.label :title %>
+  <%= form.text_field :title, value: @post.title %>
+  <%= form.submit %>
+<% end %>
+```
 
 ## Hotwire: Turbo and Stimulus
 

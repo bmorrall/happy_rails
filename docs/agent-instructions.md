@@ -58,4 +58,5 @@ Each [gem](../guide/gems/) has its own file. If your app does not use a gem, del
 | `happy_pundit.instructions.md` | Pundit | `app/policies/**`, `app/controllers/**`, `app/views/**`, `app/forms/**`, `spec/policies/**` |
 | `happy_rspec.instructions.md` | RSpec and FactoryBot | `spec/**` |
 | `happy_shoulda_matchers.instructions.md` | Shoulda Matchers | `spec/models/**`, `spec/forms/**` |
+| `happy_simple_form.instructions.md` | Simple Form | `app/models/**`, `app/views/**`, `app/inputs/**`, `app/helpers/**`, `config/initializers/simple_form.rb` |
 | `happy_view_component.instructions.md` | ViewComponent | `app/components/**`, `spec/components/**` |
