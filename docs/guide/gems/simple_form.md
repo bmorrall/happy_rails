@@ -76,11 +76,37 @@ end
 
 The select input uses `to_label` for each option's label and `to_param` for its value, so you don't build `[label, id]` pairs by hand. `to_param` is how Rails turns a record into a param when it builds a URL, so the select sends the same value as the record's URL, and one lookup works for both. For most models it's the id.
 
-When a model changes `to_param`, e.g. to a slug with FriendlyId, the select sends the slug, not the id. Make the form object's attribute a `:string`, and validate it against the same param, e.g. `pluck(:slug)` instead of `pluck(:id)`. See [Forms: Association ids](../../forms/#association-ids).
+When a model changes `to_param`, e.g. to a slug with FriendlyId, the select sends the slug, not the id. Keep the form object's attribute named after the model's column, e.g. `featured_comment_id`, so its field, param and translations match the model's. It holds the slug, though, so make it a `:string`, and validate it against the same param, e.g. `pluck(:slug)` instead of `pluck(:id)`. See [Forms: Association ids](../../forms/#association-ids). In `submit`, find the record by its slug, e.g. `collection_for_featured_comment_id.find_by!(slug: featured_comment_id)`. Never pass the attribute to `where(id:)` or `find`.
+
+```ruby
+class UpdatePostForm < ApplicationForm
+  # ...
+
+  ### Attributes ###
+
+  attribute :featured_comment_id, :string
+
+  ### Collections ###
+
+  def collection_for_featured_comment_id
+    post.comments
+  end
+
+  ### Validations ###
+
+  validates :featured_comment_id,
+    inclusion: { in: ->(form) { form.collection_for_featured_comment_id.where(slug: form.featured_comment_id).pluck(:slug) } },
+    allow_nil: true
+end
+```
+
+```erb
+<%= form.input :featured_comment_id, as: :comment_select, collection: form.object.collection_for_featured_comment_id %>
+```
 
 For an attribute that picks a record, e.g. `featured_comment_id`, write a custom select input for the resource, e.g. `CommentSelectInput` in `app/inputs/comment_select_input.rb`. Pass it the choices from the form object's `collection_for_<attribute>` method, as for any other field. See [Forms: Association ids](../../forms/#association-ids). The input passes them to a helper in the resource's helper file, e.g. `comment_select_options` in `CommentsHelper`. The helper returns the records in the order to show them, and groups them if the input is grouped.
 
-Every select for a resource then shows its records the same way, wherever it is used. The input doesn't know where the records come from, so it works with any list of comments, from a form object or a plain model. You can also switch an input between a flat list and groups without changing a view. The helper has its own helper spec, so you can test the order and groups without a form.
+Every select for a resource then shows its records the same way, wherever it is used. The input doesn't know where the records come from, so it works with any list of comments, from a form object or a plain model. You can also switch an input between a flat list and groups without changing a view.
 
 Inherit from `SimpleForm::Inputs::CollectionSelectInput` for a flat list, and override `collection`. Set `label_method: :to_label` and `value_method: :to_param` in `input`, so Simple Form doesn't guess them. If the model has no `to_label`, Simple Form would quietly fall back to another method, e.g. `to_s`. With both set, the input raises an error instead.
 

@@ -51,6 +51,38 @@ Group the declarations in a form object under comment headings, in the same styl
 2. Collections
 3. Validations
 4. Callbacks
+5. Public Methods, e.g. `submit`
+
+Put the setup at the top, without a heading: `self.model_name`, any `delegate` lines, then `initialize`. A reader then sees first what the form needs to be built. Put `submit` under Public Methods, after the declarations it uses, as in a model. Private methods go last, after `private`.
+
+```ruby
+class CreatePostForm < ApplicationForm
+  def self.model_name
+    Post.model_name
+  end
+
+  delegate :to_param, :to_partial_path, :persisted?, :new_record?, to: :post
+
+  def initialize(post, current_user, params = {})
+    @post = post
+    super(current_user, params)
+  end
+
+  ### Attributes ###
+
+  # ...
+
+  ### Public Methods ###
+
+  def submit
+    # ...
+  end
+
+  private
+
+  attr_reader :post
+end
+```
 
 Under Collections, write a `collection_for_<attribute>` method for each attribute that has a fixed set of choices. The form's select uses it for its options, and the validations use it to check the value.
 
@@ -198,6 +230,8 @@ A resource form's `submit` returns the saved resource, or `false` if the save fa
 class CreatePostForm
   # ...
 
+  ### Public Methods ###
+
   def submit
     return false unless valid?
 
@@ -224,6 +258,8 @@ When the resource fails to save, copy its errors onto the form, so the form show
 ```ruby
 class CreatePostForm
   # ...
+
+  ### Public Methods ###
 
   def submit
     return false unless valid?
