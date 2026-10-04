@@ -39,14 +39,16 @@ Pass a component the decorated record, e.g. `post` from `decorates_assigned`, no
 A component must work without a request. Previews, component specs, mailers and Turbo Stream broadcasts all render it with no request and no signed-in user. So never call a permission check in a component, e.g. `@post.can_update?`, and never call a decorator method that needs the request, e.g. one that reads `h.current_user` or `h.params`. When a permission toggles part of the component, pass it in as a flag. Name the flag after the check, e.g. `can_update:` for `post.can_update?`, and default it to `false`. Read it through a predicate method with the same name, e.g. `can_update?`, which returns `!!@can_update`. The template checks the permission, and the component only reads the flag. A preview or spec then sets each case directly, and a caller that forgets the flag hides the action rather than showing it.
 
 ```ruby
-class Posts::CardComponent < ViewComponent::Base
-  def initialize(post:, can_update: false)
-    @post = post
-    @can_update = can_update
-  end
+module Posts
+  class CardComponent < ViewComponent::Base
+    def initialize(post:, can_update: false)
+      @post = post
+      @can_update = can_update
+    end
 
-  def can_update?
-    !!@can_update
+    def can_update?
+      !!@can_update
+    end
   end
 end
 ```

@@ -323,12 +323,14 @@ end
 ```
 
 ```ruby
-class Posts::CommentsController < ApplicationController
-  decorates_assigned :comments, with: CommentsDecorator
+module Posts
+  class CommentsController < ApplicationController
+    decorates_assigned :comments, with: CommentsDecorator
 
-  # GET /posts/:post_id/comments
-  def index
-    @comments = Post.find(params[:post_id]).comments
+    # GET /posts/:post_id/comments
+    def index
+      @comments = Post.find(params[:post_id]).comments
+    end
   end
 end
 ```

@@ -19,8 +19,10 @@ Put actions in `app/actions/`, e.g. `Posts::ArchivePost` in `app/actions/posts/a
 Put each action in a module named after the resource it works on, in the plural, like its controller, e.g. `Posts`. Name the action after the task, starting with a verb. The name can include the resource as well, e.g. `Posts::ArchivePost`. The module groups every action for a resource in one directory, and the name says what the action does.
 
 ```ruby
-class Posts::ArchivePost < ApplicationAction
-  # ...
+module Posts
+  class ArchivePost < ApplicationAction
+    # ...
+  end
 end
 ```
 
@@ -40,19 +42,21 @@ end
 ```
 
 ```ruby
-class Posts::ArchivePost < ApplicationAction
-  def initialize(post)
-    @post = post
+module Posts
+  class ArchivePost < ApplicationAction
+    def initialize(post)
+      @post = post
+    end
+
+    def call
+      post.update!(archived_at: Time.current)
+      post.comments.update_all(locked: true)
+    end
+
+    private
+
+    attr_reader :post
   end
-
-  def call
-    post.update!(archived_at: Time.current)
-    post.comments.update_all(locked: true)
-  end
-
-  private
-
-  attr_reader :post
 end
 ```
 
@@ -72,16 +76,18 @@ If the task fails, raise an error, e.g. with `update!`, rather than returning `f
 When a caller is meant to handle an error, write a custom `Error` class inside the action, and inherit it from `StandardError`. In `call`, rescue the errors the caller should handle and raise them again as the action's `Error`. The caller then rescues one error class, e.g. `Posts::ArchivePost::Error`, and doesn't need to know which errors the action's code can raise. Ruby keeps the original error as the new error's `cause`, so it still shows up in the error report.
 
 ```ruby
-class Posts::ArchivePost < ApplicationAction
-  class Error < StandardError; end
+module Posts
+  class ArchivePost < ApplicationAction
+    class Error < StandardError; end
 
-  # ...
+    # ...
 
-  def call
-    post.update!(archived_at: Time.current)
-    post.comments.update_all(locked: true)
-  rescue ActiveRecord::RecordInvalid => e
-    raise Error, e.message
+    def call
+      post.update!(archived_at: Time.current)
+      post.comments.update_all(locked: true)
+    rescue ActiveRecord::RecordInvalid => e
+      raise Error, e.message
+    end
   end
 end
 ```

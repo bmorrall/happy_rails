@@ -25,10 +25,12 @@ Don't use decorators or presenters in mailers. A mailer has no request and no si
 Never render a page component in a mailer template. Page components take decorated records, build links with `_path` helpers, and rely on the app's stylesheets, which email clients ignore. When several emails repeat the same markup, write a component for email under a `Mailers::` namespace. Give it plain values and full URLs, and style it inline.
 
 ```ruby
-class Mailers::ButtonComponent < ViewComponent::Base
-  def initialize(label:, url:)
-    @label = label
-    @url = url
+module Mailers
+  class ButtonComponent < ViewComponent::Base
+    def initialize(label:, url:)
+      @label = label
+      @url = url
+    end
   end
 end
 ```

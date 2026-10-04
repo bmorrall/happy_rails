@@ -61,9 +61,11 @@ A persona whose role plays no part in the action doesn't need a scenario of its 
 List personas in rank order everywhere they appear: in the table above, in permission checks, and in request and feature specs. Then every list of personas reads the same way. You can compare a policy with its spec at a glance, and a missing persona stands out.
 
 ```ruby
-class Posts::PublicationPolicy < ApplicationPolicy
-  def create?
-    user.app_admin? || user.publishing_manager?
+module Posts
+  class PublicationPolicy < ApplicationPolicy
+    def create?
+      user.app_admin? || user.publishing_manager?
+    end
   end
 end
 ```

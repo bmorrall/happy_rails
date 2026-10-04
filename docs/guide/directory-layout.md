@@ -16,6 +16,20 @@ What lives where under `app/`, `config/` and `lib/`.
 
 > **TODO:** Describe how you handle this.
 
+## Namespaced classes
+
+Define a class in a namespace inside a `module` block, e.g. `module Posts` and then `class CommentsController`. Don't use the short form, `class Posts::CommentsController`. Inside the block, Ruby looks up constants in `Posts` first, so the class can refer to its neighbours by their short names, e.g. `BaseController`. The short form skips `Posts`, so the same reference fails or finds a different class. The block form is also RuboCop's default for `Style/ClassAndModuleChildren`.
+
+```ruby
+module Posts
+  class CommentsController < BaseController
+    # ...
+  end
+end
+```
+
+Use the full name everywhere outside the namespace, e.g. `Posts::CommentsController` in a spec or a route.
+
 ## Concerns
 
 Use a concern to group the code for one feature, when it could be shared with other classes or you may want to remove it all at once later. Name the concern after what it does.

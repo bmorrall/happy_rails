@@ -240,24 +240,26 @@ A form that creates a nested resource, e.g. a comment on a post, goes in a modul
 Take the parent as the first argument, before the current user, and build the new resource for it in `initialize`, e.g. `Comment.new(post: post)`. The controller only passes the post it already loaded, and the comment always belongs to that post. Set any default values from the parent with `reverse_merge`, so the params the user submitted still win. Keep both records in private `attr_reader`s, and delegate to the new resource as for any resource form.
 
 ```ruby
-class Posts::CreateCommentForm < ApplicationForm
-  def self.model_name
-    Comment.model_name
+module Posts
+  class CreateCommentForm < ApplicationForm
+    def self.model_name
+      Comment.model_name
+    end
+
+    delegate :to_param, :to_partial_path, :persisted?, :new_record?, to: :comment
+
+    def initialize(post, current_user, params = {})
+      @post = post
+      @comment = Comment.new(post: post)
+      super(current_user, params.reverse_merge(subject: "Re: #{post.title}"))
+    end
+
+    # ...
+
+    private
+
+    attr_reader :post, :comment
   end
-
-  delegate :to_param, :to_partial_path, :persisted?, :new_record?, to: :comment
-
-  def initialize(post, current_user, params = {})
-    @post = post
-    @comment = Comment.new(post: post)
-    super(current_user, params.reverse_merge(subject: "Re: #{post.title}"))
-  end
-
-  # ...
-
-  private
-
-  attr_reader :post, :comment
 end
 ```
 
