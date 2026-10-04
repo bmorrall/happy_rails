@@ -26,6 +26,18 @@ Pass the record to the job, never its ID, e.g. `NotifySubscribersJob.perform_lat
 NotifySubscribersJob.perform_later(post)
 ```
 
+If the record is deleted before the job runs, Active Job can't load it, and raises `ActiveJob::DeserializationError`. It raises the error before `perform` runs, so a `rescue` in `perform` doesn't catch it. When the record could reasonably be gone by then, e.g. a user can delete a post before its subscribers are notified, add `discard_on ActiveJob::DeserializationError` to that job. The job then stops quietly, because there is no work left to do.
+
+```ruby
+class NotifySubscribersJob < ApplicationJob
+  discard_on ActiveJob::DeserializationError
+
+  # ...
+end
+```
+
+Add it only to the jobs that need it, not to `ApplicationJob`. In any other job, a missing record is a bug, and the error should be reported.
+
 ### Enqueueing after a transaction
 
 Enqueue a job only after the transactions that change its arguments have committed. Active Job passes a record to the job by its ID, and the job loads it again when it runs. A job enqueued inside a transaction could run before the transaction commits. It would not find a new record, or it would see the old values. If the transaction rolls back, the job runs for changes that never happened.
@@ -112,6 +124,39 @@ RSpec.describe NotifySubscribersJob do
 end
 ```
 
+### Deleted records
+
+When a job discards a missing record, test it with `perform_later`, not `perform_now`. `perform_now` takes the record as it is, so the spec never loads it again and can't see that it is gone. Enqueue the job, delete the record, then run the job with `perform_enqueued_jobs`. Check that it doesn't raise and does none of its work. Name the `describe` block `".perform_later"`, after the method the spec calls.
+
+Include `ActiveJob::TestHelper` in job specs for `perform_enqueued_jobs`, in `spec/support/active_job.rb`, as for [feature specs](#feature-specs).
+
+```ruby
+# spec/support/active_job.rb
+RSpec.configure do |config|
+  config.include ActiveJob::TestHelper, type: :job
+  # ...
+end
+```
+
+```ruby
+RSpec.describe NotifySubscribersJob do
+  # ...
+
+  describe ".perform_later" do
+    it "does nothing when the post was deleted" do
+      post = create(:post)
+      newsletter_request = stub_request(:post, "https://newsletter.example.com/posts")
+
+      described_class.perform_later(post)
+      post.destroy
+
+      expect { perform_enqueued_jobs }.not_to raise_error
+      expect(newsletter_request).not_to have_been_requested
+    end
+  end
+end
+```
+
 ### Feature specs
 
 Run every job in at least one feature spec. The job spec checks the job on its own. The feature spec checks that the app enqueues it at the right time, with the right arguments, and that the persona gets the result.
@@ -125,6 +170,7 @@ The block also runs any jobs that a job enqueues, as long as they are enqueued b
 ```ruby
 # spec/support/active_job.rb
 RSpec.configure do |config|
+  # ...
   config.include ActiveJob::TestHelper, type: :feature
 end
 ```
