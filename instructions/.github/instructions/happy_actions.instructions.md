@@ -11,6 +11,11 @@ applyTo: "app/actions/**/*.rb,spec/actions/**/*.rb"
 - Write an `initialize` that takes the action's arguments and an instance method `call` that does the task, e.g. `Posts::ArchivePost.new(post)` keeps `post` in a private `attr_reader`.
 - Call an action with the class method, e.g. `Posts::ArchivePost.call(post)`, not `Posts::ArchivePost.new(post).call`.
 - Never return a value from an action, and never use the value an action returns.
+- When a caller needs a value from an action's work, have the action save it on a record the caller holds, and read it from the record after the call, e.g. `@post.newsletter_id` after `Posts::SendNewsletter.call(@post)`.
+- When another service accepts an ID from you, generate the ID in the caller and pass it to the action, e.g. `newsletter_id = SecureRandom.uuid` then `Posts::SendNewsletter.call(@post, newsletter_id:)`.
+- When an API client tracks a request to another service, create a record for the request first with your own ID, e.g. `has_secure_token :reference` on `NewsletterDelivery`. Send your ID to the service, and give the client your ID, never the service's.
+- Never pass a value back from an action through a block or a result object, e.g. `Posts::SendNewsletter.call(post) { |newsletter_id| ... }` or `Result.new(success: true, value: response.id)`.
+- For more ways to get a value from an action's work, see https://bmorrall.github.io/happy_rails/patterns/values-from-actions/.
 - When an action's task fails, raise an error, e.g. with `update!`, rather than returning `false`.
 - Let an error that no caller should handle pass through the action unchanged.
 - When a caller is meant to handle an error, define a custom `Error` class inside the action that inherits from `StandardError`, e.g. `class Error < StandardError; end` in `Posts::ArchivePost`. In `call`, rescue the errors the caller should handle and raise them again as the action's `Error`, e.g. `rescue ActiveRecord::RecordInvalid => e` then `raise Error, e.message`.

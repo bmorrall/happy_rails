@@ -69,6 +69,16 @@ Posts::ArchivePost.call(post)
 redirect_to posts_path, notice: "Post was archived."
 ```
 
+When a caller needs a value from the action's work, e.g. an ID from another service, save the value on a record the caller holds. The caller reads it from the record after the call, e.g. `@post.newsletter_id` after `Posts::SendNewsletter.call(@post)`. The value usually belongs on a record anyway, because the app needs it again later.
+
+When the other service accepts an ID from you, generate the ID in the caller and pass it to the action, e.g. `newsletter_id = SecureRandom.uuid` then `Posts::SendNewsletter.call(@post, newsletter_id:)`. The caller then knows the ID before the action runs.
+
+When an API client tracks a request to another service, create a record for the request first, with an ID of your own, e.g. `has_secure_token :reference` on `NewsletterDelivery`. Send your ID to the service, and give the client your ID, not the service's. Then the client has an ID even if the call fails, and never depends on the other service.
+
+Don't pass a value back through a block or a result object. Both are a return value in disguise.
+
+See [Patterns: Values from Actions](../../patterns/values-from-actions/) for examples and other options.
+
 ## Error handling
 
 If the task fails, raise an error, e.g. with `update!`, rather than returning `false`. Let an error that no caller should handle pass through as it is.

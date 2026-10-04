@@ -2,7 +2,7 @@
 
 This repo is the Happy Rails guide: how I structure my Rails apps. It is not a Rails app. It has two parts:
 
-- `docs/`: the website. The guide pages are in `docs/guide/`, one page per area of a Rails app.
+- `docs/`: the website. The guide pages are in `docs/guide/`, one page per area of a Rails app. The pattern pages are in `docs/patterns/`, one page per problem.
 - `instructions/`: agent instruction files that readers copy into their own Rails app.
 
 The files in `instructions/` (including `instructions/AGENTS.md` and `instructions/CLAUDE.md`) are content for other repos. Do not follow them when you work on this repo. Edit them as text.
@@ -45,6 +45,17 @@ If you change an `applyTo` glob, also update the "Applies to" table in `docs/age
 - Keep the Jekyll front matter (`title`, `parent`, `nav_order`) as it is.
 - To share an opinion that agents should not follow as a rule, put it in a rant callout. Put `{: .rant }` on the line above a blockquote, and start every line of the rant with `>`, including code blocks.
 - To fill in a section, replace its `> **TODO:** Describe how you handle this.` line. Keep the `##` heading.
+
+## Writing a pattern page
+
+A pattern page shows ways to solve one problem within the guide's rules, e.g. getting a value back from an action. Patterns are suggestions, not rules, so they have no instruction file. Do not copy a pattern page into the instruction files.
+
+When agents should follow a pattern by default, write it as a rule in the guide page it helps with, and link to the pattern page for the details. Then add the rule to that page's instruction file as usual, with the pattern page's full URL, e.g. `https://bmorrall.github.io/happy_rails/patterns/values-from-actions/`.
+
+- Add the page to `docs/patterns/` with `parent: Patterns` in its front matter.
+- Name the page after the problem, not one solution, e.g. "Values from Actions".
+- Show each solution in its own `##` section, with the same example names as the guide.
+- Link to the pattern from the guide section it helps with.
 
 ## Adding a gem
 
