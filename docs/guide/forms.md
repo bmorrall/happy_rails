@@ -382,6 +382,52 @@ class PublishPostForm < ApplicationForm
 end
 ```
 
+### Calling actions
+
+A form handles what the user submits: it checks the input, then does the work. When the work could be run from somewhere else too, e.g. a job or the console, put it in an [action](../actions/) and call the action from `submit`. The form deals with the user and their input, and the action does the task. See [Actions: When to write an action](../actions/#when-to-write-an-action).
+
+Call the action after `valid?`, and pass it the records and values it needs. Never pass it the form or the params. The action then doesn't depend on how the user submitted the data. Pass the current user as an argument named after the role the user plays, e.g. `publisher: current_user`. See [Principles: The signed-in user](../principles/#the-signed-in-user).
+
+The action returns nothing, so `submit` returns the resource itself, as for any resource form. Rescue the action's `Error` in `submit`, add an error to `:base`, and return `false`, so the form shows the failure.
+
+```ruby
+class PublishPostForm < ApplicationForm
+  # ...
+
+  ### Public Methods ###
+
+  def submit
+    return false unless valid?
+
+    Posts::PublishPost.call(post, publisher: current_user)
+    NotifySubscribersJob.perform_later(post)
+    post
+  rescue Posts::PublishPost::Error
+    errors.add(:base, "Post could not be published.")
+    false
+  end
+end
+```
+
+An action that writes more than once has its own transaction. Open a transaction in `submit` only to combine several actions, or an action and the form's own save, into one unit. Call any `Record` action before or after that transaction, never inside it. See [Actions: Transactions](../actions/#transactions).
+
+```ruby
+def submit
+  return false unless valid?
+
+  ActiveRecord::Base.transaction do
+    Posts::PublishPost.call(post, publisher: current_user)
+    Posts::ArchivePost.call(previous_post)
+  end
+
+  NotifySubscribersJob.perform_later(post)
+  post
+rescue Posts::PublishPost::Error, Posts::ArchivePost::Error
+  errors.add(:base, "Post could not be published.")
+  false
+end
+```
+
 ## Testing
 
 Cover every `collection_for_<attribute>` method with a unit test, in `spec/forms/`. The form's select and its validation both use the collection. A wrong collection hides a choice from the user, or rejects a value the user is allowed to pick.

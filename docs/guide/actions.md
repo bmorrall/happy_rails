@@ -14,6 +14,12 @@ An action is not an [action form](../forms/#action-forms). An action form handle
 
 Put actions in `app/actions/`, e.g. `Posts::ArchivePost` in `app/actions/posts/archive_post.rb`.
 
+## When to write an action
+
+Write an action for a unit of work that could be run from more than one place, e.g. a form, a job, the console or a rake task. Publishing a post is a good fit: a user publishes from a form, a job publishes scheduled posts, and a developer may publish one from the console to fix a problem. Each caller calls the same action, so the task works the same way everywhere.
+
+When only one place will ever do the work, keep it there, e.g. in the form's `submit` or the job's `perform`. Move it into an action when a second caller needs it.
+
 ## Naming
 
 Put each action in a module named after the resource it works on, in the plural, like its controller, e.g. `Posts`. Name the action after the task, starting with a verb. The name can include the resource as well, e.g. `Posts::ArchivePost`. The module groups every action for a resource in one directory, and the name says what the action does.

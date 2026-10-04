@@ -44,6 +44,28 @@ ActiveRecord.after_all_transactions_commit do
 end
 ```
 
+### Calling actions
+
+A job is a caller, like a form. When the work in `perform` could be run from somewhere else too, e.g. a form or the console, put it in an [action](../actions/) and call the action from `perform`. Keep work that only the job does in `perform`. See [Actions: When to write an action](../actions/#when-to-write-an-action).
+
+Pass the action the records and values it needs. A job has no signed-in user, so when the action needs a user, take it from a record or from the job's arguments, and pass it under its role, e.g. `publisher: post.scheduled_by`. See [Principles: The signed-in user](../principles/#the-signed-in-user).
+
+When the action's `Error` is an outcome the app expects, rescue it in `perform` and save it on the record the job works on, e.g. mark the post as failed. Let any other error pass through, so the job fails and can retry.
+
+```ruby
+class PublishScheduledPostJob < ApplicationJob
+  def perform(post)
+    Posts::PublishPost.call(post, publisher: post.scheduled_by)
+  rescue Posts::PublishPost::Error
+    post.update!(publish_status: :failed)
+  end
+end
+```
+
+A job may run more than once, e.g. when it retries. Write the action so a second run is safe, e.g. it does nothing if the post is already published. See [Actions: Locks](../actions/#locks).
+
+An action that writes more than once has its own transaction. Open a transaction in `perform` only to combine several actions into one unit. Call any `Record` action before or after that transaction, never inside it. See [Actions: Transactions](../actions/#transactions).
+
 ## Scheduling
 
 > **TODO:** Describe how you handle this.

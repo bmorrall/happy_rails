@@ -5,6 +5,7 @@ applyTo: "app/actions/**/*.rb,spec/actions/**/*.rb"
 # Actions
 
 - Put service objects that do one task in `app/actions/`, e.g. `Posts::ArchivePost` in `app/actions/posts/archive_post.rb`.
+- Write an action for a unit of work that could be run from more than one place, e.g. a form, a job, the console or a rake task. Keep work that only one place does in that place, e.g. a form's `submit` or a job's `perform`, and move it into an action when a second caller needs it.
 - Keep actions separate from action forms. An action form handles what the user submits, e.g. `PublishPostForm`. An action is its own object that does a task, e.g. `Posts::ArchivePost`.
 - Put each action in a module named after the resource it works on, in the plural, e.g. `Posts`. Name the action after the task, starting with a verb. The name can include the resource, e.g. `Posts::ArchivePost`, not `ArchivePost` or `Posts::ArchivePostAction`.
 - Inherit every action from `ApplicationAction` in `app/actions/application_action.rb`. Define the class method `call` there to build the action, call it and return `nil`, e.g. `def self.call(...); new(...).call; nil; end`.
