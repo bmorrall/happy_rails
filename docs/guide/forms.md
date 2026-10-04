@@ -233,6 +233,53 @@ Pass the `url` to `form_with`. The action's route is a singular `resource`, whic
 <% end %>
 ```
 
+### Nested forms
+
+A form that creates a nested resource, e.g. a comment on a post, goes in a module named after the parent, like its controller, e.g. `Posts::CreateCommentForm` in `app/forms/posts/create_comment_form.rb` for `Posts::CommentsController`. See [Controllers and Routes: Nested resources](../controllers/#nested-resources).
+
+Take the parent as the first argument, before the current user, and build the new resource for it in `initialize`, e.g. `Comment.new(post: post)`. The controller only passes the post it already loaded, and the comment always belongs to that post. Set any default values from the parent with `reverse_merge`, so the params the user submitted still win. Keep both records in private `attr_reader`s, and delegate to the new resource as for any resource form.
+
+```ruby
+class Posts::CreateCommentForm < ApplicationForm
+  def self.model_name
+    Comment.model_name
+  end
+
+  delegate :to_param, :to_partial_path, :persisted?, :new_record?, to: :comment
+
+  def initialize(post, current_user, params = {})
+    @post = post
+    @comment = Comment.new(post: post)
+    super(current_user, params.reverse_merge(subject: "Re: #{post.title}"))
+  end
+
+  # ...
+
+  private
+
+  attr_reader :post, :comment
+end
+```
+
+```ruby
+def create
+  @create_comment_form = Posts::CreateCommentForm.new(@post, current_user, comment_params)
+  # ...
+end
+```
+
+Don't build it with `post.comments.new`. That adds the unsaved comment to `post.comments` in memory, so a page that shows the form and lists `@post.comments` would end the list with an empty comment. `Comment.new(post: post)` sets the same post, without changing the post's comments.
+
+A nested form that updates a resource, e.g. `Posts::UpdateCommentForm`, takes the existing comment as its first argument instead, like any resource form. The comment already belongs to its post.
+
+Pass the parent and the form to `form_with` as an array. It then builds the nested URL, e.g. `POST /posts/:post_id/comments`.
+
+```erb
+<%= form_with model: [@post, @create_comment_form] do |form| %>
+  <%# ... %>
+<% end %>
+```
+
 ## Submitting
 
 Process every form with the same method, typically `submit`. It returns the result, or `false` if the form is invalid. Every form then works the same way in a controller, whatever it does. If the app already uses another name, e.g. `save`, use that instead.
