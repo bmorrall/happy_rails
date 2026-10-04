@@ -351,6 +351,35 @@ If the resource's errors could show the user something they shouldn't see, add a
 errors.add(:base, "Post could not be saved.")
 ```
 
+### Saving several records
+
+When `submit` saves more than one record, wrap the saves in a transaction, and use the `!` methods, e.g. `update!` and `create!`. Either every record saves, or none do. Rescue `ActiveRecord::RecordInvalid`, copy the failed record's errors onto the form, and return `false`, as for a single save.
+
+Enqueue jobs and send emails after the transaction, not inside it. A job enqueued inside it could run before the records are committed, and not find them. It could also run for records that were rolled back.
+
+```ruby
+class PublishPostForm < ApplicationForm
+  # ...
+
+  ### Public Methods ###
+
+  def submit
+    return false unless valid?
+
+    ActiveRecord::Base.transaction do
+      post.update!(status: :published)
+      post.publications.create!(publisher: current_user)
+    end
+
+    NotifySubscribersJob.perform_later(post)
+    post
+  rescue ActiveRecord::RecordInvalid => e
+    merge_errors_from(e.record)
+    false
+  end
+end
+```
+
 ## Testing
 
 Cover every `collection_for_<attribute>` method with a unit test, in `spec/forms/`. The form's select and its validation both use the collection. A wrong collection hides a choice from the user, or rejects a value the user is allowed to pick.
