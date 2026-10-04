@@ -1,5 +1,5 @@
 ---
-applyTo: "app/actions/**/*.rb"
+applyTo: "app/actions/**/*.rb,spec/actions/**/*.rb"
 ---
 
 # Actions
@@ -15,6 +15,10 @@ applyTo: "app/actions/**/*.rb"
 - Let an error that no caller should handle pass through the action unchanged.
 - When a caller is meant to handle an error, define a custom `Error` class inside the action that inherits from `StandardError`, e.g. `class Error < StandardError; end` in `Posts::ArchivePost`. In `call`, rescue the errors the caller should handle and raise them again as the action's `Error`, e.g. `rescue ActiveRecord::RecordInvalid => e` then `raise Error, e.message`.
 - Rescue an action's `Error` in a form or a job, not in a controller, e.g. `rescue Posts::ArchivePost::Error` then `errors.add(:base, "Post could not be archived.")` and `false` in a form's `submit`.
+- Write action specs as unit specs. Stub and mock the models and other objects the action uses, and check that the action calls them with the right arguments, e.g. `post = instance_double(Post)` then `expect(post).to receive(:update!).with(archived_at: an_instance_of(ActiveSupport::TimeWithZone))` before `described_class.call(post)`.
+- In action specs, name the `describe` block after the method the spec calls, e.g. `describe ".call"`.
+- In action specs, use `instance_double`, e.g. `instance_double(Post)`. Avoid a plain `double`, e.g. `double("post")`.
+- If an action spec needs a lot of stubs to set up, split the action into smaller actions. If the action is simple but its objects take a lot of stubbing, e.g. a chain of associations, build real records with factories instead, e.g. `create(:post)`.
+- In action specs, check the action's `Error` by stubbing a collaborator to raise the original error, e.g. `allow(post).to receive(:update!).and_raise(ActiveRecord::RecordInvalid)` then `expect { described_class.call(post) }.to raise_error(described_class::Error)`.
 - Never stub or mock an action in a request spec or a job spec, e.g. `allow(Posts::ArchivePost).to receive(:call)` or `expect(Posts::ArchivePost).to receive(:call).with(post)`. Let the action run, and check what the controller or job does, e.g. the records it changes, the response, the flash and the jobs it enqueues.
 - To test how a request spec or job spec handles an action's `Error`, set up records that make the action fail for real. Never stub the action to raise it, e.g. `allow(Posts::ArchivePost).to receive(:call).and_raise(Posts::ArchivePost::Error)`.
-- TODO: How to test actions.

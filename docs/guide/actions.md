@@ -110,7 +110,41 @@ end
 
 ### Action specs
 
-> **TODO:** Describe how you handle this.
+Write an action spec as a unit spec. Stub and mock the models and other objects the action uses, and check that the action calls them with the right arguments. Name the `describe` block `".call"`, after the method the spec calls.
+
+Use `instance_double`, e.g. `instance_double(Post)`, and avoid a plain `double`. It fails when you stub a method the class doesn't have, so the stubs can't drift away from the real code.
+
+An action does one task, so its unit spec stays short. If the spec needs a lot of stubs to set up, the action is often doing too much. Split it into smaller actions. If the action is simple but its objects take a lot of stubbing, e.g. a chain of associations, build real records with factories instead, e.g. `create(:post)`.
+
+```ruby
+RSpec.describe Posts::ArchivePost do
+  describe ".call" do
+    it "archives the post and locks its comments" do
+      post = instance_double(Post)
+      comments = instance_double(ActiveRecord::Relation)
+      allow(post).to receive(:comments).and_return(comments)
+
+      expect(post).to receive(:update!).with(archived_at: an_instance_of(ActiveSupport::TimeWithZone))
+      expect(comments).to receive(:update_all).with(locked: true)
+
+      described_class.call(post)
+    end
+  end
+end
+```
+
+Stub a collaborator to raise an error, to check that the action raises its own `Error` in its place.
+
+```ruby
+it "raises an Error when the post is invalid" do
+  post = instance_double(Post)
+  allow(post).to receive(:update!).and_raise(ActiveRecord::RecordInvalid)
+
+  expect { described_class.call(post) }.to raise_error(described_class::Error)
+end
+```
+
+The unit spec checks the action alone. The request and job specs for its callers let it run for real, so between them they check that it works with the rest of the app.
 
 ### Specs for callers
 
