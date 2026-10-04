@@ -1,5 +1,5 @@
 ---
-applyTo: "app/models/**/*.rb,app/views/**/*,app/inputs/**/*.rb,app/helpers/**/*.rb,config/initializers/simple_form.rb"
+applyTo: "app/models/**/*.rb,app/views/**/*,app/inputs/**/*.rb,app/helpers/**/*.rb,config/initializers/simple_form.rb,spec/requests/**/*.rb,spec/features/**/*.rb,spec/support/**/*.rb"
 ---
 
 # Simple Form
@@ -16,4 +16,6 @@ applyTo: "app/models/**/*.rb,app/views/**/*,app/inputs/**/*.rb,app/helpers/**/*.
 - In a custom select input, set the label and value methods in `input`, e.g. `options.reverse_merge!(label_method: :to_label, value_method: :to_param)` before `super`. Never let Simple Form guess them.
 - For a flat list, inherit the input from `SimpleForm::Inputs::CollectionSelectInput`, override the private `collection` method, and return the records from the helper, e.g. `comments.sort_by(&:to_label)`.
 - For a grouped list, inherit the input from `SimpleForm::Inputs::GroupedCollectionSelectInput`, override the private `grouped_collection` method, and return `[group_label, records]` pairs from the helper, e.g. `comments.group_by(&:author).map { |author, author_comments| [author.name, author_comments.sort_by(&:to_label)] }`.
-- TODO: How to test inputs.
+- Give each custom select input a matcher named after the input with a `have_` prefix, that wraps `have_select` with the input's type as a class and passes the arguments through, e.g. `def have_comment_select(locator = nil, **options) = have_select(locator, class: "comment_select", **options)` for `CommentSelectInput`. Put it in the module for the input's resource, e.g. `CommentSpecHelpers` in `spec/support/comment_spec_helpers.rb`, included for `type: :request` and `type: :feature`.
+- Never write specs for inputs, e.g. in `spec/inputs`. Test a custom input through the request specs for the pages that render it, and check the select and its options with its matcher, one option on each line, e.g. `expect(response.body).to have_comment_select("Featured comment", with_options: ["Great post!"])` and `expect(response.body).to have_comment_select("Featured comment", with_options: ["Thanks for sharing"])` in `describe "GET /posts/:id/edit"`.
+- Cover each custom input in at least one feature spec where a persona picks an option and submits the form, e.g. `select "Great post!", from: "Featured comment"` in `scenario "Publishing Manager features a comment"`, then check the saved value, e.g. `expect(page).to have_comment_select("Featured comment", selected: "Great post!")` after editing the post again.

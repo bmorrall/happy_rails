@@ -71,6 +71,19 @@ Don't check for the text alone.
 expect(response.body).to include("Hello World")
 ```
 
+When you check a select's options with `with_options:`, check one option on each line. A failure then names the option that's missing. With every option in one list, the failure only says the list didn't match.
+
+```ruby
+expect(response.body).to have_select("Status", with_options: ["Draft"])
+expect(response.body).to have_select("Status", with_options: ["Published"])
+```
+
+Don't check them all in one line.
+
+```ruby
+expect(response.body).to have_select("Status", with_options: ["Draft", "Published"])
+```
+
 ## Spec types
 
 > **TODO:** Describe how you handle this.
@@ -461,6 +474,18 @@ matcher :have_publish_button_for_post do |post|
 end
 ```
 
+When a matcher only narrows one Capybara matcher, e.g. adds a filter, write it as a method that returns that Capybara matcher, and pass its arguments through. The matcher then takes every option the Capybara matcher does, e.g. `selected:` or `name:`, and `not_to` and its failure messages come from Capybara. Use `matcher` when the matcher checks more than one thing, or builds its own selector.
+
+```ruby
+def have_comment_select(locator = nil, **options)
+  have_select(locator, class: "comment_select", **options)
+end
+```
+
+```ruby
+expect(page).to have_comment_select("Featured comment", selected: "Great post!")
+```
+
 ### Composing matchers
 
 Build a complex matcher from simpler ones. Combine them with `and` when the element has more than one part to check, e.g. the banner's heading and its link. Define each part as a private method inside the matcher, with a `have_` prefix and named after what the part is, e.g. `have_welcome_heading` and `have_first_post_link`. The `match` block then reads as a list of parts, and the negated check uses the same parts. Never name a part after one of Capybara's matchers, e.g. `have_link` or `have_title`. The part would then call itself instead of Capybara's matcher, and loop until the stack overflows.
@@ -513,7 +538,7 @@ RSpec.describe "Posts" do
 end
 ```
 
-When more than one spec file uses a matcher, move it to a module in `spec/support`. Extend the module with `RSpec::Matchers::DSL`, and include it in every spec type that checks the element, e.g. request specs and feature specs. Keep all the includes for a module in its own file, in one `RSpec.configure` block. When a gem's specs need the module too, add their type to the same block, e.g. `type: :component` for ViewComponent. See [Support files](#support-files).
+When more than one spec file uses a matcher, move it to a module in `spec/support`. Extend the module with `RSpec::Matchers::DSL` when it defines matchers with `matcher`, and include it in every spec type that checks the element, e.g. request specs and feature specs. Keep all the includes for a module in its own file, in one `RSpec.configure` block. When a gem's specs need the module too, add their type to the same block, e.g. `type: :component` for ViewComponent. See [Support files](#support-files).
 
 Keep the shared spec code for a resource together, in one module named after the resource with a `SpecHelpers` suffix, e.g. `PostSpecHelpers` in `spec/support/post_spec_helpers.rb`. Put the resource's matchers in it. You then find everything the specs share about posts in one file. The suffix keeps it apart from the app's own helpers, e.g. `PostsHelper` in `app/helpers`. Name a module for generic matchers after what they cover, e.g. `OnboardingSpecHelpers` for `have_welcome_new_author_banner`.
 
