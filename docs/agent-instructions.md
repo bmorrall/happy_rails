@@ -54,9 +54,9 @@ Each [gem](../guide/gems/) has its own file. If your app does not use a gem, del
 | File | Gem | Applies to |
 | --- | --- | --- |
 | `happy_devise.instructions.md` | Devise | `config/initializers/devise.rb`, `config/routes.rb`, `app/models/user.rb`, `app/controllers/users/**`, `app/views/devise/**`, `spec/requests/users/**` |
-| `happy_draper.instructions.md` | Draper | `app/decorators/**`, `app/controllers/**`, `app/views/**`, `app/helpers/**`, `spec/decorators/**` |
+| `happy_draper.instructions.md` | Draper | `app/decorators/**`, `app/controllers/**`, `app/views/**`, `app/helpers/**`, `spec/decorators/**`, `spec/support/**` |
 | `happy_pundit.instructions.md` | Pundit | `app/policies/**`, `app/controllers/**`, `app/views/**`, `app/forms/**`, `spec/policies/**` |
 | `happy_rspec.instructions.md` | RSpec and FactoryBot | `spec/**` |
 | `happy_shoulda_matchers.instructions.md` | Shoulda Matchers | `spec/models/**`, `spec/forms/**` |
 | `happy_simple_form.instructions.md` | Simple Form | `app/models/**`, `app/views/**`, `app/inputs/**`, `app/helpers/**`, `config/initializers/simple_form.rb` |
-| `happy_view_component.instructions.md` | ViewComponent | `app/components/**`, `spec/components/**` |
+| `happy_view_component.instructions.md` | ViewComponent | `app/components/**`, `spec/components/**`, `spec/support/**` |

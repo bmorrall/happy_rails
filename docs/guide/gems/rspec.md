@@ -430,3 +430,154 @@ RSpec.feature "Post API" do
   end
 end
 ```
+
+## Custom matchers
+
+When specs look for the same element on more than one page, e.g. a banner or a button, write a custom matcher for it. Name the matcher after what it finds. The specs then read like the page, and when the markup changes, you fix it in one place.
+
+Always write a custom matcher when one spec checks that an element is there and another checks that it isn't, even on the same page. Use the same matcher for both, with `to` and `not_to`. If the two checks differ, the absence check can pass while the element is still there, e.g. when it looks for different text or a different tag. When the markup changes, the presence check fails and gets fixed, but the absence check keeps passing and no longer checks anything.
+
+```ruby
+expect(response.body).to have_publish_button_for_post(draft)
+expect(response.body).not_to have_publish_button_for_post(published_post)
+```
+
+Don't write the two checks separately.
+
+```ruby
+expect(response.body).to have_button("Publish")
+expect(response.body).not_to have_css("form[action='#{post_publication_path(published_post)}']")
+```
+
+A generic matcher takes no arguments, e.g. `have_welcome_new_author_banner`. A matcher for one record takes the record and ends in `_for_<resource>`, e.g. `have_publish_button_for_post(post)`. The name then says which record the element belongs to.
+
+Define a matcher with `matcher`. Every matcher must work with both `to` and `not_to`, with as little code as it needs. Check the element with a Capybara matcher in its `match` block. When the matcher checks one thing, `match` is all it needs. RSpec runs the same block for `not_to`, and flips the result.
+
+```ruby
+matcher :have_publish_button_for_post do |post|
+  match do |actual|
+    expect(actual).to have_css("form[action='#{post_publication_path(post)}'] button", text: "Publish")
+  end
+end
+```
+
+### Composing matchers
+
+Build a complex matcher from simpler ones. Combine them with `and` when the element has more than one part to check, e.g. the banner's heading and its link. Define each part as a private method inside the matcher, with a `have_` prefix and named after what the part is, e.g. `have_welcome_heading` and `have_first_post_link`. The `match` block then reads as a list of parts, and the negated check uses the same parts. Never name a part after one of Capybara's matchers, e.g. `have_link` or `have_title`. The part would then call itself instead of Capybara's matcher, and loop until the stack overflows.
+
+RSpec can't negate a matcher combined with `and`, so `not_to` would raise an error. Add a `match_when_negated` block, with one `expect(actual).not_to` for each part, so `not_to` checks that every part is gone.
+
+Pass `notify_expectation_failures: true` to both blocks, so a failure shows the message from the Capybara matcher that failed. Only pass it when the matcher has both blocks. A matcher with only `match` uses that block for `not_to` too, and flips the result. The option stops RSpec from turning a failure inside `match` into `false`. So when the element is missing, as `not_to` wants, the failure is raised and the spec fails.
+
+```ruby
+matcher :have_welcome_new_author_banner do
+  match(notify_expectation_failures: true) do |actual|
+    expect(actual).to have_welcome_heading.and have_first_post_link
+  end
+
+  match_when_negated(notify_expectation_failures: true) do |actual|
+    expect(actual).not_to have_welcome_heading
+    expect(actual).not_to have_first_post_link
+  end
+
+  private
+
+  def have_welcome_heading
+    have_css("h2", text: "Welcome, new author")
+  end
+
+  def have_first_post_link
+    have_link("Write your first post", href: new_post_path)
+  end
+end
+```
+
+```ruby
+expect(page).to have_welcome_new_author_banner
+expect(page).not_to have_welcome_new_author_banner
+```
+
+### Where to put matchers
+
+When only one spec file uses a matcher, define it at the bottom of that file, inside the top-level `describe` block, after the examples. `matcher` then defines it for that file's specs only, next to the specs that use it.
+
+```ruby
+RSpec.describe "Posts" do
+  describe "GET /posts" do
+    # ...
+  end
+
+  matcher :have_welcome_new_author_banner do
+    # ...
+  end
+end
+```
+
+When more than one spec file uses a matcher, move it to a module in `spec/support`. Extend the module with `RSpec::Matchers::DSL`, and include it in every spec type that checks the element, e.g. request specs and feature specs. Keep all the includes for a module in its own file, in one `RSpec.configure` block. When a gem's specs need the module too, add their type to the same block, e.g. `type: :component` for ViewComponent. See [Support files](#support-files).
+
+Keep the shared spec code for a resource together, in one module named after the resource with a `SpecHelpers` suffix, e.g. `PostSpecHelpers` in `spec/support/post_spec_helpers.rb`. Put the resource's matchers in it. You then find everything the specs share about posts in one file. The suffix keeps it apart from the app's own helpers, e.g. `PostsHelper` in `app/helpers`. Name a module for generic matchers after what they cover, e.g. `OnboardingSpecHelpers` for `have_welcome_new_author_banner`.
+
+```ruby
+# spec/support/post_spec_helpers.rb
+module PostSpecHelpers
+  extend RSpec::Matchers::DSL
+
+  matcher :have_publish_button_for_post do |post|
+    # ...
+  end
+end
+
+RSpec.configure do |config|
+  config.include PostSpecHelpers, type: :request
+  config.include PostSpecHelpers, type: :feature
+end
+```
+
+### Matchers for helpers
+
+Give each helper that builds a simple view element a matcher, named after the helper with a `have_` prefix, e.g. `have_unknown_value_tag` for `unknown_value_tag`. See [Views and Frontend: Helpers](../../views/#helpers). Specs then check for the element the same way on every page, and say what they expect to see, not the markup. When the helper's markup changes, change the matcher next to it.
+
+Put the matchers in a module named after the helper module, with a `SpecHelpers` suffix, e.g. `UnknownValuesSpecHelpers` in `spec/support/unknown_values_spec_helpers.rb` for `UnknownValuesHelper`. Include it in helper specs too. The helper's own spec then checks the helper's output with the matcher, so the two can't drift apart.
+
+```ruby
+# spec/support/unknown_values_spec_helpers.rb
+module UnknownValuesSpecHelpers
+  extend RSpec::Matchers::DSL
+
+  matcher :have_unknown_value_tag do
+    match do |actual|
+      expect(actual).to have_css("span[aria-label='Unknown']", text: "—")
+    end
+  end
+end
+
+RSpec.configure do |config|
+  config.include UnknownValuesSpecHelpers, type: :helper
+  config.include UnknownValuesSpecHelpers, type: :request
+  config.include UnknownValuesSpecHelpers, type: :feature
+end
+```
+
+```ruby
+RSpec.describe UnknownValuesHelper do
+  describe "#unknown_value_tag" do
+    it "shows an unknown value" do
+      expect(helper.unknown_value_tag).to have_unknown_value_tag
+    end
+  end
+end
+```
+
+```ruby
+RSpec.describe "Posts" do
+  describe "GET /posts/:id" do
+    it "shows an unknown value for a draft's publish date" do
+      draft = create(:post, published_at: nil)
+
+      get post_path(draft)
+
+      expect(response.body).to have_unknown_value_tag
+    end
+  end
+end
+```

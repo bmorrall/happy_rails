@@ -463,7 +463,7 @@ RSpec.describe PostDecorator do
       let(:post) { instance_double(Post, published_at: Time.zone.local(2026, 10, 3, 9, 30)) }
 
       it "returns the date it was published" do
-        expect(decorator.published_on).to eq('<time datetime="2026-10-03">October 03, 2026</time>')
+        expect(decorator.published_on).to have_date_tag(Date.new(2026, 10, 3))
       end
     end
 
@@ -471,10 +471,20 @@ RSpec.describe PostDecorator do
       let(:post) { instance_double(Post, published_at: nil) }
 
       it "returns the unknown value tag" do
-        expect(decorator.published_on).to eq(helpers.unknown_value_tag)
+        expect(decorator.published_on).to have_unknown_value_tag
       end
     end
   end
+end
+```
+
+When a method returns an element built with a helper, check it with the helper's matcher, e.g. `have_date_tag` and `have_unknown_value_tag`, not with the markup or the helper's output. See [RSpec: Matchers for helpers](../rspec/#matchers-for-helpers). The decorator spec then checks for the element the same way as the request and feature specs do, and doesn't break when the helper's markup changes. Include each helper's matcher module in decorator specs.
+
+```ruby
+# spec/support/unknown_values_spec_helpers.rb
+RSpec.configure do |config|
+  # ...
+  config.include UnknownValuesSpecHelpers, type: :decorator
 end
 ```
 

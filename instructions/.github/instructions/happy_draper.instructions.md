@@ -1,5 +1,5 @@
 ---
-applyTo: "app/decorators/**/*.rb,app/controllers/**/*.rb,app/views/**/*,app/helpers/**/*.rb,spec/decorators/**/*.rb"
+applyTo: "app/decorators/**/*.rb,app/controllers/**/*.rb,app/views/**/*,app/helpers/**/*.rb,spec/decorators/**/*.rb,spec/support/**/*.rb"
 ---
 
 # Draper
@@ -36,6 +36,7 @@ applyTo: "app/decorators/**/*.rb,app/controllers/**/*.rb,app/views/**/*,app/help
 - Never make another decorator method depend on a permission, e.g. `edit_link` returning `nil` unless `can_update?`. Let the view decide, e.g. `<% if post.can_update? %><%= post.edit_link %><% end %>`. When the view shows an alternative, add a method for it next to the link and let the view choose, e.g. `PostDecorator#disabled_link` returning `h.tag.span(object.title, aria: { disabled: true })`, with `post.can_show? ? post.link : post.disabled_link` in the view.
 - Write a decorator spec in `spec/decorators` for each decorator, with a `describe` block for each method and an example for each path through it, e.g. `context "when the post is published"` and `context "when the post is a draft"` for `PostDecorator#published_on`.
 - In decorator specs, build the record being decorated with an `instance_double` and stub only the values the method reads, e.g. `PostDecorator.new(instance_double(Post, published_at: nil))`. Use a factory only when an `instance_double` can't stand in for the record.
+- In decorator specs, check an element built with a helper with the helper's matcher, e.g. `expect(decorator.published_on).to have_unknown_value_tag`. Never compare it with markup or the helper's output, e.g. `eq(helpers.unknown_value_tag)`. Include each helper's matcher module for `type: :decorator`, e.g. `config.include UnknownValuesSpecHelpers, type: :decorator` in `spec/support/unknown_values_spec_helpers.rb`.
 - In decorator specs, test a method that reads its context in a `context` block that defines the record with `let`, decorated the same way the controller passes it, and overrides the subject to pass it, e.g. `context "with a tag"` with `let(:tag) { TagDecorator.new(instance_double(Tag, to_param: "2")) }` and `subject(:decorator) { described_class.new(post, context: { tag: tag }) }` for `PostDecorator#tag_post_link`.
 - Spec each `can_` method you override, with an example for each path, e.g. `context "when the policy forbids it"`, `context "when the post has comments"` and `context "when the post has no comments"` for `PostDecorator#can_destroy?`. Do not spec the plain `can_` delegates.
 - In decorator specs, stub the policy in each context that needs it, not at the top of the spec, with an `instance_double` of the policy class returned from `helpers.policy`, e.g. `allow(helpers).to receive(:policy).with(post).and_return(instance_double(PostPolicy, destroy?: true))`.

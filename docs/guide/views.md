@@ -79,6 +79,8 @@ Format primitive values with a helper, e.g. a date, a time or a boolean. Write o
 
 Avoid putting helpers in `ApplicationHelper`. Group related helpers in their own helper file. Name each file `<Things>Helper` after what it covers, in the plural, like the `PostsHelper` that Rails generates for a resource, e.g. `DatesHelper` for dates and times, and `BooleansHelper` for booleans. Each file then stays small, and its helper spec covers one kind of value. Rails includes every helper in `app/helpers` in every view, so you don't lose anything by splitting them up.
 
+Give each helper that builds a simple view element a matcher, so specs check for it the same way everywhere. See [RSpec: Matchers for helpers](../gems/rspec/#matchers-for-helpers).
+
 ```ruby
 # app/helpers/dates_helper.rb
 module DatesHelper
