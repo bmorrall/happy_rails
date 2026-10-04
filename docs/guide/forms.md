@@ -24,12 +24,13 @@ end
 
 ## Base class
 
-Give every form a base class, `ApplicationForm`, in `app/forms/application_form.rb`. It takes the current user and the params, so every form knows who is submitting it. A resource form or action form takes its resource as the first argument, before the current user, and keeps it in its own private `attr_reader`.
+Give every form a base class, `ApplicationForm`, in `app/forms/application_form.rb`. It takes the current user and the params, so every form knows who is submitting it. A resource form or action form takes its resource as the first argument, before the current user, and keeps it in its own private `attr_reader`. It also includes `ActiveModel::Validations::Callbacks`, so forms can use `before_validation` and `after_validation`. `ActiveModel::Model` doesn't include it.
 
 ```ruby
 class ApplicationForm
   include ActiveModel::Model
   include ActiveModel::Attributes
+  include ActiveModel::Validations::Callbacks
 
   def initialize(current_user, params = {})
     @current_user = current_user
@@ -49,6 +50,7 @@ Group the declarations in a form object under comment headings, in the same styl
 1. Attributes
 2. Collections
 3. Validations
+4. Callbacks
 
 Under Collections, write a `collection_for_<attribute>` method for each attribute that has a fixed set of choices. The form's select uses it for its options, and the validations use it to check the value.
 
