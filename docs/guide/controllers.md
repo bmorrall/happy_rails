@@ -703,6 +703,8 @@ redirect_to post_comments_path(@post)
 
 ## Testing
 
+### Request specs
+
 Write a request spec for every controller. It tests each action the way a browser or API client uses it: the route, sign-in, authorisation, params and the response.
 
 Put the spec in `spec/requests`, at the same path as the controller, e.g. `spec/requests/posts_spec.rb` for `PostsController` and `spec/requests/posts/comments_spec.rb` for `Posts::CommentsController`. Name the top-level `RSpec.describe` block after the controller's resource, e.g. `"Posts"` or `"Posts::Comments"`.
@@ -824,7 +826,49 @@ RSpec.describe "Posts" do
 end
 ```
 
+Don't stub the models, forms, services or other classes the action calls, e.g. with `allow_any_instance_of(Post).to receive(:publish)`. Check what the action does instead: the records it changes, the response, the flash and the jobs it enqueues. Then the spec fails when any part of the action breaks, not only the controller's own lines.
+
+Check that the action enqueues each job, with its arguments, using `have_enqueued_job`. Don't run the job in the request spec. The job spec checks what the job does, and a feature spec runs it. See [Jobs: Testing](../jobs/#testing).
+
+```ruby
+module Posts
+  class PublicationsController < BaseController
+    # POST /posts/:post_id/publication
+    def create
+      if @post.publish
+        redirect_to @post, notice: "Post was published."
+      else
+        redirect_to @post, alert: "Post could not be published."
+      end
+    end
+  end
+end
+```
+
+```ruby
+RSpec.describe "Posts::Publications" do
+  describe "POST /posts/:post_id/publication", :aggregate_failures do
+    # ...
+
+    it "publishes the post" do
+      draft = create(:post)
+
+      expect {
+        post post_publication_path(draft)
+      }.to have_enqueued_job(NotifySubscribersJob).with(draft)
+
+      expect(draft.reload).to be_published
+      expect(response).to redirect_to(post_path(draft))
+    end
+  end
+end
+```
+
+When the action calls another service during the request, stub only the HTTP request, and check that the action made it, e.g. `newsletter_request = stub_request(:post, "https://newsletter.example.com/posts")` then `expect(newsletter_request).to have_been_requested`. See [WebMock and VCR](../gems/webmock/).
+
 See [RSpec: Request specs](../gems/rspec/#request-specs) for how to write the contexts inside each block.
+
+### Feature specs
 
 Write at least one feature spec for every controller that serves pages. Between them, its scenarios must cover the happy path of every HTML route in the controller. Request specs test each route on its own, but only a feature spec shows that a persona can reach the route through the app and finish the task. A route no scenario visits may have no link or button to it. This doesn't cover routes that only serve other formats, e.g. `GET /posts.json`, or controllers for an API. You can still write feature specs for them, as described in [RSpec: API endpoints](../gems/rspec/#api-endpoints).
 

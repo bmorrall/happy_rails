@@ -175,7 +175,7 @@ Never write a view spec. A view spec renders a template on its own, with data yo
 
 Test each part of a page where its logic lives:
 
-- **Templates and partials:** request specs. Each branch in a view the action renders needs at least one example. See [Controllers and Routes: Testing](../controllers/#testing).
+- **Templates and partials:** request specs. Each branch in a view the action renders needs at least one example. See [Controllers and Routes: Request specs](../controllers/#request-specs).
 - **Components:** component specs. See [ViewComponent: Testing](../gems/view_component/#testing).
 - **Decorators:** decorator specs. See [Draper: Testing](../gems/draper/#testing).
 - **Helpers:** helper specs.

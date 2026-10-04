@@ -129,7 +129,7 @@ Don't add a trait for a role on a record, e.g. the Author of a post. Build a pla
 
 ## Request specs
 
-Write a request spec for every controller. See [Controllers and Routes: Testing](../../controllers/#testing) for where to put it and how to lay out its `describe` blocks.
+Write a request spec for every controller. See [Controllers and Routes: Request specs](../../controllers/#request-specs) for where to put it and how to lay out its `describe` blocks.
 
 ### Personas
 
@@ -360,7 +360,7 @@ end
 
 Feature specs describe the user stories of the app. Each one shows a persona using a feature from start to finish.
 
-Write at least one feature spec for every controller that serves pages, so that its scenarios cover the happy path of every HTML route. See [Controllers and Routes: Testing](../../controllers/#testing) for which routes to cover.
+Write at least one feature spec for every controller that serves pages, so that its scenarios cover the happy path of every HTML route. See [Controllers and Routes: Feature specs](../../controllers/#feature-specs) for which routes to cover.
 
 Use `RSpec.feature` and name it after the feature under test, e.g. `RSpec.feature "Post Publishing"`. Write each example as a `scenario`.
 

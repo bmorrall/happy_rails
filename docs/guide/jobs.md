@@ -50,6 +50,8 @@ end
 
 ## Testing
 
+### Job specs
+
 Test a job the way you test a controller with a request spec. Run it with `perform_now`, and check what it does: the records it changes, the emails it sends, the jobs it enqueues and the requests it makes. Don't stub the models, services or other classes the job calls, e.g. with `allow(NewsletterClient).to receive(:new)`. Then the spec fails when any part of the work breaks, not only the job's own lines.
 
 Name the `describe` block `".perform_now"`, after the method the spec calls, not `"#perform"`.
