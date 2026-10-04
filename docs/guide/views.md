@@ -1,7 +1,7 @@
 ---
 title: Views and Frontend
 parent: The Guide
-nav_order: 6
+nav_order: 7
 ---
 
 # Views and Frontend
