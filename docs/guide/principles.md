@@ -50,8 +50,10 @@ module Posts
     end
 
     def call
-      post.update!(status: :published)
-      post.publications.create!(publisher:)
+      ActiveRecord::Base.transaction do
+        post.update!(status: :published)
+        post.publications.create!(publisher:)
+      end
     end
 
     private

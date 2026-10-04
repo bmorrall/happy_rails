@@ -49,8 +49,10 @@ module Posts
     end
 
     def call
-      post.update!(archived_at: Time.current)
-      post.comments.update_all(locked: true)
+      ActiveRecord::Base.transaction do
+        post.update!(archived_at: Time.current)
+        post.comments.update_all(locked: true)
+      end
     end
 
     private
@@ -93,8 +95,10 @@ module Posts
     # ...
 
     def call
-      post.update!(archived_at: Time.current)
-      post.comments.update_all(locked: true)
+      ActiveRecord::Base.transaction do
+        post.update!(archived_at: Time.current)
+        post.comments.update_all(locked: true)
+      end
     rescue ActiveRecord::RecordInvalid => e
       raise Error, e.message
     end
@@ -115,6 +119,112 @@ rescue Posts::ArchivePost::Error
   false
 end
 ```
+
+## Transactions
+
+When an action writes more than once, wrap the writes in a transaction, so either they all save or none do. Then the action is safe whoever calls it, and no caller has to remember to wrap it. An action that writes once doesn't need a transaction.
+
+```ruby
+def call
+  ActiveRecord::Base.transaction do
+    post.update!(archived_at: Time.current)
+    post.comments.update_all(locked: true)
+  end
+end
+```
+
+A form or a job can still wrap several actions in one transaction. Rails joins a nested `transaction` block to the one around it, so the action's writes commit or roll back with the caller's. Open a transaction in a form or a job only to combine several writes into one unit, e.g. two actions, or an action and the form's own save.
+
+```ruby
+def submit
+  return false unless valid?
+
+  ActiveRecord::Base.transaction do
+    Posts::PublishPost.call(post, publisher: current_user)
+    Posts::ArchivePost.call(previous_post)
+  end
+
+  post
+end
+```
+
+### Locks
+
+When an action relies on a lock, take the lock inside the action with `with_lock`. It opens a transaction, or joins the caller's, and reloads the record. Keep the lock next to the code it protects, not in the caller.
+
+You may check the condition before you take the lock, to skip the lock when the work is plainly not needed. Always check it again inside the lock, because another process may have changed the record while you waited for it.
+
+```ruby
+module Posts
+  class PublishPost < ApplicationAction
+    # ...
+
+    def call
+      return if post.published?
+
+      post.with_lock do
+        next if post.published?
+
+        post.update!(status: :published)
+        post.publications.create!(publisher:)
+      end
+    end
+  end
+end
+```
+
+Use `next` to leave a `transaction` or `with_lock` block early, never `return`. What a `return` inside the block does has changed between Rails versions, and depends on the app's config: it may commit or roll back. `next` ends the block, and the transaction commits as normal.
+
+When the check fails, decide what the caller needs to know. If the work is already done, e.g. the post is already published, do nothing. The action is then safe to retry, e.g. from a job. If the caller needs to know, e.g. to show a form error, raise the action's `Error`. Do the same thing in the check before the lock and the check inside it, so the result doesn't depend on timing.
+
+When an action locks more than one record, lock them in the same order every time, the parent before its children, e.g. the post before its comments. Two processes that lock in different orders can deadlock.
+
+### Other services
+
+Never call another service inside a transaction. The transaction keeps its locks and its database connection while it waits for the reply. A rollback can't undo the call either. Call the service first, then save its reply in the transaction.
+
+```ruby
+def call
+  response = NewsletterClient.new.create_newsletter(post)
+
+  ActiveRecord::Base.transaction do
+    post.update!(newsletter_id: response.id)
+    post.publications.create!(publisher:)
+  end
+end
+```
+
+### Rolling back
+
+Never raise `ActiveRecord::Rollback` in an action. In a nested block, Rails swallows it: the block stops, but the caller's transaction carries on and commits. Raise a real error instead, so the whole transaction rolls back.
+
+Rescue errors to raise them again as the action's `Error` outside the transaction block, as in [Error handling](#error-handling). By then the transaction has already rolled back.
+
+### Records that must survive a rollback
+
+Some actions save a fact about what happened, e.g. whether a check passed or failed. That fact must stay saved even when other work fails. Start the name of these actions with `Record`, e.g. `Posts::RecordLinkCheck`, which saves `link_check_status` on the post. The name tells the caller that this write must not roll back with the rest.
+
+Never call a `Record` action inside a transaction. Call it before or after the transaction block. A write inside a transaction rolls back with it, even in a nested block with `requires_new: true`. That only adds a savepoint, which rolls back when the outer transaction does.
+
+```ruby
+def submit
+  return false unless valid?
+
+  Posts::RecordLinkCheck.call(post)
+  return false if post.link_check_failed?
+
+  ActiveRecord::Base.transaction do
+    Posts::PublishPost.call(post, publisher: current_user)
+    Posts::ArchivePost.call(previous_post)
+  end
+
+  post
+end
+```
+
+The link check commits on its own. If `Posts::ArchivePost` fails, the publish rolls back, but the link check stays saved. When later work depends on the result, read it from the record, e.g. `post.link_check_failed?`.
+
+To record that the transaction itself failed, call the `Record` action in a `rescue` or `ensure` on the caller's method. The transaction has rolled back by then, so the write stays saved.
 
 ## Testing
 

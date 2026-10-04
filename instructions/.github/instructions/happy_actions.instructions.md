@@ -20,6 +20,19 @@ applyTo: "app/actions/**/*.rb,spec/actions/**/*.rb"
 - Let an error that no caller should handle pass through the action unchanged.
 - When a caller is meant to handle an error, define a custom `Error` class inside the action that inherits from `StandardError`, e.g. `class Error < StandardError; end` in `Posts::ArchivePost`. In `call`, rescue the errors the caller should handle and raise them again as the action's `Error`, e.g. `rescue ActiveRecord::RecordInvalid => e` then `raise Error, e.message`.
 - Rescue an action's `Error` in a form or a job, not in a controller, e.g. `rescue Posts::ArchivePost::Error` then `errors.add(:base, "Post could not be archived.")` and `false` in a form's `submit`.
+- When an action writes more than once, wrap the writes in `ActiveRecord::Base.transaction` inside the action, e.g. `post.update!(archived_at: Time.current)` and `post.comments.update_all(locked: true)` in `Posts::ArchivePost`. Don't open a transaction in an action that writes once.
+- Open a transaction in a form or a job only to combine several writes into one unit, e.g. `Posts::PublishPost.call(post, publisher: current_user)` and `Posts::ArchivePost.call(previous_post)` in one `ActiveRecord::Base.transaction` block.
+- When an action relies on a lock, take it inside the action with `with_lock`, e.g. `post.with_lock do ... end` in `Posts::PublishPost`. Never take the lock in the caller.
+- You may check a condition before taking a lock, to skip the lock when the work is not needed, e.g. `return if post.published?`. Always check it again inside the lock, e.g. `next if post.published?` as the first line of the `with_lock` block.
+- Use `next` to leave a `transaction` or `with_lock` block early. Never use `return` inside the block.
+- When a check before or inside a lock fails, do nothing if the work is already done, e.g. the post is already published. Raise the action's `Error` when the caller needs to know, e.g. to show a form error. Do the same in both checks.
+- When an action locks more than one record, lock them in the same order every time, the parent before its children, e.g. the post before its comments.
+- Never call another service inside a transaction, e.g. `NewsletterClient.new.create_newsletter(post)`. Call it first, then save its reply in the transaction, e.g. `post.update!(newsletter_id: response.id)`.
+- Never raise `ActiveRecord::Rollback` in an action. Raise a real error, so the whole transaction rolls back.
+- Rescue errors to raise them again as the action's `Error` outside the transaction block, e.g. with a `rescue` on `call` after the `ActiveRecord::Base.transaction` block.
+- Start the name of an action whose write must stay saved when other work fails with `Record`, e.g. `Posts::RecordLinkCheck` saves `link_check_status` on the post.
+- Never call a `Record` action inside a transaction, including a nested `requires_new: true` block. Call it before or after the transaction block, e.g. `Posts::RecordLinkCheck.call(post)` before `ActiveRecord::Base.transaction do`. Read its result from the record, e.g. `return false if post.link_check_failed?`.
+- To record that a transaction failed, call the `Record` action in a `rescue` or `ensure` on the caller's method, after the transaction has rolled back.
 - Write action specs as unit specs. Stub and mock the models and other objects the action uses, and check that the action calls them with the right arguments, e.g. `post = instance_double(Post)` then `expect(post).to receive(:update!).with(archived_at: an_instance_of(ActiveSupport::TimeWithZone))` before `described_class.call(post)`.
 - In action specs, name the `describe` block after the method the spec calls, e.g. `describe ".call"`.
 - In action specs, use `instance_double`, e.g. `instance_double(Post)`. Avoid a plain `double`, e.g. `double("post")`.
