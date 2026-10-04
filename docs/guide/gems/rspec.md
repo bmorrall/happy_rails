@@ -9,6 +9,68 @@ nav_order: 4
 
 Tests with [RSpec](https://rspec.info) and [FactoryBot](https://github.com/thoughtbot/factory_bot).
 
+## Setup
+
+### Support files
+
+Load every file in `spec/support` from `rails_helper.rb`. The line is in the file that `rails generate rspec:install` creates, commented out. Uncomment it.
+
+```ruby
+# spec/rails_helper.rb
+Rails.root.glob("spec/support/**/*.rb").sort_by(&:to_s).each { |f| require f }
+```
+
+Put spec setup in `spec/support`, not in `rails_helper.rb`, with one file for each gem or concern, named after it, e.g. `spec/support/factory_bot.rb` and `spec/support/devise.rb`. Each file calls `RSpec.configure` for its own setup. `rails_helper.rb` then stays as Rails generated it, and you can find a gem's spec setup by its name. When you remove a gem, delete its file.
+
+```ruby
+# spec/support/factory_bot.rb
+RSpec.configure do |config|
+  config.include FactoryBot::Syntax::Methods
+end
+```
+
+```ruby
+# spec/support/devise.rb
+RSpec.configure do |config|
+  config.include Devise::Test::IntegrationHelpers, type: :request
+  config.include Devise::Test::IntegrationHelpers, type: :feature
+end
+```
+
+### Capybara matchers
+
+Include `Capybara::RSpecMatchers` in request specs and feature specs, in `spec/support/capybara.rb`. Request specs can then check the HTML in a response with the same matchers as feature specs, e.g. `have_link` or `have_field`. A matcher checks an element and its text, which `include` can't do.
+
+Prefer a matcher for the element over `have_content` or `include`, in request specs and feature specs, e.g. `have_link`, `have_button`, `have_field`, `have_select`, or `have_css` with `text:`. `have_content` and `include` pass when the text is anywhere on the page, e.g. in the flash or the page title, so they can pass when the element you meant is missing. `include` also matches the raw HTML, so it can match text inside an attribute.
+
+```ruby
+# spec/support/capybara.rb
+RSpec.configure do |config|
+  config.include Capybara::RSpecMatchers, type: :request
+  config.include Capybara::RSpecMatchers, type: :feature
+end
+```
+
+```ruby
+RSpec.describe "Posts" do
+  describe "GET /posts" do
+    it "links to each post" do
+      post = create(:post, title: "Hello World")
+
+      get posts_path
+
+      expect(response.body).to have_link("Hello World", href: post_path(post))
+    end
+  end
+end
+```
+
+Don't check for the text alone.
+
+```ruby
+expect(response.body).to include("Hello World")
+```
+
 ## Spec types
 
 > **TODO:** Describe how you handle this.
@@ -211,7 +273,7 @@ RSpec.describe "Posts" do
 
         expect(response).to have_http_status(:ok)
 
-        expect(response.body).to include("Hello World")
+        expect(response.body).to have_css("h1", text: "Hello World")
       end
     end
   end
@@ -315,7 +377,7 @@ RSpec.feature "Post Publishing" do
     click_button "Publish"
 
     # THEN I see that it was published
-    expect(page).to have_content("Post was published.")
+    expect(page).to have_css(".notice", text: "Post was published.")
 
     # WHEN I visit the home page
     visit root_path

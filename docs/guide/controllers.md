@@ -809,7 +809,7 @@ RSpec.describe "Posts" do
 
         expect(response).to have_http_status(:ok)
 
-        expect(response.body).to include("Hello World")
+        expect(response.body).to have_link("Hello World")
       end
 
       it "shows a message when there are no posts" do
@@ -817,7 +817,7 @@ RSpec.describe "Posts" do
 
         expect(response).to have_http_status(:ok)
 
-        expect(response.body).to include("No posts yet.")
+        expect(response.body).to have_css("p", text: "No posts yet.")
       end
     end
   end
@@ -847,13 +847,13 @@ RSpec.feature "Post Writing" do
     click_button "Update Post"
 
     # THEN I see the new title
-    expect(page).to have_content("Goodbye World")
+    expect(page).to have_css("h1", text: "Goodbye World")
 
     # WHEN I delete my post
     click_button "Delete"
 
     # THEN it is no longer listed
-    expect(page).not_to have_content("Goodbye World")
+    expect(page).not_to have_link("Goodbye World")
   end
 
   scenario "User writes a post" do
@@ -870,7 +870,7 @@ RSpec.feature "Post Writing" do
     click_button "Create Post"
 
     # THEN I see my post
-    expect(page).to have_content("Hello World")
+    expect(page).to have_css("h1", text: "Hello World")
   end
 end
 ```

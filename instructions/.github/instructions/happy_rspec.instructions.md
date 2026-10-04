@@ -4,6 +4,10 @@ applyTo: "spec/**/*.rb"
 
 # RSpec and FactoryBot
 
+- Load every file in `spec/support` from `spec/rails_helper.rb` by uncommenting the generated line, e.g. `Rails.root.glob("spec/support/**/*.rb").sort_by(&:to_s).each { |f| require f }`.
+- Put spec setup in `spec/support`, not in `spec/rails_helper.rb`, with one file for each gem or concern, named after it, each with its own `RSpec.configure` block, e.g. `config.include FactoryBot::Syntax::Methods` in `spec/support/factory_bot.rb`.
+- Include `Capybara::RSpecMatchers` for request and feature specs in `spec/support/capybara.rb`, e.g. `config.include Capybara::RSpecMatchers, type: :request`, so request specs can check the response HTML with Capybara matchers, e.g. `expect(response.body).to have_link("Hello World", href: post_path(post))`.
+- In request and feature specs, prefer a Capybara matcher for the element over `have_content` or `include`, e.g. `have_link`, `have_button`, `have_field`, `have_select`, or `have_css` with `text:`, e.g. `expect(page).to have_css("h1", text: "Hello World")` instead of `expect(page).to have_content("Hello World")` or `expect(response.body).to include("Hello World")`.
 - TODO: Which spec types to write, and when.
 - TODO: Where to put specs and how to name them.
 - TODO: How to write factories, e.g. `create(:post)`.
