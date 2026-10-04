@@ -20,6 +20,12 @@ class NotifySubscribersJob < ApplicationJob
 end
 ```
 
+Pass the record to the job, never its ID, e.g. `NotifySubscribersJob.perform_later(post)`, not `NotifySubscribersJob.perform_later(post.id)`. Active Job saves the record as a GlobalID and loads it again when the job runs, so the job always sees the current values. The job doesn't need its own `find`, and its arguments say which kind of record it takes.
+
+```ruby
+NotifySubscribersJob.perform_later(post)
+```
+
 ### Enqueueing after a transaction
 
 Enqueue a job only after the transactions that change its arguments have committed. Active Job passes a record to the job by its ID, and the job loads it again when it runs. A job enqueued inside a transaction could run before the transaction commits. It would not find a new record, or it would see the old values. If the transaction rolls back, the job runs for changes that never happened.

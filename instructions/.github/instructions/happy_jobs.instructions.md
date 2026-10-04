@@ -5,6 +5,7 @@ applyTo: "app/jobs/**/*.rb,spec/jobs/**/*.rb"
 # Jobs
 
 - Write background jobs with Active Job. Inherit from `ApplicationJob` and enqueue with `perform_later`, e.g. `NotifySubscribersJob.perform_later(post)`.
+- Pass records to a job, never their IDs, e.g. `NotifySubscribersJob.perform_later(post)`, not `NotifySubscribersJob.perform_later(post.id)`. Never call `find` in `perform` to load a record from an ID argument.
 - Enqueue a job only after the transactions that change its arguments have committed. Set `self.enqueue_after_transaction_commit = true` in the job class, e.g. in `NotifySubscribersJob`.
 - If you can't change the job class, e.g. it comes from a gem, wrap the enqueue in an `ActiveRecord.after_all_transactions_commit` block, e.g. `ActiveRecord.after_all_transactions_commit { NotifySubscribersJob.perform_later(post) }`.
 - When the work in `perform` could be run from somewhere else too, e.g. a form or the console, put it in an action and call it from `perform`, e.g. `Posts::PublishPost.call(post, publisher: post.scheduled_by)` in `PublishScheduledPostJob`. Keep work that only the job does in `perform`.
