@@ -134,6 +134,8 @@ end
 
 ## Testing
 
+### Building records
+
 Build the record under test with `described_class.new`, not a factory. Pass only the attributes the example needs. The spec then shows everything the result depends on, and a change to a factory can't break it.
 
 ```ruby
@@ -148,20 +150,7 @@ RSpec.describe Post do
 end
 ```
 
-Scopes are the exception. A scope queries the database, so its spec needs saved records. Create them with factories, and check the records the scope returns. Comparing the scope's `to_sql` with the query you expect also works, but a spec with records checks the result the scope is for.
-
-```ruby
-RSpec.describe Post do
-  describe ".recent" do
-    it "returns the newest post first" do
-      older_post = create(:post, created_at: 2.days.ago)
-      newer_post = create(:post, created_at: 1.day.ago)
-
-      expect(described_class.recent).to eq([newer_post, older_post])
-    end
-  end
-end
-```
+### Spec layout
 
 Name the `subject` after the model, e.g. `subject(:post)`, and use `is_expected` where you can. When an example needs a record with different attributes, build it in the example, e.g. `post = described_class.new(title: "A title")`. Don't add a `let`, or another `subject`, for it. The example then shows the record it checks.
 
@@ -211,6 +200,83 @@ RSpec.describe Post do
 end
 ```
 
+### Validations and associations
+
 Test validations and associations with Shoulda Matchers. See [Shoulda Matchers: Validations](../gems/shoulda_matchers/#validations) and [Shoulda Matchers: Associations](../gems/shoulda_matchers/#associations).
 
-> **TODO:** Describe how you handle this.
+### Scopes
+
+Scopes are an exception to building records with `described_class.new`. A scope queries the database, so its spec needs saved records. Create them with factories, and check the records the scope returns. Comparing the scope's `to_sql` with the query you expect also works, but a spec with records checks the result the scope is for.
+
+```ruby
+RSpec.describe Post do
+  describe ".recent" do
+    it "returns the newest post first" do
+      older_post = create(:post, created_at: 2.days.ago)
+      newer_post = create(:post, created_at: 1.day.ago)
+
+      expect(described_class.recent).to eq([newer_post, older_post])
+    end
+  end
+end
+```
+
+### Callbacks
+
+Test a callback by what it does, through the call that triggers it in the app. Don't call the callback method itself, and don't test that the callback is registered. Put the examples in the `describe` block of the attribute the callback changes, and say in each description what triggers it, e.g. "when saved" or "when validated". When the callback has a condition, test both sides of it.
+
+A save callback runs on `save`, which needs a valid record, so build the record with a factory, as for scopes.
+
+```ruby
+RSpec.describe Post do
+  describe "#published_at" do
+    it "is set when a published post is saved" do
+      post = build(:post, status: :published, published_at: nil)
+
+      freeze_time do
+        post.save!
+
+        expect(post.published_at).to eq(Time.current)
+      end
+    end
+
+    it "is not set when a draft post is saved" do
+      post = build(:post, status: :draft, published_at: nil)
+
+      post.save!
+
+      expect(post.published_at).to be_nil
+    end
+  end
+end
+```
+
+A validation callback, e.g. `before_validation`, runs on `validate`. Call `validate` on a record built with `described_class.new`, so no factory is needed.
+
+```ruby
+RSpec.describe Post do
+  describe "#title" do
+    it "is stripped when validated" do
+      post = described_class.new(title: "  A title  ")
+
+      post.validate
+
+      expect(post.title).to eq("A title")
+    end
+  end
+end
+```
+
+When a callback reaches outside the record, it doesn't change an attribute. Put its examples in the `describe` block of the method that triggers it, e.g. `describe "#save"` for an `after_create_commit` callback, or `describe "#destroy"` for an `after_destroy_commit` callback. Check the effect, e.g. that a job is enqueued. Don't name the block after the callback method. It is private, and the examples never call it.
+
+```ruby
+RSpec.describe Post do
+  describe "#save" do
+    it "enqueues a NotifySubscribersJob when a new post is saved" do
+      post = build(:post)
+
+      expect { post.save! }.to have_enqueued_job(NotifySubscribersJob).with(post)
+    end
+  end
+end
+```
