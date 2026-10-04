@@ -14,6 +14,12 @@ Follow these rules for all changes. Area-specific rules are in `.github/instruct
 - TODO: State the guiding principles in short imperative sentences, e.g. "Prefer Rails defaults over extra gems."
 - Match the style of the surrounding code.
 
+## The signed-in user
+
+- Only use the signed-in user, e.g. `current_user`, in controllers, forms, views and helpers, and in request and feature specs. Never use it in models, actions, jobs, mailers or view components.
+- When code outside a request needs a user, pass the user in as an argument named after the role it plays in the task, e.g. `Posts::PublishPost.call(post, publisher: current_user)`, not `current_user:` or `user:`.
+- Never reach the signed-in user through a global, e.g. `Current.user` from `ActiveSupport::CurrentAttributes`.
+
 ## Personas
 
 - Think of users as personas. A persona is a role that lets a user take certain actions on certain records. A role can apply to the whole app, e.g. a role or a flag on the user, or to one record the user is given, e.g. as the record's owner or through a membership.

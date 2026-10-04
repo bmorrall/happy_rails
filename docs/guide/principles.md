@@ -20,6 +20,49 @@ The ideas that shape every other decision in this guide.
 
 > **TODO:** Describe how you handle this.
 
+## The signed-in user
+
+Only the code that handles a request knows who is signed in. That is controllers, forms, views and helpers, and the request and feature specs that test them. Everything else has no signed-in user, e.g. models, actions, jobs, mailers and view components.
+
+That code often runs outside a request. A job runs after the request has finished. A mailer or a component may render in a job or a Turbo Stream broadcast. A console or a rake task has no session at all. Code that reaches for the signed-in user breaks there, or picks up the wrong user.
+
+When that code needs a user, pass the user in as an argument. Name the argument after the role the user plays in the task, e.g. `publisher:`, not `current_user:` or `user:`. The name says why the user is there, and the code works the same whoever calls it.
+
+```ruby
+class PublishPostForm < ApplicationForm
+  # ...
+
+  def submit
+    return false unless valid?
+
+    Posts::PublishPost.call(post, publisher: current_user)
+    post
+  end
+end
+```
+
+```ruby
+module Posts
+  class PublishPost < ApplicationAction
+    def initialize(post, publisher:)
+      @post = post
+      @publisher = publisher
+    end
+
+    def call
+      post.update!(status: :published)
+      post.publications.create!(publisher:)
+    end
+
+    private
+
+    attr_reader :post, :publisher
+  end
+end
+```
+
+Don't reach the signed-in user through a global, e.g. `Current.user` from `ActiveSupport::CurrentAttributes`. The code then depends on a user it doesn't ask for, and it only works when a request has set one.
+
 ## Personas
 
 A persona stands for one type of person who uses the app. Name each persona after its role, e.g. a Publishing Manager or an Author. A role lets a user take certain actions on certain records.
