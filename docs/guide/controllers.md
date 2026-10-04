@@ -571,6 +571,20 @@ class ApplicationController < ActionController::Base
 end
 ```
 
+Use `rescue_from` only for errors that aren't part of the app's normal flow, e.g. a record that isn't found, or a request the user isn't allowed to make. When an error is an outcome the app expects, handle it where the work is done, in a form or a job. Either one can recover from the error, or add the error. A form adds it to its errors and returns `false`, so the controller takes its normal failure path. A job adds it to the record it works on, e.g. it marks a subscription as failed when its payment fails. The action then shows every outcome the user can expect as a normal path, and its request spec covers each one.
+
+```ruby
+class NotifySubscribersJob < ApplicationJob
+  # ...
+
+  def perform(post)
+    NewsletterClient.new.deliver(post)
+  rescue NewsletterClient::DeliveryError
+    post.update!(newsletter_status: :failed)
+  end
+end
+```
+
 ## Authorization
 
 Use [Pundit](../gems/pundit/) to authorise requests. It is the default choice for any app with user accounts. The rules below apply whichever gem you use. See [Pundit: Controllers](../gems/pundit/#controllers) for how to write each check with Pundit.
