@@ -26,6 +26,8 @@ Pass the record to the job, never its ID, e.g. `NotifySubscribersJob.perform_lat
 NotifySubscribersJob.perform_later(post)
 ```
 
+### Records deleted before the job runs
+
 If the record is deleted before the job runs, Active Job can't load it, and raises `ActiveJob::DeserializationError`. It raises the error before `perform` runs, so a `rescue` in `perform` doesn't catch it. When the record could reasonably be gone by then, e.g. a user can delete a post before its subscribers are notified, add `discard_on ActiveJob::DeserializationError` to that job. The job then stops quietly, because there is no work left to do.
 
 ```ruby
