@@ -168,6 +168,19 @@ end
 
 Keep the resource in a private `attr_reader`. Callers use the form, not the record inside it.
 
+Set the form's attributes from the resource's existing values in `initialize`, with `reverse_merge`. The params the user submitted win, and the resource fills in the rest. The edit page then shows the record's current values, and a field the user didn't send keeps its value.
+
+```ruby
+class UpdatePostForm < ApplicationForm
+  # ...
+
+  def initialize(post, current_user, params = {})
+    @post = post
+    super(current_user, params.reverse_merge(title: post.title, status: post.status))
+  end
+end
+```
+
 The form looks up its translations under `activemodel`, not `activerecord`, because it is not an Active Record model. Alias the model's translations in your locale file, so the form and the model share them.
 
 ```yaml
