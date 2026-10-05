@@ -50,6 +50,38 @@ end
 
 Name the arguments to `validate_each` as Rails does: `record`, `attribute` and `value`. The validator then reads the same wherever it is used, e.g. in a model, a form or an action.
 
+### Format validators
+
+When a value must match a pattern, e.g. a UUID, inherit from Rails' `ActiveModel::Validations::FormatValidator`, and give it the pattern in `initialize`. The validator then works like `format:`. It adds `:invalid`, it handles `allow_blank:`, `message:` and `strict:`, and every caller checks the same pattern.
+
+```ruby
+class UuidValidator < ActiveModel::Validations::FormatValidator
+  UUID_FORMAT = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/
+
+  def initialize(options)
+    super(options.merge(with: UUID_FORMAT).reverse_merge(message: :invalid_uuid))
+  end
+end
+```
+
+Set the pattern with `merge`, so a caller can't replace it. Set the default message with `reverse_merge`, so a caller can still pass its own. Use a symbol for the message, e.g. `:invalid_uuid`, so it comes from the locale file, as in [Default messages](#default-messages).
+
+```yaml
+# config/locales/en.yml
+en:
+  errors:
+    messages:
+      invalid_uuid: "is not a valid UUID"
+```
+
+Use it like any other validator, e.g. on the ID a caller generates with `SecureRandom.uuid` for another service. See [Actions: Return values](../actions/#return-values).
+
+```ruby
+validates :newsletter_id, uuid: { allow_blank: true }
+```
+
+Use a format validator only when matching the pattern is the whole rule. If a value also needs another check, e.g. a check digit, write an `ActiveModel::EachValidator` instead.
+
 ## I18n
 
 Add each error with a symbol, e.g. `:modified`, not a sentence. Rails uses the symbol to look up the message in the locale files, so you can change the wording, or translate it, without changing the validator.
