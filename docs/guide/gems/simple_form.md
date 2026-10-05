@@ -2,7 +2,7 @@
 title: Simple Form
 parent: Gems
 grand_parent: The Guide
-nav_order: 6
+nav_order: 7
 ---
 
 # Simple Form

@@ -2,7 +2,7 @@
 title: Pundit
 parent: Gems
 grand_parent: The Guide
-nav_order: 3
+nav_order: 4
 ---
 
 # Pundit

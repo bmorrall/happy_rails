@@ -587,7 +587,7 @@ end
 
 ### Other services failing
 
-When a controller calls an [action](../actions/) that calls another service, the service can fail, e.g. it returns a 500 or times out. That isn't part of the app's normal flow. The user didn't cause it, and can't fix it by changing what they submitted. Give the action an error class for this cause, e.g. `Posts::SendNewsletter::ServiceError`, as in [Actions: Error handling](../actions/#error-handling). Rescue it with `rescue_from`, and name the handler after the action and the error, without the `Error` suffix, e.g. `handle_send_newsletter_service`. Errors the user or a developer caused, e.g. invalid data, still belong in a form, as above.
+When a controller calls an [action](../actions/) that calls another service, the service can fail, e.g. it returns a 500 or times out. That isn't part of the app's normal flow. The user didn't cause it, and can't fix it by changing what they submitted. Give the action an error class for this cause, e.g. `Posts::SendNewsletter::ServiceError`, as in [Actions: Error handling](../actions/#error-handling). Rescue it with `rescue_from`, and name the handler after the action and the error, without the `Error` suffix, e.g. `handle_send_newsletter_service`. Errors the user or a developer caused, e.g. invalid data, still belong in a form, as above. Never rescue `ApplicationAction::Error`, which catches every action's errors. Rescue the error class of the action you call.
 
 In the handler, redirect with an alert. Write the alert as fixed text, and never show the error's message. It may hold the other service's reply, or details about your systems.
 

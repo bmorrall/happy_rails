@@ -388,7 +388,7 @@ A form handles what the user submits: it checks the input, then does the work. W
 
 Call the action after `valid?`, and pass it the records and values it needs. Never pass it the form or the params. The action then doesn't depend on how the user submitted the data. Pass the current user as an argument named after the role the user plays, e.g. `publisher: current_user`. See [Principles: The signed-in user](../principles/#the-signed-in-user).
 
-The action returns nothing, so `submit` returns the resource itself, as for any resource form. Rescue the action's `Error` in `submit`, add an error to `:base`, and return `false`, so the form shows the failure.
+The action returns nothing, so `submit` returns the resource itself, as for any resource form. Rescue the action's `Error` in `submit`, add an error to `:base`, and return `false`, so the form shows the failure. Never rescue `ApplicationAction::Error`, which catches every action's errors. Rescue the error class of the action you call.
 
 ```ruby
 class PublishPostForm < ApplicationForm

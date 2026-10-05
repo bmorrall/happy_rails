@@ -23,6 +23,7 @@ Each convention is written twice: once in the guide for people, and once in the 
 | `docs/guide/mailers.md` | `instructions/.github/instructions/happy_mailers.instructions.md` |
 | `docs/guide/gems/devise.md` | `instructions/.github/instructions/happy_devise.instructions.md` |
 | `docs/guide/gems/draper.md` | `instructions/.github/instructions/happy_draper.instructions.md` |
+| `docs/guide/gems/honeybadger.md` | `instructions/.github/instructions/happy_honeybadger.instructions.md` |
 | `docs/guide/gems/pundit.md` | `instructions/.github/instructions/happy_pundit.instructions.md` |
 | `docs/guide/gems/rspec.md` | `instructions/.github/instructions/happy_rspec.instructions.md` |
 | `docs/guide/gems/shoulda_matchers.md` | `instructions/.github/instructions/happy_shoulda_matchers.instructions.md` |

@@ -208,12 +208,24 @@ See [Patterns: Values from Actions](../../patterns/values-from-actions/) for exa
 
 If the task fails, raise an error, e.g. with `update!`, rather than returning `false`. Let an error that no caller should handle pass through as it is.
 
-When a caller is meant to handle an error, write a custom `Error` class inside the action, and inherit it from `StandardError`. In `call`, rescue the errors the caller should handle and raise them again as the action's `Error`. The caller then rescues one error class, e.g. `Posts::ArchivePost::Error`, and doesn't need to know which errors the action's code can raise. Ruby keeps the original error as the new error's `cause`, so it still shows up in the error report.
+When a caller is meant to handle an error, write a custom `Error` class inside the action, and inherit it from `ApplicationAction::Error`. In `call`, rescue the errors the caller should handle and raise them again as the action's `Error`. The caller then rescues one error class, e.g. `Posts::ArchivePost::Error`, and doesn't need to know which errors the action's code can raise. Ruby keeps the original error as the new error's `cause`, so it still shows up in the error report.
+
+Define `ApplicationAction::Error` once, in `ApplicationAction`, and inherit it from `StandardError`. Every action's errors then share one base class. Behaviour that every action's errors need, e.g. what they add to an error report, goes there once.
+
+Never rescue `ApplicationAction::Error` anywhere, e.g. in a controller, a form, a job or another action. Rescue the error of the action you call, e.g. `Posts::ArchivePost::Error`. The base class catches the errors of every action, including actions the caller doesn't know it runs. The caller would then hide failures it can't handle, and treat them as its own.
+
+```ruby
+class ApplicationAction
+  class Error < StandardError; end
+
+  # ...
+end
+```
 
 ```ruby
 module Posts
   class ArchivePost < ApplicationAction
-    class Error < StandardError; end
+    class Error < ApplicationAction::Error; end
 
     # ...
 
@@ -248,7 +260,7 @@ An action can fail for more than one cause, and its callers may handle each caus
 ```ruby
 module Posts
   class SendNewsletter < ApplicationAction
-    class Error < StandardError; end
+    class Error < ApplicationAction::Error; end
     class RejectedError < Error; end
     class ServiceError < Error; end
 

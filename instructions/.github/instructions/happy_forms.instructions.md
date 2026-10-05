@@ -35,6 +35,7 @@ applyTo: "app/forms/**/*.rb,spec/forms/**/*.rb"
 - Pass the current user to an action as an argument named after the role the user plays, e.g. `publisher: current_user`, not `user: current_user`.
 - After calling an action, return the resource from `submit`, e.g. `post`. Never use the value the action returns.
 - Rescue an action's `Error` in `submit`, add an error to `:base` and return `false`, e.g. `rescue Posts::PublishPost::Error` then `errors.add(:base, "Post could not be published.")` and `false`.
+- Never rescue `ApplicationAction::Error` in a form. Rescue the error class of the action the form calls, e.g. `rescue Posts::PublishPost::Error`.
 - Open a transaction in `submit` only to combine several actions, or an action and the form's own save, into one unit, e.g. `Posts::PublishPost.call(post, publisher: current_user)` and `Posts::ArchivePost.call(previous_post)` in one `ActiveRecord::Base.transaction` block. Don't wrap a single action in a transaction.
 - Call a `Record` action before or after the transaction block in `submit`, never inside it, e.g. `Posts::RecordLinkCheck.call(post)` before `ActiveRecord::Base.transaction do`.
 - Cover every `collection_for_<attribute>` method with a unit test in `spec/forms/`, e.g. `describe "#collection_for_status"` in `spec/forms/create_post_form_spec.rb`.
