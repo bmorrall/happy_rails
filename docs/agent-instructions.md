@@ -57,7 +57,7 @@ Each [gem](../guide/gems/) has its own file. If your app does not use a gem, del
 | --- | --- | --- |
 | `happy_devise.instructions.md` | Devise | `config/initializers/devise.rb`, `config/routes.rb`, `app/models/user.rb`, `app/controllers/users/**`, `app/views/devise/**`, `spec/requests/users/**` |
 | `happy_draper.instructions.md` | Draper | `app/decorators/**`, `app/controllers/**`, `app/views/**`, `app/helpers/**`, `spec/decorators/**`, `spec/support/**` |
-| `happy_honeybadger.instructions.md` | Honeybadger | `config/honeybadger.yml`, `app/models/**`, `app/actions/application_action.rb`, `app/controllers/**`, `app/jobs/**` |
+| `happy_honeybadger.instructions.md` | Honeybadger | `config/honeybadger.yml`, `app/models/**`, `app/actions/**`, `app/controllers/**`, `app/jobs/**` |
 | `happy_pundit.instructions.md` | Pundit | `app/policies/**`, `app/controllers/**`, `app/views/**`, `app/forms/**`, `spec/policies/**` |
 | `happy_rspec.instructions.md` | RSpec and FactoryBot | `spec/**` |
 | `happy_shoulda_matchers.instructions.md` | Shoulda Matchers | `spec/models/**`, `spec/forms/**` |

@@ -70,7 +70,7 @@ A job is a caller, like a form. When the work in `perform` could be run from som
 
 Pass the action the records and values it needs. A job has no signed-in user, so when the action needs a user, take it from a record or from the job's arguments, and pass it under its role, e.g. `publisher: post.scheduled_by`. See [Principles: The signed-in user](../principles/#the-signed-in-user).
 
-When the action's `Error` is an outcome the app expects, rescue it in `perform` and save it on the record the job works on, e.g. mark the post as failed. Let any other error pass through, so the job fails and can retry. Never rescue `ApplicationAction::Error`, which catches every action's errors. Rescue the error class of the action you call, e.g. `Posts::PublishPost::Error`.
+When the action's `Error` is an outcome the app expects, rescue it in `perform` and save it on the record the job works on, e.g. mark the post as failed. Let any other error pass through, so the job fails and can retry.
 
 ```ruby
 class PublishScheduledPostJob < ApplicationJob

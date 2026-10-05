@@ -141,15 +141,20 @@ module HoneybadgerCauseContext
 end
 ```
 
-Include it in `ApplicationAction::Error`, which every action's errors inherit from. See [Actions: Error handling](../../actions/#error-handling). Include it in any other error class that you raise in place of an error with context.
+Include it in the highest error class that an action raises in place of another error. That is usually the action's own `Error`, and the error classes for each cause inherit it from there. Don't include it in them again. See [Actions: Error handling](../../actions/#error-handling).
 
 ```ruby
-class ApplicationAction
-  class Error < StandardError
-    include HoneybadgerCauseContext
-  end
+module Posts
+  class SendNewsletter < ApplicationAction
+    class Error < StandardError
+      include HoneybadgerCauseContext
+    end
 
-  # ...
+    class RejectedError < Error; end
+    class ServiceError < Error; end
+
+    # ...
+  end
 end
 ```
 
