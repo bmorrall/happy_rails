@@ -5,7 +5,6 @@ applyTo: "app/forms/**/*.rb,spec/forms/**/*.rb"
 # Forms
 
 - If the app uses a gem for form objects, e.g. Reform, follow the gem's conventions and ignore the rules below.
-- Otherwise, follow the rules below for form objects the app writes itself.
 - Put form objects in `app/forms/`, e.g. `CreatePostForm` in `app/forms/create_post_form.rb`.
 - Name a form after its action and resource, e.g. `CreatePostForm`, `UpdatePostForm` or `PublishPostForm`.
 - Inherit every form from `ApplicationForm` in `app/forms/application_form.rb`, which includes `ActiveModel::Model`, `ActiveModel::Attributes` and `ActiveModel::Validations::Callbacks`, takes the current user and the params in `initialize(current_user, params = {})`, and keeps `current_user` in a private `attr_reader`.
@@ -33,10 +32,9 @@ applyTo: "app/forms/**/*.rb,spec/forms/**/*.rb"
 - Enqueue jobs and send emails after the transaction block, never inside it, e.g. `NotifySubscribersJob.perform_later(post)` after `ActiveRecord::Base.transaction do ... end` in `PublishPostForm#submit`.
 - When the work in `submit` could be run from somewhere else too, e.g. a job or the console, put it in an action and call it from `submit`, e.g. `Posts::PublishPost.call(post, publisher: current_user)` in `PublishPostForm#submit`. Keep work that only the form does in `submit`.
 - Call an action from `submit` only after `valid?`. Pass it the records and values it needs, never the form or the params, e.g. `Posts::PublishPost.call(post, publisher: current_user)`, not `Posts::PublishPost.call(self)` or `Posts::PublishPost.call(post, params)`. Never pass a record with unsaved changes, e.g. after `post.title = title`. Pass the new values as keywords instead, e.g. `Posts::PublishPost.call(post, publisher: current_user, title:)`.
-- Pass the current user to an action as an argument named after the role the user plays, e.g. `publisher: current_user`, not `user: current_user`.
 - After calling an action, return the resource from `submit`, e.g. `post`. Never use the value the action returns.
 - Rescue an action's `Error` in `submit`, add an error to `:base` and return `false`, e.g. `rescue Posts::PublishPost::Error` then `errors.add(:base, "Post could not be published.")` and `false`.
 - Never rescue `ApplicationAction::Error` in a form. Rescue the error class of the action the form calls, e.g. `rescue Posts::PublishPost::Error`.
 - Open a transaction in `submit` only to combine several actions, or an action and the form's own save, into one unit, e.g. `Posts::PublishPost.call(post, publisher: current_user)` and `Posts::ArchivePost.call(previous_post)` in one `ActiveRecord::Base.transaction` block. Don't wrap a single action in a transaction.
-- Call a `Record` action before or after the transaction block in `submit`, never inside it, e.g. `Posts::RecordLinkCheck.call(post)` before `ActiveRecord::Base.transaction do`.
+- Call a `Record` action before or after the transaction block in `submit`, never inside it, e.g. `Posts::RecordLinkCheck.call(post)` before `ActiveRecord::Base.transaction do`. To record that the transaction failed, call it in a `rescue` or `ensure` on `submit`.
 - Cover every `collection_for_<attribute>` method with a unit test in `spec/forms/`, e.g. `describe "#collection_for_status"` in `spec/forms/create_post_form_spec.rb`.

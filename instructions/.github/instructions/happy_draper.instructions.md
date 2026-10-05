@@ -4,7 +4,7 @@ applyTo: "app/decorators/**/*.rb,app/controllers/**/*.rb,app/views/**/*,app/help
 
 # Draper
 
-- Use a decorator method for presentation logic about one record, not a helper, so the decorator spec covers it and you don't need a helper spec, e.g. `post.published_on` in `PostDecorator` instead of `post_published_on(post)` in `PostsHelper`.
+- Use a decorator method for presentation logic about one record, not a helper, e.g. `post.published_on` in `PostDecorator` instead of `post_published_on(post)` in `PostsHelper`.
 - Keep helpers for general view elements that are not about one record, e.g. `success_badge` or `date_tag`. Call those helpers from the decorator through `h`, e.g. `h.date_tag(object.published_at)` in `PostDecorator`.
 - Keep decorator methods simple: return a formatted value, a link, or a small element built with a helper, e.g. `status_badge` in `PostDecorator`. Never render a component or a partial from a decorator, e.g. `h.render(Posts::CardComponent.new(post: object))`. Render it in the view instead.
 - Only change a decorator method's output based on the record's state or a record passed in its context, e.g. `object.published?` in `PostDecorator#status_badge`. Never base it on the request, e.g. the current user, the params or a permission check. The `can_` permission checks are the only exception.

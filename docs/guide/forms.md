@@ -411,7 +411,7 @@ class PublishPostForm < ApplicationForm
 end
 ```
 
-An action that writes more than once has its own transaction. Open a transaction in `submit` only to combine several actions, or an action and the form's own save, into one unit. Call any `Record` action before or after that transaction, never inside it. See [Actions: Transactions](../actions/#transactions).
+An action that writes more than once has its own transaction. Open a transaction in `submit` only to combine several actions, or an action and the form's own save, into one unit. Call any `Record` action before or after that transaction, never inside it. To record that the transaction failed, call the `Record` action in a `rescue` or `ensure` on `submit`. See [Actions: Transactions](../actions/#transactions).
 
 ```ruby
 def submit
