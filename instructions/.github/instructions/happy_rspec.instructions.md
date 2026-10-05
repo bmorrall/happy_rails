@@ -42,6 +42,7 @@ applyTo: "spec/**/*.rb"
 - Keep the shared spec code for a resource, including its matchers, in one module named after the resource with a `SpecHelpers` suffix, e.g. `PostSpecHelpers` in `spec/support/post_spec_helpers.rb`. Never name it `PostHelpers` or `PostsHelper`. Name a module for generic matchers after what they cover, e.g. `OnboardingSpecHelpers` for `have_welcome_new_author_banner`.
 - Give each helper that builds a simple view element a matcher named after the helper with a `have_` prefix, e.g. `have_unknown_value_tag` for `unknown_value_tag`. Put it in a module named after the helper module with a `SpecHelpers` suffix, e.g. `UnknownValuesSpecHelpers` in `spec/support/unknown_values_spec_helpers.rb` for `UnknownValuesHelper`, included for `type: :helper`, `type: :request` and `type: :feature`.
 - Check a helper's output in its helper spec with its matcher, e.g. `expect(helper.unknown_value_tag).to have_unknown_value_tag`, and use the matcher in request and feature specs instead of checking the markup, e.g. `expect(response.body).to have_unknown_value_tag`.
+- Give specs in `spec/forms/` a `:form` type in `spec/support/forms.rb` with `config.define_derived_metadata(file_path: %r{/spec/forms/}) { |metadata| metadata[:type] ||= :form }`, and include setup for them with `type: :form`. Never tag each form spec by hand, and never include setup with `file_path:`.
 - TODO: Which spec types to write, and when.
 - TODO: Where to put specs and how to name them.
 - TODO: How to write factories, e.g. `create(:post)`.

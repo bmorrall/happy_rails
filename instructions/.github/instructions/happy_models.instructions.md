@@ -22,6 +22,7 @@ applyTo: "app/models/**/*.rb,spec/models/**/*.rb"
 - When a callback reaches outside the record, put its examples in the `describe` block of the method that triggers it and check the effect, e.g. `expect { post.save! }.to have_enqueued_job(NotifySubscribersJob).with(post)` in `describe "#save"` for an `after_create_commit` callback, or `describe "#destroy"` for an `after_destroy_commit` callback. Never name the block after the callback method.
 - When an attribute has `presence: true`, add `allow_blank: true` to its other validators, so a blank value only gets "can't be blank", e.g. `validates :title, presence: true, length: { maximum: TITLE_MAX_LENGTH, allow_blank: true }`.
 - Tidy values with `normalizes` under `### Attributes ###`, e.g. `normalizes :isbn, with: ->(isbn) { isbn.delete("-") }`. Never tidy a value in a `before_validation` callback or an overridden writer, except before Rails 7.1, which has no `normalizes`: then use `before_validation { self.title = title&.strip }` under `### Callbacks ###`.
+- In model specs, test an attribute that uses a custom validator with the validator's matcher, e.g. `it { is_expected.to validate_isbn_of(:isbn) }`. Never repeat the cases from the validator's own spec.
 - TODO: How to write validations and associations.
 - TODO: Where scopes and query logic go.
 - TODO: When callbacks are allowed.

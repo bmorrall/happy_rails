@@ -27,7 +27,14 @@ RSpec.describe Post do
 end
 ```
 
-Use the same matchers for validations on [form objects](../../forms/).
+Use the same matchers for validations on [form objects](../../forms/). Shoulda Matchers only includes them in `type: :model` specs, so include them for form specs in `spec/support/shoulda_matchers.rb`. Form specs get `type: :form` from [RSpec: Form specs](../rspec/#form-specs).
+
+```ruby
+# spec/support/shoulda_matchers.rb
+RSpec.configure do |config|
+  config.include Shoulda::Matchers::ActiveModel, type: :form
+end
+```
 
 ## Associations
 

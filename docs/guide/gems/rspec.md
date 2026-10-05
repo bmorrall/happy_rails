@@ -86,7 +86,22 @@ expect(response.body).to have_select("Status", with_options: ["Draft", "Publishe
 
 ## Spec types
 
-> **TODO:** Describe how you handle this.
+### Form specs
+
+rspec-rails gives a spec its type from its folder, e.g. `type: :model` for `spec/models/`, but it doesn't know `spec/forms/`. Give form specs a `:form` type in `spec/support/forms.rb`, so setup can be included for them by type, like every other spec type. Each form spec then gets the type from its folder, with no tag.
+
+```ruby
+# spec/support/forms.rb
+RSpec.configure do |config|
+  config.define_derived_metadata(file_path: %r{/spec/forms/}) do |metadata|
+    metadata[:type] ||= :form
+  end
+end
+```
+
+`||=` keeps a type that a spec sets itself. Include setup for form specs with `type: :form`, e.g. `config.include Shoulda::Matchers::ActiveModel, type: :form`. See [Shoulda Matchers: Validations](../shoulda_matchers/#validations).
+
+> **TODO:** Describe how you handle the rest of this.
 
 ## Layout and naming
 

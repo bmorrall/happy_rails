@@ -227,6 +227,8 @@ end
 
 Test validations and associations with Shoulda Matchers. See [Shoulda Matchers: Validations](../gems/shoulda_matchers/#validations) and [Shoulda Matchers: Associations](../gems/shoulda_matchers/#associations).
 
+Test an attribute that uses a custom validator with the validator's matcher, e.g. `it { is_expected.to validate_isbn_of(:isbn) }`. Don't repeat the cases from the validator's own spec. See [Validators: Models and forms that use a validator](../validators/#models-and-forms-that-use-a-validator).
+
 ### Scopes
 
 Scopes are an exception to building records with `described_class.new`. A scope queries the database, so its spec needs saved records. Create them with factories, and check the records the scope returns. Comparing the scope's `to_sql` with the query you expect also works, but a spec with records checks the result the scope is for.

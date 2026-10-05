@@ -459,3 +459,5 @@ RSpec.describe CreatePostForm do
   end
 end
 ```
+
+Test a form attribute that uses a custom validator with the validator's matcher, as in a model spec, e.g. `it { is_expected.to validate_isbn_of(:isbn) }`. See [Validators: Models and forms that use a validator](../validators/#models-and-forms-that-use-a-validator).
