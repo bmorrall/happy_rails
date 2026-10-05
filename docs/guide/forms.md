@@ -24,12 +24,13 @@ end
 
 ## Base class
 
-Give every form a base class, `ApplicationForm`, in `app/forms/application_form.rb`. It takes the current user and the params, so every form knows who is submitting it. A resource form or action form takes its resource as the first argument, before the current user, and keeps it in its own private `attr_reader`. It also includes `ActiveModel::Validations::Callbacks`, so forms can use `before_validation` and `after_validation`. `ActiveModel::Model` doesn't include it.
+Give every form a base class, `ApplicationForm`, in `app/forms/application_form.rb`. It takes the current user and the params, so every form knows who is submitting it. A resource form or action form takes its resource as the first argument, before the current user, and keeps it in its own private `attr_reader`. It also includes `ActiveModel::Validations::Callbacks`, so forms can use `before_validation` and `after_validation`, and `ActiveModel::Attributes::Normalization`, so forms can use `normalizes`. `ActiveModel::Model` includes neither. `ActiveModel::Attributes::Normalization` needs Rails 8.1 or later.
 
 ```ruby
 class ApplicationForm
   include ActiveModel::Model
   include ActiveModel::Attributes
+  include ActiveModel::Attributes::Normalization
   include ActiveModel::Validations::Callbacks
 
   def initialize(current_user, params = {})
@@ -108,6 +109,19 @@ end
 ```
 
 Write a form's validations as you would a model's, e.g. add `allow_blank: true` next to `presence: true`. See [Models: Validations](../models/#validations).
+
+Tidy a form attribute with `normalizes` under `### Attributes ###`, as in a model, e.g. `normalizes :title, with: ->(title) { title.strip }`. Don't use a `before_validation` callback for it. See [Models: Normalising values](../models/#normalising-values). Form objects can use `normalizes` from Rails 8.1. Before that, leave `ActiveModel::Attributes::Normalization` out of `ApplicationForm`, and tidy the value in a `before_validation` callback under `### Callbacks ###`, e.g. `before_validation { self.title = title&.strip }`.
+
+```ruby
+class CreatePostForm < ApplicationForm
+  ### Attributes ###
+
+  attribute :title, :string
+  normalizes :title, with: ->(title) { title.strip }
+
+  # ...
+end
+```
 
 ### Association ids
 

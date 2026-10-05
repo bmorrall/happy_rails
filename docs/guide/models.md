@@ -116,6 +116,23 @@ When an attribute has `presence: true`, add `allow_blank: true` to its other val
 validates :title, presence: true, length: { maximum: TITLE_MAX_LENGTH, allow_blank: true }
 ```
 
+### Normalising values
+
+Tidy a value with `normalizes`, e.g. to strip spaces or remove hyphens. Put it under `### Attributes ###`. Rails runs it whenever the attribute is set, so validations always see the tidy value. It also runs on the values you pass to finders, e.g. `Post.find_by(isbn: "978-0306406157")` finds a post saved with `9780306406157`. Rails skips `nil`, so the block doesn't need `&.`.
+
+```ruby
+class Post < ApplicationRecord
+  ### Attributes ###
+
+  normalizes :title, with: ->(title) { title.strip }
+  normalizes :isbn, with: ->(isbn) { isbn.delete("-") }
+
+  # ...
+end
+```
+
+Don't tidy a value in a `before_validation` callback, or by overriding its writer. A callback leaves the value untidy until the record is validated, and finders never use either of them. `normalizes` needs Rails 7.1 or later. Before that, tidy the value in a `before_validation` callback under `### Callbacks ###`, e.g. `before_validation { self.title = title&.strip }`.
+
 > **TODO:** Describe how you handle the rest of this.
 
 ## Associations
@@ -261,11 +278,25 @@ A validation callback, e.g. `before_validation`, runs on `validate`. Call `valid
 
 ```ruby
 RSpec.describe Post do
-  describe "#title" do
-    it "is stripped when validated" do
-      post = described_class.new(title: "  A title  ")
+  describe "#reading_time" do
+    it "is set from the body when validated" do
+      post = described_class.new(body: "word " * 400)
 
       post.validate
+
+      expect(post.reading_time).to eq(2)
+    end
+  end
+end
+```
+
+Test a normalisation in the `describe` block of its attribute. Build the record with the untidy value, and read the attribute back. It runs when the attribute is set, so there's no need to call `validate` or `save`.
+
+```ruby
+RSpec.describe Post do
+  describe "#title" do
+    it "is stripped" do
+      post = described_class.new(title: "  A title  ")
 
       expect(post.title).to eq("A title")
     end
