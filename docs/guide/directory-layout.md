@@ -34,7 +34,7 @@ Use the full name everywhere outside the namespace, e.g. `Posts::CommentsControl
 
 Use a concern to group the code for one feature, when it could be shared with other classes or you may want to remove it all at once later. Name the concern after what it does.
 
-Put a shared concern in `app/models/concerns/` or `app/controllers/concerns/`. If only one class uses the code, write it in a `concerning` block in that class instead. It stays grouped and easy to remove, without a separate file.
+Put a shared concern in the `concerns/` directory of the classes that include it, e.g. `app/models/concerns/`, `app/controllers/concerns/`, `app/forms/concerns/` or `app/actions/concerns/`. Rails loads every `app/*/concerns/` directory as a root, so a concern there has no `Concerns::` namespace, e.g. `ValidatedCallable` in `app/actions/concerns/validated_callable.rb`. If only one class uses the code, write it in a `concerning` block in that class instead. It stays grouped and easy to remove, without a separate file.
 
 ```ruby
 class Post < ApplicationRecord

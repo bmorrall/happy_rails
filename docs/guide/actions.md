@@ -257,9 +257,9 @@ See [Patterns: Values from Actions](../../patterns/values-from-actions/) for exa
 
 If the task fails, raise an error, e.g. with `update!`, rather than returning `false`. Let an error that no caller should handle pass through as it is.
 
-When a caller is meant to handle an error, write a custom `Error` class inside the action, and inherit it from `ApplicationAction::Error`. In `call`, rescue the errors the caller should handle and raise them again as the action's `Error`. The caller then rescues one error class, e.g. `Posts::ArchivePost::Error`, and doesn't need to know which errors the action's code can raise. Ruby keeps the original error as the new error's `cause`, so it still shows up in the error report.
+When a caller is meant to handle an error, write a custom `Error` class inside the action, and inherit it from `ApplicationAction::Error`. In `call`, rescue the errors the caller should handle and raise them again as the action's `Error`. The caller then rescues one error class, e.g. `Posts::ArchivePost::Error`, and doesn't need to know which errors the action's code can raise. Ruby keeps the original error as the new error's `cause`, so a report of the new error shows the original too. See [Honeybadger: Reporting errors](../gems/honeybadger/#reporting-errors) for reporting an error the caller rescues.
 
-Define `ApplicationAction::Error` once, in `ApplicationAction`, and inherit it from `StandardError`. Every action's errors then share one base class. Behaviour that every action's errors need, e.g. what they add to an error report, goes there once.
+Define `ApplicationAction::Error` once, in `ApplicationAction`, and inherit it from `StandardError`. Every action's errors then share one base class. Behaviour that every action's errors need goes there once, e.g. a concern that adds the cause's details to an error report, as in [Honeybadger: Errors](../gems/honeybadger/#errors).
 
 Never rescue `ApplicationAction::Error` anywhere, e.g. in a controller, a form, a job or another action. Rescue the error of the action you call, e.g. `Posts::ArchivePost::Error`. The base class catches the errors of every action, including actions the caller doesn't know it runs. The caller would then hide failures it can't handle, and treat them as its own.
 

@@ -129,14 +129,24 @@ end
 
 Keep the hash flat, and start the keys with `request_` and `response_`, so they don't clash with the records in the report's context. Never add the request or response headers. They hold API keys and tokens. Cut the body short, e.g. to 1,000 characters, so a large error page doesn't fill the report. Leave out the query string when the service takes a key in the URL.
 
-Honeybadger only reads `to_honeybadger_context` from the error it reports, not from the error's `cause`. An action raises its own error with the client's error as the `cause`, e.g. `Posts::SendNewsletter::ServiceError`, so the details would be lost. Pass them on from `ApplicationAction::Error`, which every action's errors inherit from. See [Actions: Error handling](../../actions/#error-handling).
+Honeybadger only reads `to_honeybadger_context` from the error it reports, not from the error's `cause`. An action raises its own error with the client's error as the `cause`, e.g. `Posts::SendNewsletter::ServiceError`, so the details would be lost. Pass them on with a `HoneybadgerCauseContext` concern in `app/models/concerns/honeybadger_cause_context.rb`.
+
+```ruby
+module HoneybadgerCauseContext
+  extend ActiveSupport::Concern
+
+  def to_honeybadger_context
+    cause.respond_to?(:to_honeybadger_context) ? cause.to_honeybadger_context : {}
+  end
+end
+```
+
+Include it in `ApplicationAction::Error`, which every action's errors inherit from. See [Actions: Error handling](../../actions/#error-handling). Include it in any other error class that you raise in place of an error with context.
 
 ```ruby
 class ApplicationAction
   class Error < StandardError
-    def to_honeybadger_context
-      cause.respond_to?(:to_honeybadger_context) ? cause.to_honeybadger_context : {}
-    end
+    include HoneybadgerCauseContext
   end
 
   # ...
