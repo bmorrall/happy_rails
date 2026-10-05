@@ -39,6 +39,8 @@ end
 
 `Posts::PublishPost` publishes the post and does nothing else. Notifying subscribers is a separate step, so it runs in its own job.
 
+When several forms and jobs run the same steps, see [Patterns: Multi-Step Processes](../../patterns/multi-step-processes/) for ways to share them.
+
 An action can enqueue a job. The job's work doesn't run in the action, so it doesn't add a step that the action has to retry or roll back. If the action enqueues inside a transaction, make sure the job waits for the transaction to commit. See [Jobs: Enqueueing after a transaction](../jobs/#enqueueing-after-a-transaction).
 
 When enqueuing a job takes more than a plain `perform_later`, e.g. working out when the job should run and what it should run with, put it in an action, and start the action's name with `Enqueue`, e.g. `Posts::EnqueuePublish`. Every caller then enqueues the job the same way. The name tells the caller that the work happens later, not by the time the action returns. For a plain `perform_later`, enqueue the job in the caller.
