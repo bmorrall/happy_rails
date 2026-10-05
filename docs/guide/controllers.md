@@ -585,6 +585,56 @@ class NotifySubscribersJob < ApplicationJob
 end
 ```
 
+### Other services failing
+
+When a controller calls an [action](../actions/) that calls another service, the service can fail, e.g. it returns a 500 or times out. That isn't part of the app's normal flow. The user didn't cause it, and can't fix it by changing what they submitted. Give the action an error class for this cause, e.g. `Posts::SendNewsletter::ServiceError`, as in [Actions: Error handling](../actions/#error-handling). Rescue it with `rescue_from`, and name the handler after the action and the error, without the `Error` suffix, e.g. `handle_send_newsletter_service`. Errors the user or a developer caused, e.g. invalid data, still belong in a form, as above.
+
+In the handler, redirect with an alert. Write the alert as fixed text, and never show the error's message. It may hold the other service's reply, or details about your systems.
+
+```ruby
+module Posts
+  class NewslettersController < BaseController
+    rescue_from Posts::SendNewsletter::ServiceError, with: :handle_send_newsletter_service
+
+    # POST /posts/:post_id/newsletter
+    def create
+      # ...
+
+      Posts::SendNewsletter.call(@post)
+      redirect_to post_path(@post), notice: "Newsletter was sent."
+    end
+
+    private
+
+    def handle_send_newsletter_service
+      redirect_to post_path(@post), alert: "Newsletter could not be sent. Please try again later."
+    end
+  end
+end
+```
+
+An API controller renders the error instead, with a 5xx status, so the client knows its request wasn't the problem. Use `:bad_gateway` (502) when the other service failed, e.g. it returned a 500. Use `:gateway_timeout` (504) when the service took too long to reply. Use `:service_unavailable` (503) when the service can't be reached for now, e.g. it is down for maintenance. A 503 tells the client to try again later.
+
+```ruby
+def handle_send_newsletter_service
+  render json: { error: "Newsletter could not be sent. Please try again later." }, status: :bad_gateway
+end
+```
+
+In the request spec, stub the service to fail, and check the redirect and the alert. Match the whole flash, so the spec fails if the alert ever includes the service's reply.
+
+```ruby
+it "redirects with an alert when the newsletter service fails" do
+  published_post = create(:post)
+  stub_request(:post, "https://newsletter.example.com/posts").to_return(status: 500)
+
+  post post_newsletter_path(published_post)
+
+  expect(response).to redirect_to(post_path(published_post))
+  expect(flash.to_hash).to match("alert" => "Newsletter could not be sent. Please try again later.")
+end
+```
+
 ## Authorization
 
 Use [Pundit](../gems/pundit/) to authorise requests. It is the default choice for any app with user accounts. The rules below apply whichever gem you use. See [Pundit: Controllers](../gems/pundit/#controllers) for how to write each check with Pundit.

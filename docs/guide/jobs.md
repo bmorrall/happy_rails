@@ -86,6 +86,22 @@ A job may run more than once, e.g. when it retries. Write the action so a second
 
 An action that writes more than once has its own transaction. Open a transaction in `perform` only to combine several actions into one unit. Call any `Record` action before or after that transaction, never inside it. See [Actions: Transactions](../actions/#transactions).
 
+### Jobs that run at a set time
+
+A job enqueued with `wait_until` runs at that time, even if the record has changed since. When a user can change or cancel the time, e.g. reschedule a post, check that the work is still due at the start of `perform`. If it isn't, return and do nothing. The job enqueued for the new time does the work.
+
+```ruby
+class PublishScheduledPostJob < ApplicationJob
+  def perform(post)
+    return unless post.publish_at&.past?
+
+    Posts::PublishPost.call(post, publisher: post.scheduled_by)
+  rescue Posts::PublishPost::Error
+    post.update!(publish_status: :failed)
+  end
+end
+```
+
 ## Scheduling
 
 > **TODO:** Describe how you handle this.

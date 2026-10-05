@@ -20,6 +20,47 @@ Write an action for a unit of work that could be run from more than one place, e
 
 When only one place will ever do the work, keep it there, e.g. in the form's `submit` or the job's `perform`. Move it into an action when a second caller needs it.
 
+## Calling other actions
+
+An action can call another action, but keep it rare. An action does the one task its caller needs. When it calls other actions, it starts to run a process, and the failures and retries of every step become its problem.
+
+Call another action only when that action is part of the same task, and no caller would want one without the other. Its writes join the first action's transaction, as in [Transactions](#transactions).
+
+When the work needs more than one step, run the steps from a job. A step can be an action, or code that only the job runs. When a later step can wait, enqueue a job for it, so it runs and retries on its own.
+
+```ruby
+class PublishScheduledPostJob < ApplicationJob
+  def perform(post)
+    Posts::PublishPost.call(post, publisher: post.scheduled_by)
+    NotifySubscribersJob.perform_later(post)
+  end
+end
+```
+
+`Posts::PublishPost` publishes the post and does nothing else. Notifying subscribers is a separate step, so it runs in its own job.
+
+An action can enqueue a job. The job's work doesn't run in the action, so it doesn't add a step that the action has to retry or roll back. If the action enqueues inside a transaction, make sure the job waits for the transaction to commit. See [Jobs: Enqueueing after a transaction](../jobs/#enqueueing-after-a-transaction).
+
+When enqueuing a job takes more than a plain `perform_later`, e.g. working out when the job should run and what it should run with, put it in an action, and start the action's name with `Enqueue`, e.g. `Posts::EnqueuePublish`. Every caller then enqueues the job the same way. The name tells the caller that the work happens later, not by the time the action returns. For a plain `perform_later`, enqueue the job in the caller.
+
+```ruby
+module Posts
+  class EnqueuePublish < ApplicationAction
+    def initialize(post)
+      @post = post
+    end
+
+    def call
+      PublishScheduledPostJob.set(wait_until: post.publish_at).perform_later(post)
+    end
+
+    private
+
+    attr_reader :post
+  end
+end
+```
+
 ## Naming
 
 Put each action in a module named after the resource it works on, in the plural, like its controller, e.g. `Posts`. Name the action after the task, starting with a verb. The name can include the resource as well, e.g. `Posts::ArchivePost`. The module groups every action for a resource in one directory, and the name says what the action does.
@@ -68,6 +109,82 @@ module Posts
 end
 ```
 
+## Arguments
+
+Pass an action the records it works on, never their IDs, e.g. `Posts::ArchivePost.call(post)`, not `Posts::ArchivePost.call(post.id)`. The caller finds the records, e.g. a controller loads the post, or a job gets it as an argument. The action never looks a record up, so it doesn't have to decide which records the caller is allowed to reach.
+
+Make the resource the action works on the first positional argument. Pass every other argument as a keyword, e.g. `Posts::PublishPost.call(post, publisher: current_user)`. The call then reads as the task and the record it works on, and each other value is named where it is passed. You can also add a keyword later without changing the order of the arguments in every caller.
+
+```ruby
+module Posts
+  class PublishPost < ApplicationAction
+    def initialize(post, publisher:)
+      @post = post
+      @publisher = publisher
+    end
+
+    # ...
+
+    private
+
+    attr_reader :post, :publisher
+  end
+end
+```
+
+A job finds the records from its own arguments, e.g. the user who scheduled the post.
+
+```ruby
+class PublishScheduledPostJob < ApplicationJob
+  def perform(post)
+    Posts::PublishPost.call(post, publisher: post.scheduled_by)
+  end
+end
+```
+
+When an action needs a user, name the keyword after the role the user plays, e.g. `publisher:`. See [Principles: The signed-in user](../principles/#the-signed-in-user).
+
+## Authorisation and validation
+
+An action runs outside a request, so it doesn't authorise the user or validate what they submitted. The caller does that before it calls the action. A controller authorises the request, and a form validates the user's input. When a job calls the action, the request that enqueued the job has already done both. The action trusts its caller, and does its task.
+
+### Checking arguments
+
+You may add a last check that an action was given proper arguments, as a safety check for developers. Put it in a `ValidatedCallable` concern in `app/actions/concerns/validated_callable.rb`. It adds `ActiveModel::Validations` to the action, and runs `validate!` before `call`.
+
+```ruby
+module ValidatedCallable
+  extend ActiveSupport::Concern
+
+  include ActiveModel::Validations
+
+  class_methods do
+    def call(...)
+      action = new(...)
+      action.validate!
+      action.call
+      nil
+    end
+  end
+end
+```
+
+Include it in the actions that need it, and validate the arguments as you would a model's attributes.
+
+```ruby
+module Posts
+  class PublishPost < ApplicationAction
+    include ValidatedCallable
+
+    validates :post, :publisher, presence: true
+
+    # ...
+  end
+end
+```
+
+A failed check means a developer called the action wrongly. It is a bug, not an outcome the user can expect, so never use it to control what the app does next. Never rescue `ActiveModel::ValidationError` from an action, and never raise it again as the action's `Error`. Let it fail loudly, so the bug shows up in your specs and error reports. When a user can cause the failure, check it in the form instead, where the user can see the error.
+
 ## Return values
 
 An action does its task and returns nothing. The caller doesn't check a result, so don't return one from `call`, and don't use the value it returns. `ApplicationAction.call` returns `nil`, so a caller can't come to depend on whatever the last line of `call` returns.
@@ -112,7 +229,7 @@ module Posts
 end
 ```
 
-Rescue the action's `Error` where the work is done, in a form or a job, as in [Controllers and Routes: Rescuing errors](../controllers/#rescuing-errors).
+When the user or a developer caused the failure, e.g. invalid data, rescue the action's `Error` where the work is done, in a form or a job, as in [Controllers and Routes: Rescuing errors](../controllers/#rescuing-errors).
 
 ```ruby
 def submit
@@ -125,6 +242,33 @@ rescue Posts::ArchivePost::Error
   false
 end
 ```
+
+An action can fail for more than one cause, and its callers may handle each cause differently. Give each cause its own error class, and inherit it from the action's `Error`. A caller rescues the class for the cause it handles, or `Error` to handle them all.
+
+```ruby
+module Posts
+  class SendNewsletter < ApplicationAction
+    class Error < StandardError; end
+    class RejectedError < Error; end
+    class ServiceError < Error; end
+
+    # ...
+
+    def call
+      response = NewsletterClient.new.create_newsletter(post)
+      post.update!(newsletter_id: response.id)
+    rescue NewsletterClient::UnprocessableError => e
+      raise RejectedError, e.message
+    rescue NewsletterClient::Error => e
+      raise ServiceError, e.message
+    end
+  end
+end
+```
+
+The newsletter service rejects a post it can't send, e.g. one with no title. The user can fix that, so a form rescues `RejectedError` and shows it. When the service itself fails, e.g. it returns a 500 or times out, the user can't fix it. A controller that calls the action rescues `ServiceError` with `rescue_from`, as in [Controllers and Routes: Other services failing](../controllers/#other-services-failing).
+
+Raise `ServiceError` for the client's base error class, e.g. `NewsletterClient::Error`, not a list of its errors. Then every failure of the service, e.g. a server error, a timeout or a refused connection, reaches the controller's handler. Rescue the causes the user can fix first, because Ruby uses the first `rescue` that matches. An error the action doesn't wrap is a bug, so it fails as normal.
 
 ## Transactions
 
@@ -274,7 +418,7 @@ The unit spec checks the action alone. The request and job specs for its callers
 
 ### Specs for callers
 
-Never stub or mock an action in a request spec or a job spec, e.g. with `allow(Posts::ArchivePost).to receive(:call)` or `expect(Posts::ArchivePost).to receive(:call).with(post)`. To these specs, the action is invisible. Let it run, and check what the controller or job does: the records it changes, the response, the flash and the jobs it enqueues.
+Never stub or mock an action in a request spec or a job spec, e.g. with `allow(Posts::ArchivePost).to receive(:call)` or `expect(Posts::ArchivePost).to receive(:call).with(post)`. To these specs, the action is invisible. The same goes for the form that calls it. Let them run, and check what the controller or job does: the records it changes, the response, the flash and the jobs it enqueues.
 
 An action is a detail of how the controller or job does its work. If the spec checks the result, you can move code into an action, or out of it, without changing the spec. A spec that stubs the action only checks that the action was called. It still passes when the action is broken, or when the action is called with the wrong arguments.
 
@@ -285,8 +429,13 @@ module Posts
     def create
       # ...
 
-      Posts::ArchivePost.call(@post)
-      redirect_to posts_path, notice: "Post was archived."
+      @archive_post_form = ArchivePostForm.new(@post, current_user)
+
+      if @archive_post_form.submit
+        redirect_to posts_path, notice: "Post was archived."
+      else
+        redirect_to post_path(@post), alert: "Post could not be archived."
+      end
     end
   end
 end
