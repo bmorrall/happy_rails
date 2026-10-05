@@ -19,6 +19,7 @@ applyTo: "app/models/**/*.rb,spec/models/**/*.rb"
 - Test a callback by what it does, through the call that triggers it, in the `describe` block of the attribute it changes. Say the trigger in the description, e.g. `it "is set when a published post is saved"` in `describe "#published_at"`. Never call the callback method directly or test that the callback is registered. When the callback has a condition, test both sides of it.
 - Test a save callback by building the record with a factory and calling `save!`, e.g. `build(:post, status: :published, published_at: nil)` then `post.save!`. Test a validation callback by calling `validate` on a record built with `described_class.new`, e.g. `it "is stripped when validated"` with `described_class.new(title: "  A title  ")` then `post.validate`.
 - When a callback reaches outside the record, put its examples in the `describe` block of the method that triggers it and check the effect, e.g. `expect { post.save! }.to have_enqueued_job(NotifySubscribersJob).with(post)` in `describe "#save"` for an `after_create_commit` callback, or `describe "#destroy"` for an `after_destroy_commit` callback. Never name the block after the callback method.
+- When an attribute has `presence: true`, add `allow_blank: true` to its other validators, so a blank value only gets "can't be blank", e.g. `validates :title, presence: true, length: { maximum: TITLE_MAX_LENGTH, allow_blank: true }`.
 - TODO: How to write validations and associations.
 - TODO: Where scopes and query logic go.
 - TODO: When callbacks are allowed.

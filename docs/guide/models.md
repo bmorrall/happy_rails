@@ -68,7 +68,7 @@ class Post < ApplicationRecord
 
   ### Validations ###
 
-  validates :title, presence: true, length: { maximum: TITLE_MAX_LENGTH }
+  validates :title, presence: true, length: { maximum: TITLE_MAX_LENGTH, allow_blank: true }
   validate :published_at_cannot_be_in_the_future
 
   ### Callbacks ###
@@ -110,7 +110,13 @@ end
 
 ## Validations
 
-> **TODO:** Describe how you handle this.
+When an attribute has `presence: true`, add `allow_blank: true` to its other validators. A blank value then gets one error, "can't be blank", not a stack of errors that all say it's missing. See [Validators: Blank values](../validators/#blank-values).
+
+```ruby
+validates :title, presence: true, length: { maximum: TITLE_MAX_LENGTH, allow_blank: true }
+```
+
+> **TODO:** Describe how you handle the rest of this.
 
 ## Associations
 

@@ -219,14 +219,14 @@ module Posts
   class PublishPost < ApplicationAction
     include ValidatedCallable
 
-    validates :post, :publisher, presence: true, unmodified: true
+    validates :post, :publisher, presence: true, unmodified: { allow_blank: true }
 
     # ...
   end
 end
 ```
 
-`unmodified: true` checks that a record argument has no unsaved changes, as in [Arguments](#arguments). It uses an `UnmodifiedValidator` in `app/validators/`. See [Validators: UnmodifiedValidator](../validators/#unmodifiedvalidator).
+`unmodified:` checks that a record argument has no unsaved changes, as in [Arguments](#arguments). It uses an `UnmodifiedValidator` in `app/validators/`. See [Validators: UnmodifiedValidator](../validators/#unmodifiedvalidator).
 
 The check catches a caller that breaks the rule, e.g. a form that sets `post.title` before it calls the action. It fails in the caller's specs, before `with_lock` or `update!` can hit the changes.
 

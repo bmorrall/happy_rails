@@ -107,6 +107,8 @@ class CreatePostForm < ApplicationForm
 end
 ```
 
+Write a form's validations as you would a model's, e.g. add `allow_blank: true` next to `presence: true`. See [Models: Validations](../models/#validations).
+
 ### Association ids
 
 For an association id, e.g. `featured_comment_id`, return a scope of the records the user may pick. Validate the id with an inclusion validator that uses the same method. In the validator, limit the collection to the submitted id with `where`, then `pluck` the ids. The validation then loads one id, not every record in the collection.
