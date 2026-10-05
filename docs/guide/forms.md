@@ -386,7 +386,7 @@ end
 
 A form handles what the user submits: it checks the input, then does the work. When the work could be run from somewhere else too, e.g. a job or the console, put it in an [action](../actions/) and call the action from `submit`. The form deals with the user and their input, and the action does the task. See [Actions: When to write an action](../actions/#when-to-write-an-action).
 
-Call the action after `valid?`, and pass it the records and values it needs. Never pass it the form or the params. The action then doesn't depend on how the user submitted the data. Pass the current user as an argument named after the role the user plays, e.g. `publisher: current_user`. See [Principles: The signed-in user](../principles/#the-signed-in-user).
+Call the action after `valid?`, and pass it the records and values it needs. Never pass it the form or the params. The action then doesn't depend on how the user submitted the data. Never pass it a record with unsaved changes, e.g. after `post.title = title`. Pass the new values as keywords instead, e.g. `title:`. See [Actions: Arguments](../actions/#arguments). Pass the current user as an argument named after the role the user plays, e.g. `publisher: current_user`. See [Principles: The signed-in user](../principles/#the-signed-in-user).
 
 The action returns nothing, so `submit` returns the resource itself, as for any resource form. Rescue the action's `Error` in `submit`, add an error to `:base`, and return `false`, so the form shows the failure. Never rescue `ApplicationAction::Error`, which catches every action's errors. Rescue the error class of the action you call.
 

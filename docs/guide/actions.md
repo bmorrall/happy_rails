@@ -176,6 +176,17 @@ end
 
 When an action needs a user, name the keyword after the role the user plays, e.g. `publisher:`. See [Principles: The signed-in user](../principles/#the-signed-in-user).
 
+Never pass a record with unsaved changes to an action. The action can't tell which values are saved. When it saves the record, e.g. with `update!`, it saves the caller's changes too, without anyone asking it to. When it locks the record, `with_lock` raises an error instead, as in [Locks](#locks). Save the changes first, or pass the new values to the action as keywords, e.g. `Posts::PublishPost.call(post, publisher:, title:)`, and let the action set them.
+
+```ruby
+# Don't
+post.title = title
+Posts::PublishPost.call(post, publisher: current_user)
+
+# Do
+Posts::PublishPost.call(post, publisher: current_user, title:)
+```
+
 ## Authorisation and validation
 
 An action runs outside a request, so it doesn't authorise the user or validate what they submitted. The caller does that before it calls the action. A controller authorises the request, and a form validates the user's input. When a job calls the action, the request that enqueued the job has already done both. The action trusts its caller, and does its task.
@@ -345,6 +356,8 @@ end
 ### Locks
 
 When an action relies on a lock, take the lock inside the action with `with_lock`. It opens a transaction, or joins the caller's, and reloads the record. Keep the lock next to the code it protects, not in the caller.
+
+`with_lock` raises an error if the record has unsaved changes, because reloading would throw them away. This is one reason to [never pass a record with unsaved changes](#arguments) to an action. When the action needs new values, set them inside the lock, so the check and the whole update happen together.
 
 You may check the condition before you take the lock, to skip the lock when the work is plainly not needed. Always check it again inside the lock, because another process may have changed the record while you waited for it.
 
