@@ -61,6 +61,36 @@ module Posts
 end
 ```
 
+### Errors from other actions
+
+The actions an action calls are part of how it does its task, so its callers never see their errors. Rescue the other action's error and raise your own, as for any other error. The caller of `Posts::ArchivePost` then rescues `Posts::ArchivePost::Error` alone, and you can move `Posts::UnpublishPost` in or out without changing any caller.
+
+```ruby
+module Posts
+  class ArchivePost < ApplicationAction
+    class Error < ApplicationAction::Error; end
+
+    # ...
+
+    def call
+      ActiveRecord::Base.transaction do
+        Posts::UnpublishPost.call(post) if post.published?
+        post.update!(archived_at: Time.current)
+        post.comments.update_all(locked: true)
+      end
+    rescue ActiveRecord::RecordInvalid, Posts::UnpublishPost::Error => e
+      raise Error, e.message
+    end
+  end
+end
+```
+
+Rescue the other action's error outside the transaction block. Its writes join your transaction. If you rescue its error inside the block and carry on, nothing rolls back, and its half-done writes commit with yours. See [Rolling back](#rolling-back).
+
+Raise the error for the same cause. When the other action raises a `ServiceError`, raise your own `ServiceError`, not your plain `Error`, e.g. `rescue Posts::SendNewsletter::ServiceError` then `raise ServiceError, e.message`. Put that `rescue` before the one for the other action's `Error`. A controller that rescues your `ServiceError` then still sees the service failing, as in [Controllers and Routes: Other services failing](../controllers/#other-services-failing). See [Error handling](#error-handling) for error classes for each cause.
+
+If your action should carry on when the other action fails, the other action isn't part of your task. Run it as a separate step from a job instead.
+
 ## Naming
 
 Put each action in a module named after the resource it works on, in the plural, like its controller, e.g. `Posts`. Name the action after the task, starting with a verb. The name can include the resource as well, e.g. `Posts::ArchivePost`. The module groups every action for a resource in one directory, and the name says what the action does.
