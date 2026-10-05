@@ -33,6 +33,23 @@ validates :title, presence: true, length: { minimum: 3, allow_blank: true }
 validates :post, presence: true, unmodified: { allow_blank: true }
 ```
 
+### Values of the wrong kind
+
+A validator usually checks a value by calling a method on it, e.g. `has_changes_to_save?`. Check that the value responds to that method first. When it doesn't, add `:invalid`. A value of the wrong kind then fails like any other bad value, instead of passing quietly or raising `NoMethodError`.
+
+```ruby
+class ExampleValidator < ActiveModel::EachValidator
+  def validate_each(record, attribute, value)
+    return record.errors.add(attribute, :invalid, **options) unless value.respond_to?(:example?)
+    return if value.example?
+
+    record.errors.add(attribute, :example, **options)
+  end
+end
+```
+
+Name the arguments to `validate_each` as Rails does: `record`, `attribute` and `value`. The validator then reads the same wherever it is used, e.g. in a model, a form or an action.
+
 ## I18n
 
 Add each error with a symbol, e.g. `:modified`, not a sentence. Rails uses the symbol to look up the message in the locale files, so you can change the wording, or translate it, without changing the validator.
@@ -49,13 +66,24 @@ For `errors.add(:post, :modified)` with no `message:`, Rails tries these keys in
 
 The first part of the first three keys is the class's I18n scope. It is `activemodel` for actions and forms, and `activerecord` for models. Each step is more general than the one before, so you set the default once in `errors.messages`, and override it only where one class or attribute needs different words.
 
-If none of the keys exist, the message is a "Translation missing" note that lists every key Rails tried. It's useful when you set up a message, but a user should never see it.
+If none of the keys exist, the message is a "Translation missing" note that lists every key Rails tried. A user should never see it.
+
+### Missing messages
+
+Make a missing message fail in development and in specs. Rails generates `config.i18n.raise_on_missing_translations` commented out in both environment files. Uncomment it in each.
+
+```ruby
+# config/environments/development.rb and config/environments/test.rb
+config.i18n.raise_on_missing_translations = true
+```
+
+A validator that adds an error with no message in the locale files then raises `I18n::MissingTranslationData`, which lists every key Rails tried. A spec for the validator fails until you add the message, so the note never reaches a user.
 
 ### Default messages
 
-When you pass `message:` as a string, Rails checks only the first key, for this attribute of this class. If that's missing, it uses your string, and skips the rest. That's why [`UnmodifiedValidator`](#unmodifiedvalidator) works with no locale files, but also why `errors.messages.modified` in a locale file would do nothing.
+Never pass a default message as a string. When `message:` is a string, Rails checks only the first key, for this attribute of this class. If that's missing, it uses the string and skips the rest, so the locale file can't change the message.
 
-When the app uses I18n, move the default into the locale file, and pass `message:` only when the caller gives one.
+Put the default message in `config/locales/en.yml`, which every Rails app has, under `en.errors.messages`. Pass the validator's `options` to every `errors.add` with `**options`, as Rails' own validators do. A caller's `message:` then still wins, and other options, e.g. `strict: true`, still work. `errors.add` ignores the options that only decide when the validation runs, e.g. `allow_blank:` and `if:`.
 
 ```yaml
 # config/locales/en.yml
@@ -66,19 +94,7 @@ en:
 ```
 
 ```ruby
-class ExampleValidator < ActiveModel::EachValidator
-  def validate_each(record, attribute, value)
-    return if example?(value)
-
-    record.errors.add(attribute, :example, **options.slice(:message))
-  end
-
-  private
-
-  def example?(value)
-    # ...
-  end
-end
+record.errors.add(attribute, :example, **options)
 ```
 
 Then every key in [How Rails finds the message](#how-rails-finds-the-message) works, and a caller can still pass its own message, e.g. `example: { message: "isn't one of ours" }`.
@@ -93,17 +109,26 @@ Validators that most apps need. Add the ones you use to `app/validators/`.
 
 ```ruby
 class UnmodifiedValidator < ActiveModel::EachValidator
-  def validate_each(action, attribute, record)
-    return unless record.respond_to?(:has_changes_to_save?) && record.has_changes_to_save?
+  def validate_each(record, attribute, value)
+    return record.errors.add(attribute, :invalid, **options) unless value.respond_to?(:has_changes_to_save?)
+    return unless value.has_changes_to_save?
 
-    action.errors.add(attribute, :modified, message: options[:message] || "has unsaved changes")
+    record.errors.add(attribute, :modified, **options)
   end
 end
 ```
 
-Add the error with a symbol, `:modified`, so code and specs can check which error it is, e.g. `errors.of_kind?(:post, :modified)`. Give it a default message, "has unsaved changes". A caller can pass its own, e.g. `unmodified: { message: "is being edited" }`.
+Add the error with a symbol, `:modified`, so code and specs can check which error it is, e.g. `errors.of_kind?(:post, :modified)`. Put its default message in the locale file, as in [Default messages](#default-messages). A caller can pass its own, e.g. `unmodified: { message: "is being edited" }`.
 
-Unmodified means no unsaved changes at all, whether the record is saved or not. A new record built with values, e.g. `Post.new(title:)`, has changes to save, so it fails the check. It only checks values that can have unsaved changes, so it adds no error for `nil`. Still add `allow_blank: true` next to `presence: true`, as for every validator. See [Blank values](#blank-values).
+```yaml
+# config/locales/en.yml
+en:
+  errors:
+    messages:
+      modified: "has unsaved changes"
+```
+
+Unmodified means no unsaved changes at all, whether the record is saved or not. A new record built with values, e.g. `Post.new(title:)`, has changes to save, so it fails the check. A value that isn't a record, e.g. an ID, fails as `:invalid`, as in [Values of the wrong kind](#values-of-the-wrong-kind). So does `nil`, so add `allow_blank: true` next to `presence: true`. A missing argument then only gets "can't be blank". See [Blank values](#blank-values).
 
 ```ruby
 module Posts
