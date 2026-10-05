@@ -80,7 +80,55 @@ Use it like any other validator, e.g. on the ID a caller generates with `SecureR
 validates :newsletter_id, uuid: { allow_blank: true }
 ```
 
-Use a format validator only when matching the pattern is the whole rule. If a value also needs another check, e.g. a check digit, write an `ActiveModel::EachValidator` instead.
+Use a format validator only when matching the pattern is the whole rule. If a value also needs another check, e.g. a check digit, write an `ActiveModel::EachValidator` instead, as in [Example: IsbnValidator](#example-isbnvalidator).
+
+### Example: IsbnValidator
+
+An ISBN must match a pattern, and its last digit must be the right check digit. `IsbnValidator` checks both, and follows every rule above:
+
+- A value that isn't a string fails as `:invalid`, as in [Values of the wrong kind](#values-of-the-wrong-kind).
+- It doesn't skip blank values. The caller passes `allow_blank: true`, as in [Blank values](#blank-values).
+- An ISBN with the wrong format or check digit fails with its own symbol, `:invalid_isbn`, with its message in the locale file.
+- Every `errors.add` passes `**options`, so `message:` and `strict:` still work.
+
+```ruby
+class IsbnValidator < ActiveModel::EachValidator
+  ISBN_FORMAT = /\A(?:\d{9}[\dX]|97[89]\d{10})\z/
+
+  def validate_each(record, attribute, value)
+    return record.errors.add(attribute, :invalid, **options) unless value.respond_to?(:to_str)
+    return if ISBN_FORMAT.match?(value) && valid_check_digit?(value)
+
+    record.errors.add(attribute, :invalid_isbn, **options)
+  end
+
+  private
+
+  def valid_check_digit?(isbn)
+    digits = isbn.chars.map { |char| char == "X" ? 10 : char.to_i }
+
+    if digits.size == 10
+      digits.each_with_index.sum { |digit, index| digit * (10 - index) } % 11 == 0
+    else
+      digits.each_with_index.sum { |digit, index| digit * (index.even? ? 1 : 3) } % 10 == 0
+    end
+  end
+end
+```
+
+```yaml
+# config/locales/en.yml
+en:
+  errors:
+    messages:
+      invalid_isbn: "is not a valid ISBN"
+```
+
+```ruby
+validates :isbn, presence: true, isbn: { allow_blank: true }
+```
+
+The validator checks the value as it is, so an ISBN with hyphens fails. Tidy the value in the model first, e.g. `normalizes :isbn, with: ->(isbn) { isbn.delete("-") }`.
 
 ## I18n
 
