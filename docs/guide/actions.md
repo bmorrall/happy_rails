@@ -232,6 +232,8 @@ The check catches a caller that breaks the rule, e.g. a form that sets `post.tit
 
 A failed check means a developer called the action wrongly. It is a bug, not an outcome the user can expect, so never use it to control what the app does next. Never rescue `ActiveModel::ValidationError` from an action, and never raise it again as the action's `Error`. Let it fail loudly, so the bug shows up in your specs and error reports. When a user can cause the failure, check it in the form instead, where the user can see the error.
 
+Don't test the argument checks in request or job specs, e.g. that `Posts::PublishPost` raises `ActiveModel::ValidationError` for a post with unsaved changes. Every spec that calls the action already runs them, and fails if the controller or job passes the wrong arguments. Test each validator once, in its own spec.
+
 ## Return values
 
 An action does its task and returns nothing. The caller doesn't check a result, so don't return one from `call`, and don't use the value it returns. `ApplicationAction.call` returns `nil`, so a caller can't come to depend on whatever the last line of `call` returns.
