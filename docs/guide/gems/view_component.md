@@ -11,12 +11,30 @@ Reusable view code with [ViewComponent](https://viewcomponent.org).
 
 ## Setup
 
-Include the route helpers in component specs, in `spec/support/view_component.rb`. Component specs can then build paths, e.g. `post_publication_path(post)`, and use shared matchers that build them, e.g. `have_publish_button_for_post(post)`. See [RSpec: Support files](../rspec/#support-files).
+rspec-rails doesn't know `spec/components/`, so give component specs a `:component` type in `spec/support/view_component.rb`, as for form specs. Each component spec then gets the type from its folder, with no tag. See [RSpec: Form specs](../rspec/#form-specs).
+
+Include ViewComponent's test helpers in component specs in the same file, for `render_inline`. Include the route helpers too. Component specs can then build paths, e.g. `post_publication_path(post)`, and use shared matchers that build them, e.g. `have_publish_button_for_post(post)`. See [RSpec: Support files](../rspec/#support-files).
 
 ```ruby
 # spec/support/view_component.rb
 RSpec.configure do |config|
+  config.define_derived_metadata(file_path: %r{/spec/components/}) do |metadata|
+    metadata[:type] ||= :component
+  end
+
+  config.include ViewComponent::TestHelpers, type: :component
   config.include Rails.application.routes.url_helpers, type: :component
+end
+```
+
+Component specs check the rendered HTML with Capybara's matchers, e.g. `have_css`. Add `type: :component` to the Capybara include in `spec/support/capybara.rb`, not to this file. See [RSpec: Capybara matchers](../rspec/#capybara-matchers).
+
+```ruby
+# spec/support/capybara.rb
+RSpec.configure do |config|
+  config.include Capybara::RSpecMatchers, type: :request
+  config.include Capybara::RSpecMatchers, type: :feature
+  config.include Capybara::RSpecMatchers, type: :component
 end
 ```
 
@@ -113,7 +131,7 @@ end
 Put the matcher in the module for the component's resource, e.g. `PostSpecHelpers` for a component in `Posts::`, and add component specs to the module's includes. See [RSpec: Where to put matchers](../rspec/#where-to-put-matchers). The component's own spec then checks that it renders with the matcher, so the two can't drift apart. Check the inside of the component in the same spec, alongside the matcher. Use a shared matcher for a part that other specs also check, e.g. `have_publish_button_for_post(post)`, so every spec checks it the same way.
 
 ```ruby
-RSpec.describe Posts::PublishingSectionComponent, type: :component do
+RSpec.describe Posts::PublishingSectionComponent do
   it "renders the publishing section with a form to publish the post", :aggregate_failures do
     post = build_stubbed(:post)
 

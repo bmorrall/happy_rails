@@ -39,7 +39,7 @@ end
 
 ### Capybara matchers
 
-Include `Capybara::RSpecMatchers` in request specs and feature specs, in `spec/support/capybara.rb`. Request specs can then check the HTML in a response with the same matchers as feature specs, e.g. `have_link` or `have_field`. A matcher checks an element and its text, which `include` can't do.
+Include `Capybara::RSpecMatchers` in request specs and feature specs, in `spec/support/capybara.rb`. When a gem's specs check HTML too, add its spec type here, e.g. `type: :component` for [ViewComponent](../view_component/#setup). Request specs can then check the HTML in a response with the same matchers as feature specs, e.g. `have_link` or `have_field`. A matcher checks an element and its text, which `include` can't do.
 
 Prefer a matcher for the element over `have_content` or `include`, in request specs and feature specs, e.g. `have_link`, `have_button`, `have_field`, `have_select`, or `have_css` with `text:`. `have_content` and `include` pass when the text is anywhere on the page, e.g. in the flash or the page title, so they can pass when the element you meant is missing. `include` also matches the raw HTML, so it can match text inside an attribute.
 
@@ -99,7 +99,7 @@ RSpec.configure do |config|
 end
 ```
 
-`||=` keeps a type that a spec sets itself. Include setup for form specs with `type: :form`, e.g. `config.include Shoulda::Matchers::ActiveModel, type: :form`. See [Shoulda Matchers: Validations](../shoulda_matchers/#validations).
+`||=` keeps a type that a spec sets itself. Do the same for any other folder rspec-rails doesn't know, e.g. `spec/components/` for [ViewComponent](../view_component/#setup). Include setup for form specs with `type: :form`, e.g. `config.include Shoulda::Matchers::ActiveModel, type: :form`. See [Shoulda Matchers: Validations](../shoulda_matchers/#validations).
 
 > **TODO:** Describe how you handle the rest of this.
 

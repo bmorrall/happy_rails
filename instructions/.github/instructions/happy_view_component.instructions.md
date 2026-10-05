@@ -4,7 +4,10 @@ applyTo: "app/components/**,spec/components/**/*.rb,spec/support/**/*.rb"
 
 # ViewComponent
 
+- Give specs in `spec/components/` a `:component` type in `spec/support/view_component.rb` with `config.define_derived_metadata(file_path: %r{/spec/components/}) { |metadata| metadata[:type] ||= :component }`. Never tag a component spec with `type: :component` by hand.
+- Include `ViewComponent::TestHelpers` in component specs in `spec/support/view_component.rb`, e.g. `config.include ViewComponent::TestHelpers, type: :component`.
 - Include the route helpers in component specs in `spec/support/view_component.rb`, e.g. `config.include Rails.application.routes.url_helpers, type: :component`.
+- Include `Capybara::RSpecMatchers` in component specs by adding `config.include Capybara::RSpecMatchers, type: :component` to `spec/support/capybara.rb`, never to `spec/support/view_component.rb`.
 - Pass a component the decorated record, not the instance variable, e.g. `render Posts::CardComponent.new(post: post)` with `post` from `decorates_assigned`.
 - Make every component work without a request, e.g. in a preview, a mailer or a Turbo Stream broadcast. Never call a permission check in a component, e.g. `@post.can_update?`, and never call a decorator method that needs the request, e.g. one that reads `h.current_user` or `h.params`.
 - When a permission toggles part of a component, pass it in as a flag named after the check, defaulting to `false`, read it through a predicate method that returns `!!@<flag>`, and set it from the template, e.g. `def initialize(post:, can_update: false)` and `def can_update? = !!@can_update` in `Posts::CardComponent`, with `<% if can_update? %>` in its template, rendered with `Posts::CardComponent.new(post: post, can_update: post.can_update?)`.
