@@ -1,7 +1,7 @@
 ---
 title: Actions
 parent: The Guide
-nav_order: 5
+nav_order: 6
 ---
 
 # Actions
@@ -219,12 +219,16 @@ module Posts
   class PublishPost < ApplicationAction
     include ValidatedCallable
 
-    validates :post, :publisher, presence: true
+    validates :post, :publisher, presence: true, unmodified: true
 
     # ...
   end
 end
 ```
+
+`unmodified: true` checks that a record argument has no unsaved changes, as in [Arguments](#arguments). It uses an `UnmodifiedValidator` in `app/validators/`. See [Validators: UnmodifiedValidator](../validators/#unmodifiedvalidator).
+
+The check catches a caller that breaks the rule, e.g. a form that sets `post.title` before it calls the action. It fails in the caller's specs, before `with_lock` or `update!` can hit the changes.
 
 A failed check means a developer called the action wrongly. It is a bug, not an outcome the user can expect, so never use it to control what the app does next. Never rescue `ActiveModel::ValidationError` from an action, and never raise it again as the action's `Error`. Let it fail loudly, so the bug shows up in your specs and error reports. When a user can cause the failure, check it in the form instead, where the user can see the error.
 

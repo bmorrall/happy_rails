@@ -1,7 +1,7 @@
 ---
 title: Tooling and CI
 parent: The Guide
-nav_order: 10
+nav_order: 12
 ---
 
 # Tooling and CI

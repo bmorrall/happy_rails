@@ -1,7 +1,7 @@
 ---
 title: Controllers and Routes
 parent: The Guide
-nav_order: 6
+nav_order: 7
 ---
 
 # Controllers and Routes

@@ -15,6 +15,7 @@ Each convention is written twice: once in the guide for people, and once in the 
 | --- | --- |
 | `docs/guide/principles.md`, `directory-layout.md`, `tooling.md` | `instructions/.github/instructions/happy_rails.instructions.md` |
 | `docs/guide/models.md` | `instructions/.github/instructions/happy_models.instructions.md` |
+| `docs/guide/validators.md` | `instructions/.github/instructions/happy_validators.instructions.md` |
 | `docs/guide/forms.md` | `instructions/.github/instructions/happy_forms.instructions.md` |
 | `docs/guide/actions.md` | `instructions/.github/instructions/happy_actions.instructions.md` |
 | `docs/guide/controllers.md` | `instructions/.github/instructions/happy_controllers.instructions.md` |
