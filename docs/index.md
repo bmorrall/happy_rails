@@ -24,6 +24,7 @@ Hope this at least helps remove some friction between teams.
 
 ## What's here
 
+- **[The example app](example-app/)**: the small publishing app that every example comes from.
 - **[The guide](guide/)**: how my Rails apps are laid out and the conventions I follow, from models to CI.
 - **[Patterns](patterns/)**: ways to solve problems that come up when you follow the guide, e.g. getting a value back from an action.
 - **[Agent instructions](agent-instructions/)**: instruction files you can copy into your own repo, so GitHub Copilot, Claude Code, Codex and other coding agents follow the same conventions.

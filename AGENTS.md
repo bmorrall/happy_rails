@@ -38,7 +38,7 @@ If you change an `applyTo` glob, also update the "Applies to" table in `docs/age
 ## Writing a guide page
 
 - Write for a Rails developer reading the site. Explain the rule and the reason for it in short paragraphs.
-- Follow each rule with a code example. Use `Post` and `Comment` (`PostsController`, `Posts::CommentsController`) as the example resources, so examples on different pages fit together.
+- Follow each rule with a code example. Use `Post` and `Comment` (`PostsController`, `Posts::CommentsController`) as the example resources, so examples on different pages fit together. They come from the publishing app described in `docs/example-app.md`. Take the records, personas and tasks for new examples from that page. If an example needs something the app doesn't have yet, add it to that page first. Keep the addition small, and keep it in the same publishing domain.
 - Keep each example focused on the rule being discussed. Leave out setup that the rule doesn't need, e.g. persona contexts and `sign_in` in a spec about params. Replace code that isn't the focus with a `# ...` comment, e.g. the save and redirect in an action that shows the authorisation check.
 - When you add a rule, only change examples on other pages if they contradict it. Don't add every convention to every example.
 - When a rule affects the code and its specs, show the code first, then the spec.
