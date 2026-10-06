@@ -1,5 +1,5 @@
 ---
-applyTo: "app/jobs/**/*.rb,spec/jobs/**/*.rb"
+applyTo: "app/jobs/**/*.rb,lib/tasks/**/*.rake,spec/jobs/**/*.rb"
 ---
 
 # Jobs
@@ -15,6 +15,9 @@ applyTo: "app/jobs/**/*.rb,spec/jobs/**/*.rb"
 - Make every action a job calls safe to run again e.g. `Posts::PublishPost` does nothing if the post is already published.
 - When a job runs at a set time with `wait_until` and a user can change or cancel that time, check that the work is still due at the start of `perform`, and return if it isn't, e.g. `return unless post.publish_at&.past?` in `PublishScheduledPostJob`.
 - Open a transaction in `perform` only to combine several actions into one unit. Don't wrap a single action in a transaction. Call a `Record` action before or after the transaction block, never inside it. To record that the transaction failed, call it in a `rescue` or `ensure` on `perform`.
+- When a scheduler outside the app runs a task, e.g. cron calling a rake task, write the task as a job, e.g. `PurgeAbandonedDraftsJob`. Keep the rake task to one line that runs the job, e.g. `task purge_abandoned_drafts: :environment do PurgeAbandonedDraftsJob.perform_later end`. Never put queries, loops or conditions in the rake task.
+- Cover every path through a scheduled job in its job spec, e.g. the drafts `PurgeAbandonedDraftsJob` deletes and the posts it keeps. Never write a spec for the rake task.
+- Call `perform_later` in a rake task by default. Call `perform_now` only when the scheduler must run the work itself, e.g. when no queue worker is running at that time, or the scheduler needs to know whether the task failed.
 - Test a job like a request spec: run it with `perform_now` and check its effects, e.g. the records it changes, the emails it sends, the jobs it enqueues and the requests it makes. Never stub the models, actions, services or other classes the job calls, e.g. `allow(NewsletterClient).to receive(:new)` or `allow(Posts::ArchivePost).to receive(:call)`. To test how the job handles an action's `Error`, set up records that make the action fail for real.
 - In job specs, never test an action's argument checks, e.g. that `Posts::PublishPost` raises `ActiveModel::ValidationError` for a post with unsaved changes from `unmodified:`.
 - In job specs, name the `describe` block after the method the spec calls, e.g. `describe ".perform_now"`, not `describe "#perform"`.
@@ -24,4 +27,3 @@ applyTo: "app/jobs/**/*.rb,spec/jobs/**/*.rb"
 - Run every job in at least one feature spec, so the spec checks that the app enqueues it and the persona gets the result.
 - Include `ActiveJob::TestHelper` in feature specs in `spec/support/active_job.rb`, e.g. `config.include ActiveJob::TestHelper, type: :feature`. Wrap the step that enqueues a job in `perform_enqueued_jobs`, and check for the success message inside the block, so the block waits for the request to finish and runs any jobs those jobs enqueue, e.g. `perform_enqueued_jobs { click_button "Publish"; expect(page).to have_css(".notice", text: "Post was published.") }`.
 - Write a feature spec for every scheduled or maintenance job too. Name the feature after the task and start the scenario name with the persona who sees the result, e.g. `RSpec.feature "Draft Cleanup"` with `scenario "Author no longer sees abandoned drafts"`. Run the job with `perform_now` inside `perform_enqueued_jobs` in a `# WHEN` step, so any jobs it enqueues also run, e.g. `# WHEN the draft cleanup runs` then `perform_enqueued_jobs { PurgeAbandonedDraftsJob.perform_now }`, then check what the persona sees.
-- TODO: How to schedule recurring jobs.

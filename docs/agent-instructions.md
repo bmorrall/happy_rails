@@ -48,7 +48,7 @@ The area files are:
 | `happy_actions.instructions.md` | `app/actions/**`, `spec/actions/**` |
 | `happy_controllers.instructions.md` | `app/controllers/**`, `config/routes.rb`, `spec/requests/**`, `spec/features/**` |
 | `happy_views.instructions.md` | `app/views/**`, `app/helpers/**`, `app/javascript/**` |
-| `happy_jobs.instructions.md` | `app/jobs/**`, `spec/jobs/**` |
+| `happy_jobs.instructions.md` | `app/jobs/**`, `lib/tasks/**`, `spec/jobs/**` |
 | `happy_mailers.instructions.md` | `app/mailers/**`, `app/views/*_mailer/**`, `spec/mailers/**` |
 
 [Code Style](../guide/code-style/) has its own file. It holds my style preferences, not Happy Rails conventions. If your app has its own style, delete it:

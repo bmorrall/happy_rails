@@ -104,7 +104,65 @@ end
 
 ## Scheduling
 
-> **TODO:** Describe how you handle this.
+When a scheduler outside the app runs a task, e.g. cron or Heroku Scheduler calling a rake task, write the task as a job. Keep the rake task as simple as it can be: one line that runs the job. Put no queries, loops or conditions in it.
+
+```ruby
+class PurgeAbandonedDraftsJob < ApplicationJob
+  def perform
+    Post.draft.where(updated_at: ...1.year.ago).find_each(&:destroy!)
+  end
+end
+```
+
+```ruby
+# lib/tasks/posts.rake
+namespace :posts do
+  desc "Delete drafts no one has changed for a year"
+  task purge_abandoned_drafts: :environment do
+    PurgeAbandonedDraftsJob.perform_later
+  end
+end
+```
+
+A rake task is hard to test, but a job is easy to test. With all the work in the job, the [job spec](#job-specs) covers the whole task. Cover every path through the job, e.g. the drafts it deletes and the posts it keeps. Don't write a spec for the rake task. It has nothing left to test. The job can also run from the console, and moves to another scheduler without a rewrite.
+
+```ruby
+RSpec.describe PurgeAbandonedDraftsJob do
+  describe ".perform_now" do
+    it "deletes drafts no one has changed for a year" do
+      post = create(:post, updated_at: 13.months.ago)
+
+      described_class.perform_now
+
+      expect(Post.exists?(post.id)).to be(false)
+    end
+
+    it "keeps drafts changed in the last year" do
+      post = create(:post, updated_at: 11.months.ago)
+
+      described_class.perform_now
+
+      expect(Post.exists?(post.id)).to be(true)
+    end
+
+    it "keeps published posts" do
+      post = create(:post, status: :published, updated_at: 13.months.ago)
+
+      described_class.perform_now
+
+      expect(Post.exists?(post.id)).to be(true)
+    end
+  end
+end
+```
+
+Call `perform_later` in the rake task by default. The task ends as soon as the job is enqueued, and the queue retries the job and reports its errors, like any other job. Call `perform_now` when the scheduler must run the work itself, e.g. when no queue worker is running at that time, or the scheduler needs to know whether the task failed.
+
+```ruby
+task purge_abandoned_drafts: :environment do
+  PurgeAbandonedDraftsJob.perform_now
+end
+```
 
 ## Testing
 
