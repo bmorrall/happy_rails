@@ -474,7 +474,7 @@ The view asks the record it was given:
 
 Write a decorator spec in `spec/decorators` for each decorator. Give each method its own `describe` block, and write an example for each path through it. A method with an `if` needs one example for each side. Build the record inside each example. See [RSpec: Contexts](../rspec/#contexts).
 
-Build the record being decorated with an `instance_double`, and stub only the values the method reads. The spec then runs without the database, and it fails if the decorator reads a method the model doesn't have. Use a factory only when an `instance_double` can't stand in for the record.
+Build the record being decorated with an `instance_double` on its own line, and stub only the values the method reads. Then decorate it on the next line. The spec then runs without the database, and it fails if the decorator reads a method the model doesn't have. Use a factory only when an `instance_double` can't stand in for the record.
 
 ```ruby
 RSpec.describe PostDecorator do
