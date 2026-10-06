@@ -476,6 +476,13 @@ Write a decorator spec in `spec/decorators` for each decorator. Give each method
 
 Build the record being decorated with an `instance_double` on its own line, and stub only the values the method reads. Then decorate it on the next line. The spec then runs without the database, and it fails if the decorator reads a method the model doesn't have. Use a factory only when an `instance_double` can't stand in for the record.
 
+When you need a factory, use `build_stubbed`, e.g. for a method that passes the record to a route helper, like `h.link_to(object.title, object)`. `build_stubbed` gives the record an `id` and makes it look saved, without touching the database, so it is much quicker than `create`. Use `create` only when the method needs the record in the database, e.g. when it runs a query.
+
+```ruby
+post = build_stubbed(:post, title: "Hello")
+decorator = described_class.new(post)
+```
+
 ```ruby
 RSpec.describe PostDecorator do
   describe "#published_on" do
