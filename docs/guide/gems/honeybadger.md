@@ -22,7 +22,8 @@ Report a rescued error with `Honeybadger.notify`, not `Rails.error.report`. Then
 ```ruby
 module Posts
   class NewslettersController < BaseController
-    rescue_from Posts::SendNewsletter::ServiceError, with: :handle_send_newsletter_service
+    rescue_from Posts::SendNewsletter::ServiceError,
+      with: :handle_send_newsletter_service
 
     # ...
 

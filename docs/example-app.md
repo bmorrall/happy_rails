@@ -21,8 +21,11 @@ This page describes the app, so you know what each example is talking about. The
 class Post < ApplicationRecord
   enum :status, { draft: 0, published: 1 }
 
-  belongs_to :author, class_name: "User"
-  has_many :comments, dependent: :destroy
+  belongs_to :author,
+    class_name: "User"
+
+  has_many :comments,
+    dependent: :destroy
 end
 ```
 

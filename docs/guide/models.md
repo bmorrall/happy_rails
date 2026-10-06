@@ -55,7 +55,8 @@ class Post < ApplicationRecord
 
   ### Attributes ###
 
-  attribute :featured, :boolean, default: false
+  attribute :featured, :boolean,
+    default: false
 
   ### Enumerations ###
 
@@ -63,17 +64,24 @@ class Post < ApplicationRecord
 
   ### Associations ###
 
-  belongs_to :author, class_name: "User"
-  has_many :comments, dependent: :destroy
+  belongs_to :author,
+    class_name: "User"
+
+  has_many :comments,
+    dependent: :destroy
 
   ### Validations ###
 
-  validates :title, presence: true, length: { maximum: TITLE_MAX_LENGTH, allow_blank: true }
+  validates :title,
+    presence: true,
+    length: { maximum: TITLE_MAX_LENGTH, allow_blank: true }
+
   validate :published_at_cannot_be_in_the_future
 
   ### Callbacks ###
 
-  before_save :set_published_at, if: :published?
+  before_save :set_published_at,
+    if: :published?
 
   ### Modules (FriendlyId) ###
 
@@ -113,7 +121,9 @@ end
 When an attribute has `presence: true`, add `allow_blank: true` to its other validators. A blank value then gets one error, "can't be blank", not a stack of errors that all say it's missing. See [Validators: Blank values](../validators/#blank-values).
 
 ```ruby
-validates :title, presence: true, length: { maximum: TITLE_MAX_LENGTH, allow_blank: true }
+validates :title,
+  presence: true,
+  length: { maximum: TITLE_MAX_LENGTH, allow_blank: true }
 ```
 
 ### Normalising values
@@ -124,8 +134,11 @@ Tidy a value with `normalizes`, e.g. to strip spaces or remove hyphens. Put it u
 class Post < ApplicationRecord
   ### Attributes ###
 
-  normalizes :title, with: ->(title) { title.strip }
-  normalizes :isbn, with: ->(isbn) { isbn.delete("-") }
+  normalizes :title,
+    with: ->(title) { title.strip }
+
+  normalizes :isbn,
+    with: ->(isbn) { isbn.delete("-") }
 
   # ...
 end

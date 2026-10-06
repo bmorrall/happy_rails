@@ -98,6 +98,7 @@ When an API client tracks a request, e.g. by a transaction ID, don't give the cl
 ```ruby
 class NewsletterDelivery < ApplicationRecord
   belongs_to :post
+
   has_secure_token :reference
 end
 ```

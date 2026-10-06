@@ -63,9 +63,11 @@ module PunditAuthorization
   included do
     include Pundit::Authorization
 
-    after_action :verify_authorized, unless: :devise_controller?
+    after_action :verify_authorized,
+      unless: :devise_controller?
 
-    rescue_from Pundit::NotAuthorizedError, with: :handle_not_authorized
+    rescue_from Pundit::NotAuthorizedError,
+      with: :handle_not_authorized
   end
 
   private

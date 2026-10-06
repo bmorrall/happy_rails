@@ -89,7 +89,8 @@ Only set instance variables in an action, or in a callback whose name starts wit
 
 ```ruby
 class PostsController < ApplicationController
-  before_action :set_post, only: %i[show edit update destroy]
+  before_action :set_post,
+    only: %i[show edit update destroy]
 
   # GET /posts
   def index
@@ -493,7 +494,8 @@ end
 
 ```ruby
 class PostsController < ApplicationController
-  skip_before_action :authenticate_user!, only: %i[index show]
+  skip_before_action :authenticate_user!,
+    only: %i[index show]
 end
 ```
 
@@ -573,7 +575,8 @@ A named method is easy to find, and every handler starts the same way. A subclas
 
 ```ruby
 class ApplicationController < ActionController::Base
-  rescue_from ActiveRecord::RecordNotFound, with: :handle_record_not_found
+  rescue_from ActiveRecord::RecordNotFound,
+    with: :handle_record_not_found
 
   private
 
@@ -606,7 +609,8 @@ In the handler, redirect with an alert. Write the alert as fixed text, and never
 ```ruby
 module Posts
   class NewslettersController < BaseController
-    rescue_from Posts::SendNewsletter::ServiceError, with: :handle_send_newsletter_service
+    rescue_from Posts::SendNewsletter::ServiceError,
+      with: :handle_send_newsletter_service
 
     # POST /posts/:post_id/newsletter
     def create

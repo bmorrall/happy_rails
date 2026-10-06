@@ -62,7 +62,8 @@ class CreatePostForm < ApplicationForm
     Post.model_name
   end
 
-  delegate :to_param, :to_partial_path, :persisted?, :new_record?, to: :post
+  delegate :to_param, :to_partial_path, :persisted?, :new_record?,
+    to: :post
 
   def initialize(post, current_user, params = {})
     @post = post
@@ -94,6 +95,7 @@ class CreatePostForm < ApplicationForm
   ### Attributes ###
 
   attribute :title, :string
+
   attribute :status, :string
 
   ### Collections ###
@@ -104,7 +106,8 @@ class CreatePostForm < ApplicationForm
 
   ### Validations ###
 
-  validates :status, inclusion: { in: ->(form) { form.collection_for_status } }
+  validates :status,
+    inclusion: { in: ->(form) { form.collection_for_status } }
 end
 ```
 
@@ -117,7 +120,9 @@ class CreatePostForm < ApplicationForm
   ### Attributes ###
 
   attribute :title, :string
-  normalizes :title, with: ->(title) { title.strip }
+
+  normalizes :title,
+    with: ->(title) { title.strip }
 
   # ...
 end
@@ -161,7 +166,8 @@ class CreatePostForm < ApplicationForm
     Post.model_name
   end
 
-  delegate :to_param, :to_partial_path, :persisted?, :new_record?, to: :post
+  delegate :to_param, :to_partial_path, :persisted?, :new_record?,
+    to: :post
 
   def initialize(post, current_user, params = {})
     @post = post
@@ -262,7 +268,8 @@ module Posts
       Comment.model_name
     end
 
-    delegate :to_param, :to_partial_path, :persisted?, :new_record?, to: :comment
+    delegate :to_param, :to_partial_path, :persisted?, :new_record?,
+      to: :comment
 
     def initialize(post, current_user, params = {})
       @post = post

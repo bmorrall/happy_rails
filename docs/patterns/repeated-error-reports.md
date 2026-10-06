@@ -18,7 +18,8 @@ A job that calls another service can retry with `retry_on`. Active Job rescues t
 
 ```ruby
 class NotifySubscribersJob < ApplicationJob
-  retry_on NewsletterClient::Error, attempts: 5 do |job, error|
+  retry_on NewsletterClient::Error,
+    attempts: 5 do |job, error|
     post = job.arguments.first
     Honeybadger.notify(error, context: { post: post.to_honeybadger_context })
     post.update!(newsletter_status: :failed)

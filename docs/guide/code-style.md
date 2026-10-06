@@ -72,6 +72,43 @@ respond_to do |format|
 end
 ```
 
+### Declarations
+
+A declaration is a class-level call that sets up the class, e.g. `belongs_to`, `has_many`, `validates`, `before_action`, `rescue_from`, `delegate` or `attribute`. These rules apply to declarations in models, forms, actions, controllers, jobs and decorators. They don't apply to `include` or `extend`.
+
+Keep the positional arguments on the first line, e.g. the attribute names in `validates` or the method names in `delegate`. Put each keyword argument on its own line, indented under the call. Then you can read a declaration's options as a list, and a diff that adds or changes one option touches only its line.
+
+```ruby
+class Post < ApplicationRecord
+  belongs_to :author,
+    class_name: "User"
+
+  has_many :comments,
+    dependent: :destroy
+
+  validates :title,
+    presence: true,
+    length: { maximum: TITLE_MAX_LENGTH, allow_blank: true }
+
+  validate :published_at_cannot_be_in_the_future
+end
+```
+
+This applies with one keyword argument too, e.g. `has_many :comments,` then `dependent: :destroy` on the next line. A declaration with no keyword arguments stays on one line, e.g. `attribute :title, :string` or `validate :published_at_cannot_be_in_the_future`.
+
+Put a blank line above and below each declaration, even one-line declarations next to each other, so each one reads as its own block. Leave out the line above when the declaration is the first line in its block, and the line below when it's the last line before `end`.
+
+```ruby
+class CreatePostForm < ApplicationForm
+  attribute :title, :string
+
+  attribute :status, :string
+
+  normalizes :title,
+    with: ->(title) { title.strip }
+end
+```
+
 ## For agents
 
 > **TODO:** Describe how you handle this.

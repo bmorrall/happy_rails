@@ -67,11 +67,15 @@ class PostDecorator < ApplicationDecorator
 
   decorates_association :comments
 
-  delegate :size, to: :comments, prefix: true
+  delegate :size,
+    to: :comments,
+    prefix: true
 
   ### Policy ###
 
-  delegate :publish?, to: :policy, prefix: :can
+  delegate :publish?,
+    to: :policy,
+    prefix: :can
 end
 ```
 
@@ -192,7 +196,9 @@ class CommentDecorator < ApplicationDecorator
 
   decorates_association :post
 
-  delegate :title, :published_on, to: :post, prefix: true
+  delegate :title, :published_on,
+    to: :post,
+    prefix: true
 end
 ```
 
@@ -212,7 +218,9 @@ class PostDecorator < ApplicationDecorator
     @author ||= object.author&.decorate || NilDecorator.for(User)
   end
 
-  delegate :name, to: :author, prefix: true
+  delegate :name,
+    to: :author,
+    prefix: true
 end
 ```
 
@@ -270,7 +278,9 @@ When a view needs a scoped part of an association, add a scoped association to t
 ```ruby
 class Post < ApplicationRecord
   has_many :comments
-  has_many :approved_comments, -> { approved }, class_name: "Comment"
+
+  has_many :approved_comments, -> { approved },
+    class_name: "Comment"
 end
 ```
 
@@ -279,6 +289,7 @@ class PostDecorator < ApplicationDecorator
   ### Comments ###
 
   decorates_association :comments
+
   decorates_association :approved_comments
 end
 ```
@@ -382,7 +393,9 @@ In the same `### Policy ###` group, delegate the checks for the standard Rails a
 class ApplicationDecorator < Draper::Decorator
   ### Policy ###
 
-  delegate :index?, :show?, :new?, :create?, :edit?, :update?, :destroy?, to: :policy, prefix: :can
+  delegate :index?, :show?, :new?, :create?, :edit?, :update?, :destroy?,
+    to: :policy,
+    prefix: :can
 
   private
 
@@ -398,7 +411,9 @@ For a custom action, delegate its check in the model's own decorator, with the s
 class PostDecorator < ApplicationDecorator
   ### Policy ###
 
-  delegate :publish?, to: :policy, prefix: :can
+  delegate :publish?,
+    to: :policy,
+    prefix: :can
 end
 ```
 

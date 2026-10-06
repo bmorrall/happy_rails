@@ -55,7 +55,7 @@ The area files are:
 
 | File | Applies to |
 | --- | --- |
-| `happy_style.instructions.md` | `app/controllers/**` |
+| `happy_style.instructions.md` | `app/models/**`, `app/forms/**`, `app/actions/**`, `app/controllers/**`, `app/jobs/**`, `app/decorators/**` |
 
 Each [gem](../guide/gems/) has its own file. If your app does not use a gem, delete its file:
 

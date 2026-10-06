@@ -29,8 +29,13 @@ Write custom validators the same way. Never skip a blank value inside `validate_
 When an attribute also has `presence: true`, add `allow_blank: true` to its other validators. A blank value then gets one error, "can't be blank", not a stack of errors that all say it's missing.
 
 ```ruby
-validates :title, presence: true, length: { minimum: 3, allow_blank: true }
-validates :post, presence: true, unmodified: { allow_blank: true }
+validates :title,
+  presence: true,
+  length: { minimum: 3, allow_blank: true }
+
+validates :post,
+  presence: true,
+  unmodified: { allow_blank: true }
 ```
 
 ### Values of the wrong kind
@@ -77,7 +82,8 @@ en:
 Use it like any other validator, e.g. on the ID a caller generates with `SecureRandom.uuid` for another service. See [Actions: Return values](../actions/#return-values).
 
 ```ruby
-validates :newsletter_id, uuid: { allow_blank: true }
+validates :newsletter_id,
+  uuid: { allow_blank: true }
 ```
 
 Use a format validator only when matching the pattern is the whole rule. If a value also needs another check, e.g. a check digit, write an `ActiveModel::EachValidator` instead, as in [Example: IsbnValidator](#example-isbnvalidator).
@@ -125,7 +131,9 @@ en:
 ```
 
 ```ruby
-validates :isbn, presence: true, isbn: { allow_blank: true }
+validates :isbn,
+  presence: true,
+  isbn: { allow_blank: true }
 ```
 
 The validator checks the value as it is, so an ISBN with hyphens fails. Tidy the value in the model first, e.g. `normalizes :isbn, with: ->(isbn) { isbn.delete("-") }`.
@@ -215,7 +223,9 @@ module Posts
   class PublishPost < ApplicationAction
     include ValidatedCallable
 
-    validates :post, :publisher, presence: true, unmodified: { allow_blank: true }
+    validates :post, :publisher,
+      presence: true,
+      unmodified: { allow_blank: true }
 
     # ...
   end

@@ -24,9 +24,11 @@ module PunditAuthorization
   included do
     include Pundit::Authorization
 
-    after_action :verify_authorized, unless: :devise_controller?
+    after_action :verify_authorized,
+      unless: :devise_controller?
 
-    rescue_from Pundit::NotAuthorizedError, with: :handle_not_authorized
+    rescue_from Pundit::NotAuthorizedError,
+      with: :handle_not_authorized
   end
 
   private
@@ -91,7 +93,8 @@ If an action really needs no check, call `skip_authorization` on its first line.
 
 ```ruby
 class PagesController < ApplicationController
-  skip_before_action :authenticate_user!, only: :about
+  skip_before_action :authenticate_user!,
+    only: :about
 
   # GET /about
   def about
@@ -150,7 +153,8 @@ module PunditAuthorization
   included do
     # ...
 
-    rescue_from Pundit::NotAuthorizedError, with: :handle_not_authorized
+    rescue_from Pundit::NotAuthorizedError,
+      with: :handle_not_authorized
   end
 
   private

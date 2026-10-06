@@ -219,7 +219,9 @@ module Posts
   class PublishPost < ApplicationAction
     include ValidatedCallable
 
-    validates :post, :publisher, presence: true, unmodified: { allow_blank: true }
+    validates :post, :publisher,
+      presence: true,
+      unmodified: { allow_blank: true }
 
     # ...
   end
