@@ -127,7 +127,8 @@ The view calls the helper method instead of the instance variable:
 
 ```ruby
 class PostsController < ApplicationController
-  decorates_assigned :post, with: Posts::SummaryDecorator
+  decorates_assigned :post,
+    with: Posts::SummaryDecorator
 end
 ```
 
@@ -153,7 +154,9 @@ Decorate the parent with its own `decorates_assigned`, usually in the nested res
 module Tags
   class PostsController < ApplicationController
     decorates_assigned :tag
-    decorates_assigned :posts, context: ->(c) { { tag: c.tag } }
+
+    decorates_assigned :posts,
+      context: ->(c) { { tag: c.tag } }
 
     # GET /tags/:tag_id/posts
     def index
@@ -336,7 +339,8 @@ end
 ```ruby
 module Posts
   class CommentsController < ApplicationController
-    decorates_assigned :comments, with: CommentsDecorator
+    decorates_assigned :comments,
+      with: CommentsDecorator
 
     # GET /posts/:post_id/comments
     def index
@@ -367,7 +371,8 @@ end
 
 ```ruby
 class PostsController < ApplicationController
-  decorates_assigned :posts, with: PostsDecorator
+  decorates_assigned :posts,
+    with: PostsDecorator
 
   # GET /posts
   def index
@@ -467,29 +472,25 @@ The view asks the record it was given:
 
 ## Testing
 
-Write a decorator spec in `spec/decorators` for each decorator. Give each method its own `describe` block, and write an example for each path through it. A method with an `if` needs one example for each side.
+Write a decorator spec in `spec/decorators` for each decorator. Give each method its own `describe` block, and write an example for each path through it. A method with an `if` needs one example for each side. Build the record inside each example. See [RSpec: Contexts](../rspec/#contexts).
 
 Build the record being decorated with an `instance_double`, and stub only the values the method reads. The spec then runs without the database, and it fails if the decorator reads a method the model doesn't have. Use a factory only when an `instance_double` can't stand in for the record.
 
 ```ruby
 RSpec.describe PostDecorator do
-  subject(:decorator) { described_class.new(post) }
-
   describe "#published_on" do
-    context "when the post is published" do
-      let(:post) { instance_double(Post, published_at: Time.zone.local(2026, 10, 3, 9, 30)) }
+    it "returns the date it was published" do
+      post = instance_double(Post, published_at: Time.zone.local(2026, 10, 3, 9, 30))
+      decorator = described_class.new(post)
 
-      it "returns the date it was published" do
-        expect(decorator.published_on).to have_date_tag(Date.new(2026, 10, 3))
-      end
+      expect(decorator.published_on).to have_date_tag(Date.new(2026, 10, 3))
     end
 
-    context "when the post is a draft" do
-      let(:post) { instance_double(Post, published_at: nil) }
+    it "returns the unknown value tag for a draft" do
+      post = instance_double(Post, published_at: nil)
+      decorator = described_class.new(post)
 
-      it "returns the unknown value tag" do
-        expect(decorator.published_on).to have_unknown_value_tag
-      end
+      expect(decorator.published_on).to have_unknown_value_tag
     end
   end
 end
@@ -509,22 +510,17 @@ A decorator spec covers the presentation logic for a record, so you don't need a
 
 ### Context
 
-To spec a method that reads its context, e.g. `tag_post_link`, add a `context` block for it. In the block, define the record with `let`, decorated the same way the controller passes it, e.g. a `TagDecorator`. Then override the subject to pass it in the decorator's context. Only the examples that need the context build it, and each one shows which record it gets.
+To spec a method that reads its context, e.g. `tag_post_link`, build the record in the example, decorated the same way the controller passes it, e.g. a `TagDecorator`. Then pass it in the decorator's context. Only the examples that need the context build it, and each one shows which record it gets.
 
 ```ruby
 RSpec.describe PostDecorator do
-  subject(:decorator) { described_class.new(post) }
-
   describe "#tag_post_link" do
-    context "with a tag" do
-      subject(:decorator) { described_class.new(post, context: { tag: tag }) }
+    it "links to the post under the tag" do
+      post = instance_double(Post, title: "Hello", to_param: "1")
+      tag = TagDecorator.new(instance_double(Tag, to_param: "2"))
+      decorator = described_class.new(post, context: { tag: tag })
 
-      let(:post) { instance_double(Post, title: "Hello", to_param: "1") }
-      let(:tag) { TagDecorator.new(instance_double(Tag, to_param: "2")) }
-
-      it "links to the post under the tag" do
-        expect(decorator.tag_post_link).to eq('<a href="/tags/2/posts/1">Hello</a>')
-      end
+      expect(decorator.tag_post_link).to eq('<a href="/tags/2/posts/1">Hello</a>')
     end
   end
 end
@@ -534,41 +530,33 @@ end
 
 Spec each `can_` method that you override, e.g. `can_destroy?`, with an example for each path: the policy forbids it, the business rule forbids it, and both allow it. Don't spec the plain delegates. The policy spec covers who may do what.
 
-Stub the policy, so the spec doesn't need a signed-in user. Build it with an `instance_double` of the policy class, and stub `helpers.policy` to return it. `helpers` is the same view context the decorator reads through `h`. Stub it in each context, not at the top of the spec, so each example shows the permission it runs with, and specs for other methods don't build a policy.
+Stub the policy, so the spec doesn't need a signed-in user. Build it with an `instance_double` of the policy class, and stub `helpers.policy` to return it. `helpers` is the same view context the decorator reads through `h`. Stub it in each example, not at the top of the spec, so each example shows the permission it runs with, and specs for other methods don't build a policy.
 
 ```ruby
 RSpec.describe PostDecorator do
-  subject(:decorator) { described_class.new(post) }
-
   describe "#can_destroy?" do
-    context "when the post has no comments" do
-      let(:post) { instance_double(Post, comments: []) }
+    it "allows it when the policy allows it and the post has no comments" do
+      post = instance_double(Post, comments: [])
+      allow(helpers).to receive(:policy).with(post).and_return(instance_double(PostPolicy, destroy?: true))
+      decorator = described_class.new(post)
 
-      before do
-        allow(helpers).to receive(:policy).with(post).and_return(instance_double(PostPolicy, destroy?: true))
-      end
-
-      it { expect(decorator.can_destroy?).to be(true) }
+      expect(decorator.can_destroy?).to be(true)
     end
 
-    context "when the post has comments" do
-      let(:post) { instance_double(Post, comments: [instance_double(Comment)]) }
+    it "forbids it when the policy forbids it" do
+      post = instance_double(Post, comments: [])
+      allow(helpers).to receive(:policy).with(post).and_return(instance_double(PostPolicy, destroy?: false))
+      decorator = described_class.new(post)
 
-      before do
-        allow(helpers).to receive(:policy).with(post).and_return(instance_double(PostPolicy, destroy?: true))
-      end
-
-      it { expect(decorator.can_destroy?).to be(false) }
+      expect(decorator.can_destroy?).to be(false)
     end
 
-    context "when the policy forbids it" do
-      let(:post) { instance_double(Post, comments: []) }
+    it "forbids it when the post has comments" do
+      post = instance_double(Post, comments: [instance_double(Comment)])
+      allow(helpers).to receive(:policy).with(post).and_return(instance_double(PostPolicy, destroy?: true))
+      decorator = described_class.new(post)
 
-      before do
-        allow(helpers).to receive(:policy).with(post).and_return(instance_double(PostPolicy, destroy?: false))
-      end
-
-      it { expect(decorator.can_destroy?).to be(false) }
+      expect(decorator.can_destroy?).to be(false)
     end
   end
 end

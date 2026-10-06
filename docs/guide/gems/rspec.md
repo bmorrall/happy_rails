@@ -107,6 +107,34 @@ end
 
 > **TODO:** Describe how you handle this.
 
+### Contexts
+
+Build the records each example needs inside the example, and name the example after the path it takes. Each example then shows all of its setup, and you don't have to trace a `let` up through the blocks above it. A method with an `if` needs two examples, not two contexts.
+
+```ruby
+RSpec.describe PostDecorator do
+  describe "#published_on" do
+    it "returns the date it was published" do
+      post = instance_double(Post, published_at: Time.zone.local(2026, 10, 3, 9, 30))
+      decorator = described_class.new(post)
+
+      expect(decorator.published_on).to have_date_tag(Date.new(2026, 10, 3))
+    end
+
+    it "returns the unknown value tag for a draft" do
+      post = instance_double(Post, published_at: nil)
+      decorator = described_class.new(post)
+
+      expect(decorator.published_on).to have_unknown_value_tag
+    end
+  end
+end
+```
+
+Only write a `context` when several examples share setup that the other examples in the `describe` don't. Never write a `context` for one example, and don't set up a default with `let` for a `context` to override.
+
+The contexts that request specs require are the exception: a context for each persona, for each way the request can be authenticated, and for a Turbo Stream. Write them even when they hold one example. Define the user and the records each persona needs in its own context, as described in [Personas](#personas).
+
 ## Factories
 
 > **TODO:** Describe how you handle this.

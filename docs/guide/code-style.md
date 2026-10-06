@@ -109,6 +109,21 @@ class CreatePostForm < ApplicationForm
 end
 ```
 
+### Expectations
+
+Build and assign values before `expect`, not inside its argument. Give each value its own line in the setup, then pass the variable to `expect`. Then the `expect` line only says what is checked, and each value has a name you can read.
+
+```ruby
+it "returns the unknown value tag for a draft" do
+  post = instance_double(Post, published_at: nil)
+  decorator = described_class.new(post)
+
+  expect(decorator.published_on).to have_unknown_value_tag
+end
+```
+
+Don't write `expect(described_class.new(post).published_on)` or `expect(post = create(:post))`. This doesn't apply to the block form, e.g. `expect { post posts_path }.to change(Post, :count).by(1)`, where the block is the action being checked.
+
 ## For agents
 
 > **TODO:** Describe how you handle this.

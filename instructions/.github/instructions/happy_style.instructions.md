@@ -1,5 +1,5 @@
 ---
-applyTo: "app/models/**/*.rb,app/forms/**/*.rb,app/actions/**/*.rb,app/controllers/**/*.rb,app/jobs/**/*.rb,app/decorators/**/*.rb"
+applyTo: "app/models/**/*.rb,app/forms/**/*.rb,app/actions/**/*.rb,app/controllers/**/*.rb,app/jobs/**/*.rb,app/decorators/**/*.rb,spec/**/*.rb"
 ---
 
 # Code style
@@ -8,4 +8,5 @@ applyTo: "app/models/**/*.rb,app/forms/**/*.rb,app/actions/**/*.rb,app/controlle
 - Put a blank line above a `render` or `redirect_to` call in a controller, or above its comment if it has one, e.g. between `Posts::SendNewsletter.call(@post)` and `redirect_to post_path(@post),`. Leave it out when the call is the first line in its block, e.g. straight after `if`, `else`, `def` or `do`.
 - In a class-level declaration in a model, form, action, controller, job or decorator, e.g. `belongs_to`, `has_many`, `validates`, `before_action`, `rescue_from`, `delegate` or `attribute`, keep the positional arguments on the first line and put each keyword argument on its own indented line, e.g. `has_many :comments,` then `  dependent: :destroy`, or `validates :post, :publisher,` then `  presence: true,` then `  unmodified: { allow_blank: true }`. Do this even with one keyword argument. Keep a declaration with no keyword arguments on one line, e.g. `attribute :title, :string`. This does not apply to `include` or `extend`.
 - Put a blank line above and below each class-level declaration, even one-line declarations next to each other, e.g. between `attribute :title, :string` and `attribute :status, :string`. Leave out the line above when the declaration is the first line in its block, and the line below when it is the last line before `end`. This does not apply to `include` or `extend`.
+- In specs, build and assign values on their own lines before `expect`, never inside its argument, e.g. `decorator = described_class.new(post)` then `expect(decorator.published_on)`, not `expect(described_class.new(post).published_on)` or `expect(post = create(:post))`. This does not apply to the block form, e.g. `expect { post posts_path }.to change(Post, :count).by(1)`.
 - TODO: Agent-only style rules.
