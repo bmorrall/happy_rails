@@ -240,7 +240,9 @@ An action does its task and returns nothing. The caller doesn't check a result, 
 
 ```ruby
 Posts::ArchivePost.call(post)
-redirect_to posts_path, notice: "Post was archived."
+
+redirect_to posts_path,
+  notice: "Post was archived."
 ```
 
 When a caller needs a value from the action's work, e.g. an ID from another service, save the value on a record the caller holds. The caller reads it from the record after the call, e.g. `@post.newsletter_id` after `Posts::SendNewsletter.call(@post)`. The value usually belongs on a record anyway, because the app needs it again later.
@@ -483,9 +485,11 @@ module Posts
       @archive_post_form = ArchivePostForm.new(@post, current_user)
 
       if @archive_post_form.submit
-        redirect_to posts_path, notice: "Post was archived."
+        redirect_to posts_path,
+          notice: "Post was archived."
       else
-        redirect_to post_path(@post), alert: "Post could not be archived."
+        redirect_to post_path(@post),
+          alert: "Post could not be archived."
       end
     end
   end

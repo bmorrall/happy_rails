@@ -324,9 +324,11 @@ def create
   @create_post_form = CreatePostForm.new(Post.new, current_user, post_params)
 
   if (post = @create_post_form.submit)
-    redirect_to post, notice: "Post was created."
+    redirect_to post,
+      notice: "Post was created."
   else
-    render :new, status: :unprocessable_entity
+    render :new,
+      status: :unprocessable_entity
   end
 end
 ```

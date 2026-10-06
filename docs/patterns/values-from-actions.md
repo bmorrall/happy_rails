@@ -47,7 +47,9 @@ def create
   # ...
 
   Posts::SendNewsletter.call(@post)
-  render json: { newsletter_id: @post.newsletter_id }, status: :created
+
+  render json: { newsletter_id: @post.newsletter_id },
+    status: :created
 end
 ```
 
@@ -83,7 +85,9 @@ def create
 
   newsletter_id = SecureRandom.uuid
   Posts::SendNewsletter.call(@post, newsletter_id:)
-  render json: { newsletter_id: }, status: :created
+
+  render json: { newsletter_id: },
+    status: :created
 end
 ```
 
@@ -124,7 +128,9 @@ def create
 
   delivery = @post.newsletter_deliveries.create!
   NewsletterDeliveries::SendDelivery.call(delivery)
-  render json: { reference: delivery.reference, status: delivery.status }, status: :created
+
+  render json: { reference: delivery.reference, status: delivery.status },
+    status: :created
 end
 ```
 
@@ -147,7 +153,9 @@ def create
 
   delivery = @post.newsletter_deliveries.create!
   SendNewsletterDeliveryJob.perform_later(delivery)
-  render json: { reference: delivery.reference, status: delivery.status }, status: :accepted
+
+  render json: { reference: delivery.reference, status: delivery.status },
+    status: :accepted
 end
 ```
 

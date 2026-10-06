@@ -22,6 +22,7 @@ Each convention is written twice: once in the guide for people, and once in the 
 | `docs/guide/views.md` | `instructions/.github/instructions/happy_views.instructions.md` |
 | `docs/guide/jobs.md` | `instructions/.github/instructions/happy_jobs.instructions.md` |
 | `docs/guide/mailers.md` | `instructions/.github/instructions/happy_mailers.instructions.md` |
+| `docs/guide/code-style.md` | `instructions/.github/instructions/happy_style.instructions.md` |
 | `docs/guide/gems/devise.md` | `instructions/.github/instructions/happy_devise.instructions.md` |
 | `docs/guide/gems/draper.md` | `instructions/.github/instructions/happy_draper.instructions.md` |
 | `docs/guide/gems/honeybadger.md` | `instructions/.github/instructions/happy_honeybadger.instructions.md` |
@@ -33,6 +34,8 @@ Each convention is written twice: once in the guide for people, and once in the 
 | `docs/guide/gems/webmock.md` | `instructions/.github/instructions/happy_webmock.instructions.md` |
 
 Every rule in an instruction file must match the guide. Do not add a rule to one side only. The one exception is a rant: a guide-only opinion in a `{: .rant }` callout. Leave rants out of the instruction files.
+
+`docs/guide/code-style.md` holds my own style preferences. They are optional, so readers can delete `happy_style.instructions.md`. Rules for agents only go in its "For agents" section, as a short line each, so the guide still lists every rule in the file.
 
 If you change an `applyTo` glob, also update the "Applies to" table in `docs/agent-instructions.md`. Prefix every instruction file name with `happy_`, so it does not overwrite a reader's own instruction files. If you add or rename an instruction file, also update the tables in `docs/agent-instructions.md` and `instructions/README.md`.
 

@@ -121,18 +121,22 @@ class PostsController < ApplicationController
     @post = Post.new(post_params)
 
     if @post.save
-      redirect_to @post, notice: "Post was created."
+      redirect_to @post,
+        notice: "Post was created."
     else
-      render :new, status: :unprocessable_entity
+      render :new,
+        status: :unprocessable_entity
     end
   end
 
   # PATCH /posts/:id
   def update
     if @post.update(post_params)
-      redirect_to @post, notice: "Post was updated."
+      redirect_to @post,
+        notice: "Post was updated."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit,
+        status: :unprocessable_entity
     end
   end
 end
@@ -146,9 +150,11 @@ module Posts
     # POST /posts/:post_id/publication
     def create
       if @post.publish
-        redirect_to @post, notice: "Post was published."
+        redirect_to @post,
+          notice: "Post was published."
       else
-        redirect_to @post, alert: "Post could not be published."
+        redirect_to @post,
+          alert: "Post could not be published."
       end
     end
   end
@@ -347,10 +353,16 @@ module Posts
 
       respond_to do |format|
         if @comment.save
-          format.html { redirect_to @post, notice: "Comment was created." }
+          format.html do
+            redirect_to @post,
+              notice: "Comment was created."
+          end
           format.turbo_stream
         else
-          format.html { render :new, status: :unprocessable_entity }
+          format.html do
+            render :new,
+              status: :unprocessable_entity
+          end
         end
       end
     end
@@ -601,13 +613,16 @@ module Posts
       # ...
 
       Posts::SendNewsletter.call(@post)
-      redirect_to post_path(@post), notice: "Newsletter was sent."
+
+      redirect_to post_path(@post),
+        notice: "Newsletter was sent."
     end
 
     private
 
     def handle_send_newsletter_service
-      redirect_to post_path(@post), alert: "Newsletter could not be sent. Please try again later."
+      redirect_to post_path(@post),
+        alert: "Newsletter could not be sent. Please try again later."
     end
   end
 end
@@ -617,7 +632,8 @@ An API controller renders the error instead, with a 5xx status, so the client kn
 
 ```ruby
 def handle_send_newsletter_service
-  render json: { error: "Newsletter could not be sent. Please try again later." }, status: :bad_gateway
+  render json: { error: "Newsletter could not be sent. Please try again later." },
+    status: :bad_gateway
 end
 ```
 
@@ -812,9 +828,11 @@ class PostsController < ApplicationController
     @post = Post.new(post_params)
 
     if @post.save
-      redirect_to @post, notice: "Post was created."
+      redirect_to @post,
+        notice: "Post was created."
     else
-      render :new, status: :unprocessable_entity
+      render :new,
+        status: :unprocessable_entity
     end
   end
 end
@@ -900,9 +918,11 @@ module Posts
     # POST /posts/:post_id/publication
     def create
       if @post.publish
-        redirect_to @post, notice: "Post was published."
+        redirect_to @post,
+          notice: "Post was published."
       else
-        redirect_to @post, alert: "Post could not be published."
+        redirect_to @post,
+          alert: "Post could not be published."
       end
     end
   end

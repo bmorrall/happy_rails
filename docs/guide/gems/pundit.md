@@ -32,7 +32,8 @@ module PunditAuthorization
   private
 
   def handle_not_authorized
-    redirect_to root_url, alert: "You are not authorized to perform this action."
+    redirect_to root_url,
+      alert: "You are not authorized to perform this action."
   end
 end
 ```
@@ -155,7 +156,8 @@ module PunditAuthorization
   private
 
   def handle_not_authorized
-    redirect_to root_url, alert: "You are not authorized to perform this action."
+    redirect_to root_url,
+      alert: "You are not authorized to perform this action."
   end
 end
 ```
@@ -173,9 +175,11 @@ module Posts
 
     def handle_not_authorized
       if @post && policy(@post).show?
-        redirect_to @post, alert: "You are not authorized to perform this action."
+        redirect_to @post,
+          alert: "You are not authorized to perform this action."
       elsif policy(Post).index?
-        redirect_to posts_url, alert: "You are not authorized to perform this action."
+        redirect_to posts_url,
+          alert: "You are not authorized to perform this action."
       else
         super
       end

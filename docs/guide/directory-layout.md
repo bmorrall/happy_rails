@@ -71,7 +71,8 @@ module PunditAuthorization
   private
 
   def handle_not_authorized
-    redirect_to root_url, alert: "You are not authorized to perform this action."
+    redirect_to root_url,
+      alert: "You are not authorized to perform this action."
   end
 end
 ```

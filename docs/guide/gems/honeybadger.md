@@ -30,7 +30,9 @@ module Posts
 
     def handle_send_newsletter_service(error)
       Honeybadger.notify(error, context: { post: @post&.to_honeybadger_context })
-      redirect_to post_path(@post), alert: "Newsletter could not be sent. Please try again later."
+
+      redirect_to post_path(@post),
+        alert: "Newsletter could not be sent. Please try again later."
     end
   end
 end

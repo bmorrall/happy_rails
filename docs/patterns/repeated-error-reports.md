@@ -64,7 +64,9 @@ The action doesn't work on a resource, so it has no module. Call it wherever you
 ```ruby
 def handle_send_newsletter_service(error)
   ReportThrottledError.call(error, context: { post: @post&.to_honeybadger_context })
-  redirect_to post_path(@post), alert: "Newsletter could not be sent. Please try again later."
+
+  redirect_to post_path(@post),
+    alert: "Newsletter could not be sent. Please try again later."
 end
 ```
 
