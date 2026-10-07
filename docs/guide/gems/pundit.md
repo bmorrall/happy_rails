@@ -52,6 +52,69 @@ end
 
 > **TODO:** Describe how you handle this.
 
+### Layout
+
+Lay out every policy the same way, so you know where to find a rule:
+
+1. The `Scope` class.
+2. A permission for each action, in the same order as the controller: `index?`, `show?`, `new?`, `edit?`, `create?`, `update?`, `destroy?`, then any custom actions in alphabetical order. See [Controllers: RESTful resources](../../controllers/#restful-resources).
+3. Other permission checks, under a comment heading named after what they cover. Use the association for checks on an association, e.g. `### Comments ###`, and the feature for checks on a feature, e.g. `update_published?` under `### Publishing ###`. Name a feature's heading after the model's `concerning` block for it, e.g. `concerning :Publishing` in `Post`, so the policy and the model group a feature the same way. See [Models: Layout](../../models/#layout). Put the headings in alphabetical order.
+4. The permitted attributes methods, under `### Permitted Attributes ###`. Always put this heading last. See [Strong parameters](#strong-parameters).
+
+Keeping an association's checks together shows everything a user may do with it, e.g. who may comment on a post and who may approve the comments.
+
+Leave out any permission or heading the policy doesn't need. Private methods go last, after `private`.
+
+```ruby
+class PostPolicy < ApplicationPolicy
+  class Scope < ApplicationPolicy::Scope
+    def resolve
+      # ...
+    end
+  end
+
+  def index?
+    # ...
+  end
+
+  def show?
+    # ...
+  end
+
+  def create?
+    # ...
+  end
+
+  def update?
+    # ...
+  end
+
+  ### Comments ###
+
+  def create_comment?
+    # ...
+  end
+
+  def approve_comments?
+    # ...
+  end
+
+  ### Publishing ###
+
+  def update_published?
+    user.app_admin? || user.publishing_manager?
+  end
+
+  ### Permitted Attributes ###
+
+  def permitted_attributes
+    attributes = [:title, :body]
+    attributes << :published if update_published?
+    attributes
+  end
+end
+```
+
 ## Scopes
 
 > **TODO:** Describe how you handle this.
@@ -378,7 +441,7 @@ require "pundit/rspec"
 
 A policy reads properties of the user and the record, e.g. `user.copy_editor?` or `post.author == user`. Test those properties, not personas. A persona is a mix of properties, so a spec written for personas hides which property gives the access. Request specs cover the personas. See [RSpec: Personas](../rspec/#personas).
 
-Write a `permissions` block for each permission, in the same order as the policy. All of a permission's rules are then in one place, so you can see what it allows and spot a missing case.
+Write a `permissions` block for each permission, in the same order as the policy, as in [Layout](#layout): the actions in controller order, then the checks under each heading, e.g. `create_comment?` under `### Comments ###`, then `update_published?` under `### Publishing ###`. All of a permission's rules are then in one place, so you can see what it allows and spot a missing case.
 
 Inside the block, write an example for each property of the user the permission reads, and one for a user with none of them. Build the user and the record inside the example, as in [RSpec: Contexts](../rspec/#contexts), and don't write contexts. Name the example after the user's property, then the record's when it plays a part, e.g. `"permits a copy editor"` or `"forbids a user with no role for a post another user wrote"`. Never name a persona, e.g. "permits an author". When the policy accepts a missing user, pass `nil` and say so in the name, e.g. `"permits a published post when there is no user"`.
 
