@@ -192,13 +192,16 @@ Name the `subject` after the model, e.g. `subject(:post)`, and use `is_expected`
 
 Group a model's examples in a `describe` block for each method, named after the method, e.g. `describe "#published?"`. For an association, name the block after the association, e.g. `describe "#author"`, and put the examples for its id attribute, e.g. `author_id`, in the same block. Everything about one method or association is then in one place.
 
-Group the examples for a module in one `describe` block named after the module, e.g. `describe "FriendlyId"`, with a block for each of its methods inside.
+Group the examples for each gem's Modules heading in one `describe` block named after the gem, e.g. `describe "FriendlyId"`. Put everything under that heading in it: what the gem's setup does, e.g. the slug it sets, and the methods of its `concerning` block, e.g. `#should_generate_new_friendly_id?`. The spec then matches the model, where both sit under `### Modules (FriendlyId) ###`. Don't add a `describe` block for the `concerning` block itself.
 
-Order the blocks in three tiers, each in alphabetical order:
+Group the examples for a `concerning` block under Public Methods in one `describe` block named after it, e.g. `describe "Publishing"` for `concerning :Publishing`. Put every method the block defines inside it, including scopes and class methods. Keep the examples in the model's spec. A `concerning` block lives in the model file, so its spec lives in the model's spec. If the examples outgrow the model's spec, move the code into its own file, e.g. a concern in `app/models/concerns`, and give that file its own spec.
+
+Order the blocks in four tiers, each in alphabetical order:
 
 1. Class methods and scopes, e.g. `describe ".recent"`
 2. Instance methods, attributes and associations, e.g. `describe "#author"` and `describe "#published?"`
 3. Modules, e.g. `describe "FriendlyId"`
+4. Concerns, e.g. `describe "Publishing"`
 
 Alphabetical order needs no judgement about which group a method belongs to, e.g. whether `published?` comes from an enum or a method. The tiers follow RSpec's prefixes: `.` for a class method and `#` for an instance method.
 
@@ -225,12 +228,22 @@ RSpec.describe Post do
   end
 
   describe "FriendlyId" do
+    describe "#slug" do
+      # ...
+    end
+
     describe "#should_generate_new_friendly_id?" do
       it "is true when the title changes" do
         post = described_class.new(title: "A title")
 
         expect(post.should_generate_new_friendly_id?).to be(true)
       end
+    end
+  end
+
+  describe "Publishing" do
+    describe "#publish!" do
+      # ...
     end
   end
 end
