@@ -437,9 +437,9 @@ To record that the transaction itself failed, call the `Record` action in a `res
 
 Write an action spec as a unit spec. Stub and mock the models and other objects the action uses, and check that the action calls them with the right arguments. Name the `describe` block `".call"`, after the method the spec calls.
 
-Use `instance_double`, e.g. `instance_double(Post)`, and avoid a plain `double`. It fails when you stub a method the class doesn't have, so the stubs can't drift away from the real code.
+Use `instance_double`, e.g. `instance_double(Post)`, not a plain `double`. See [RSpec: Doubles, build_stubbed or create](../gems/rspec/#doubles-build_stubbed-or-create).
 
-An action does one task, so its unit spec stays short. If the spec needs a lot of stubs to set up, the action is often doing too much. Split it into smaller actions. If the action is simple but its objects take a lot of stubbing, e.g. a chain of associations, build real records with factories instead, e.g. `create(:post)`.
+An action does one task, so its unit spec stays short. If the spec needs a lot of stubs to set up, the action is often doing too much. Split it into smaller actions. If the action is simple but its objects take a lot of stubbing, e.g. a chain of associations, build real records with `create` instead, e.g. `create(:post)`. The action writes to the database, so `build_stubbed` can't stand in.
 
 ```ruby
 RSpec.describe Posts::ArchivePost do

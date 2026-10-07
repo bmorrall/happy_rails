@@ -46,6 +46,9 @@ applyTo: "spec/**/*.rb"
 - Build the records an example needs inside the example, and name the example after the path it takes, e.g. `post = instance_double(Post, published_at: nil)` in `it "returns the unknown value tag for a draft"`.
 - Only write a `context` when several examples share setup that the other examples in the `describe` don't. Never write a `context` for one example, and never set up a default with `let` for a `context` to override.
 - In request specs, the required contexts are the exception to these context rules: write each persona context, each authentication context, e.g. `context "without an access token"`, and `context "with a Turbo Stream"` even when it holds one example. Define the user and the records each persona needs in its own context.
+- In unit specs, e.g. decorator and action specs, build a record with an `instance_double` that stubs only the values the code reads, e.g. `post = instance_double(Post, published_at: nil)`. Never use a plain `double`, e.g. `double("post")`.
+- When an `instance_double` can't stand in for the record, e.g. the code passes it to a route helper or a form, build it with `build_stubbed`, e.g. `post = build_stubbed(:post, title: "Hello")`.
+- Use `create` only when the code needs the record in the database, e.g. when it runs a query, or a request or feature spec loads the record by its ID.
 - TODO: Which spec types to write, and when.
 - TODO: Where to put specs and how to name them.
 - TODO: How to write factories, e.g. `create(:post)`.

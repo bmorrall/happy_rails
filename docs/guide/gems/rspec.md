@@ -137,7 +137,30 @@ The contexts that request specs require are the exception: a context for each pe
 
 ## Factories
 
-> **TODO:** Describe how you handle this.
+### Doubles, build_stubbed or create
+
+Pick the lightest stand-in for a record that the code under test allows. The lighter it is, the quicker the spec runs.
+
+In a unit spec, e.g. a decorator or action spec, build the record with an `instance_double`, and stub only the values the code reads. The spec then runs without the database, and shows exactly what the code reads from the record. Use `instance_double`, not a plain `double`. It fails when you stub a method the class doesn't have, so the stubs can't drift away from the real code.
+
+```ruby
+post = instance_double(Post, published_at: nil)
+```
+
+When an `instance_double` can't stand in for the record, use `build_stubbed`, e.g. when the code passes the record to a route helper or a form, or reads so many values that stubbing them all hides what the spec is about. `build_stubbed` gives the record an `id` and makes it look saved, without touching the database, so it is much quicker than `create`.
+
+```ruby
+post = build_stubbed(:post, title: "Hello")
+```
+
+Use `create` only when the code needs the record in the database, e.g. when it runs a query, or a request or feature spec loads the record by its ID. Specs that run the whole stack, e.g. request, feature and job specs, use real records. See [Jobs: Job specs](../../jobs/#job-specs).
+
+```ruby
+post = create(:post, title: "Hello")
+get post_path(post)
+```
+
+> **TODO:** Describe how you handle the rest of this.
 
 ## Traits
 
