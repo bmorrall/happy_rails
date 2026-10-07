@@ -32,6 +32,7 @@ Each convention is written twice: once in the guide for people, and once in the 
 | `docs/guide/gems/simple_form.md` | `instructions/.github/instructions/happy_simple_form.instructions.md` |
 | `docs/guide/gems/view_component.md` | `instructions/.github/instructions/happy_view_component.instructions.md` |
 | `docs/guide/gems/webmock.md` | `instructions/.github/instructions/happy_webmock.instructions.md` |
+| `docs/guide/gems/wisper.md` | `instructions/.github/instructions/happy_wisper.instructions.md` |
 
 Every rule in an instruction file must match the guide. Do not add a rule to one side only. The one exception is a rant: a guide-only opinion in a `{: .rant }` callout. Leave rants out of the instruction files.
 

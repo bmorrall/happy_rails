@@ -44,7 +44,7 @@ Add it only to the jobs that need it, not to `ApplicationJob`. In any other job,
 
 Enqueue a job only after the transactions that change its arguments have committed. Active Job passes a record to the job by its ID, and the job loads it again when it runs. A job enqueued inside a transaction could run before the transaction commits. It would not find a new record, or it would see the old values. If the transaction rolls back, the job runs for changes that never happened.
 
-Set `enqueue_after_transaction_commit` in the job class. `perform_later` then waits until the open transactions commit, and drops the job if one rolls back. If no transaction is open, it enqueues the job at once. Callers can then enqueue the job from anywhere, e.g. a callback or a form, and don't have to think about transactions.
+Set `enqueue_after_transaction_commit` in the job class. `perform_later` then waits until the open transactions commit, and drops the job if one rolls back. If no transaction is open, it enqueues the job at once. Callers can then enqueue the job from anywhere, e.g. an action or a form, and don't have to think about transactions.
 
 ```ruby
 class NotifySubscribersJob < ApplicationJob

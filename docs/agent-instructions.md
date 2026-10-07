@@ -70,3 +70,4 @@ Each [gem](../guide/gems/) has its own file. If your app does not use a gem, del
 | `happy_simple_form.instructions.md` | Simple Form | `app/models/**`, `app/views/**`, `app/inputs/**`, `app/helpers/**`, `config/initializers/simple_form.rb`, `spec/requests/**`, `spec/features/**`, `spec/support/**` |
 | `happy_view_component.instructions.md` | ViewComponent | `app/components/**`, `spec/components/**`, `spec/support/**` |
 | `happy_webmock.instructions.md` | WebMock and VCR | `spec/**` |
+| `happy_wisper.instructions.md` | Wisper | `app/actions/**` |

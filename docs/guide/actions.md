@@ -399,6 +399,57 @@ def call
 end
 ```
 
+This includes the caller's transaction. Rails joins a nested `transaction` block to the one around it, so calling the service before the action's own transaction isn't enough. If a form or another action calls this action inside a transaction, the service call is inside it too.
+
+When the action doesn't need the service's reply, don't call the service from the action. Enqueue a job that calls it instead, e.g. `NotifySubscribersJob`. The job waits until the outermost transaction commits, as in [Jobs: Enqueueing after a transaction](../jobs/#enqueueing-after-a-transaction), so it is safe however the action is called.
+
+When the action needs the reply, it must never run inside a transaction. Include a `NonTransactionalCallable` concern, in `app/actions/concerns/non_transactional_callable.rb`. It raises an error when the action is called inside a transaction, so the first caller that wraps it fails in its specs. The transactions that wrap each spec can't be joined, so the check ignores them.
+
+```ruby
+module NonTransactionalCallable
+  extend ActiveSupport::Concern
+
+  class_methods do
+    def call(...)
+      if ActiveRecord::Base.connection.current_transaction.joinable?
+        raise "#{name} calls another service, so it can't run inside a transaction"
+      end
+
+      super
+    end
+  end
+end
+```
+
+```ruby
+module Posts
+  class SendNewsletter < ApplicationAction
+    include NonTransactionalCallable
+
+    # ...
+  end
+end
+```
+
+### Work after the commit
+
+Some work must wait until the records are committed, e.g. a job that loads them, or a Turbo broadcast that shows them. An action can't do this after its own transaction block, because its caller may still have a transaction open.
+
+For a job, set `enqueue_after_transaction_commit` in the job class, as in [Jobs: Enqueueing after a transaction](../jobs/#enqueueing-after-a-transaction). For any other work, wrap it in `ActiveRecord.after_all_transactions_commit`. The block runs once the outermost transaction commits, never if it rolls back, and at once if no transaction is open.
+
+```ruby
+def call
+  ActiveRecord::Base.transaction do
+    post.update!(archived_at: Time.current)
+    post.comments.update_all(locked: true)
+  end
+
+  ActiveRecord.after_all_transactions_commit do
+    post.broadcast_refresh
+  end
+end
+```
+
 ### Rolling back
 
 Never raise `ActiveRecord::Rollback` in an action. In a nested block, Rails swallows it: the block stops, but the caller's transaction carries on and commits. Raise a real error instead, so the whole transaction rolls back.

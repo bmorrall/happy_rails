@@ -67,7 +67,7 @@ module Posts
 end
 ```
 
-Keep jobs and emails in the caller, after the action returns, unless every caller needs them too. An action that enqueues a job inside its transaction must make the job wait for the commit, e.g. with `self.enqueue_after_transaction_commit = true` in the job class. See [Jobs: Enqueueing after a transaction](../../guide/jobs/#enqueueing-after-a-transaction).
+Keep jobs and emails in the caller, after the action returns, unless every caller needs them too. When the action does them, remember that its caller may have a transaction open around it. Set `self.enqueue_after_transaction_commit = true` in the job class, and wrap other work in `ActiveRecord.after_all_transactions_commit`. See [Actions: Work after the commit](../../guide/actions/#work-after-the-commit).
 
 ## In a job
 
@@ -83,7 +83,7 @@ class NotifySubscribersJob < ApplicationJob
 end
 ```
 
-When the task needs the service's reply before it can save, call the service from the action instead, before its transaction. See [Actions: Other services](../../guide/actions/#other-services).
+When the task needs the service's reply before it can save, call the service from the action instead, before its transaction. Include `NonTransactionalCallable` in the action, so no caller can run it inside a transaction. See [Actions: Other services](../../guide/actions/#other-services).
 
 ## In several steps
 
