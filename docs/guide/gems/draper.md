@@ -280,10 +280,13 @@ When a view needs a scoped part of an association, add a scoped association to t
 
 ```ruby
 class Post < ApplicationRecord
-  has_many :comments
+  has_many :comments,
+    dependent: :destroy
 
-  has_many :approved_comments, -> { approved },
-    class_name: "Comment"
+  has_many :approved_comments,
+    -> { approved },
+    class_name: "Comment",
+    dependent: nil
 end
 ```
 

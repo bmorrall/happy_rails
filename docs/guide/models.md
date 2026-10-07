@@ -47,7 +47,8 @@ Put shared logic in `concerning` blocks. If the block supports a gem's module, p
 class Post < ApplicationRecord
   ### Scopes ###
 
-  scope :recent, -> { order(created_at: :desc) }
+  scope :recent,
+    -> { order(created_at: :desc) }
 
   ### Constants ###
 
@@ -150,7 +151,30 @@ Don't tidy a value in a `before_validation` callback, or by overriding its write
 
 ## Associations
 
-> **TODO:** Describe how you handle this.
+Always pass `dependent:` to `has_many`. Rails leaves the associated records in place by default, and a missing option looks the same as a forgotten one. With the option on every `has_many`, each one shows a choice, and a reviewer can check what happens to the records when their parent is deleted.
+
+Start with `dependent: :restrict_with_exception`. Deleting a record that still has associated records then raises an error, so nothing is deleted or left behind by accident. Change it once you've decided what should happen, e.g. `:destroy` when a post's comments should go with it. Write `dependent: nil` only when the records should stay, e.g. for a scoped association whose records another association already handles.
+
+```ruby
+class Post < ApplicationRecord
+  ### Associations ###
+
+  has_many :comments,
+    dependent: :destroy
+
+  has_many :approved_comments,
+    -> { approved },
+    class_name: "Comment",
+    dependent: nil
+
+  has_many :publications,
+    dependent: :restrict_with_exception
+end
+```
+
+`approved_comments` uses `dependent: nil` because `comments` already deletes the same records. A published post can't be deleted until you decide what happens to its publications.
+
+> **TODO:** Describe how you handle the rest of this.
 
 ## Scopes and queries
 

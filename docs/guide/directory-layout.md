@@ -40,7 +40,8 @@ Put a shared concern in the `concerns/` directory of the classes that include it
 class Post < ApplicationRecord
   concerning :Publishing do
     included do
-      scope :recently_published, -> { published.where(published_at: 1.week.ago..) }
+      scope :recently_published,
+        -> { published.where(published_at: 1.week.ago..) }
     end
 
     def recently_published?

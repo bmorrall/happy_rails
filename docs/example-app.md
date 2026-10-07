@@ -16,6 +16,7 @@ This page describes the app, so you know what each example is talking about. The
 - **Post**: an article a user writes. Each post has an author, a title, a body and a status. A post starts as a draft, and is published when it's ready.
 - **Comment**: a reply to a published post. Comments belong to a post, and are approved before other readers see them.
 - **Tag**: a label on a post, so readers can find related posts.
+- **Publication**: a record of each time a post is published, and who published it.
 
 ```ruby
 class Post < ApplicationRecord

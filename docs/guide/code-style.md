@@ -80,11 +80,19 @@ Keep the positional arguments on the first line, e.g. the attribute names in `va
 
 ```ruby
 class Post < ApplicationRecord
+  scope :recent,
+    -> { order(created_at: :desc) }
+
   belongs_to :author,
     class_name: "User"
 
   has_many :comments,
     dependent: :destroy
+
+  has_many :approved_comments,
+    -> { approved },
+    class_name: "Comment",
+    dependent: nil
 
   validates :title,
     presence: true,
@@ -94,7 +102,7 @@ class Post < ApplicationRecord
 end
 ```
 
-This applies with one keyword argument too, e.g. `has_many :comments,` then `dependent: :destroy` on the next line. A declaration with no keyword arguments stays on one line, e.g. `attribute :title, :string` or `validate :published_at_cannot_be_in_the_future`.
+This applies with one keyword argument too, e.g. `has_many :comments,` then `dependent: :destroy` on the next line. A lambda goes on its own line too, straight after the first line and before any keyword arguments, e.g. `scope :recent,` then `-> { order(created_at: :desc) }` on the next line. A long block is then easy to read, and the declaration's name stays on its own. A declaration with no keyword arguments or lambda stays on one line, e.g. `attribute :title, :string` or `validate :published_at_cannot_be_in_the_future`.
 
 Put a blank line above and below each declaration, even one-line declarations next to each other, so each one reads as its own block. Leave out the line above when the declaration is the first line in its block, and the line below when it's the last line before `end`.
 
