@@ -114,6 +114,8 @@ Put the class method on the service, not a method on the record, e.g. `integrati
 
 Encrypt the secrets on the record, e.g. `encrypts :api_key`. See [Models: Secrets](../models/#secrets).
 
+When a service keeps connections open, share them through a connection pool on the service, keyed on the connection settings. Never let a pooled connection carry one set of credentials to a service built with another: send the credentials with each request, or include them in the key. See [Patterns: Connection Pools](../../patterns/connection-pools/).
+
 ## Kinds of services
 
 > **TODO:** Describe how you handle this.
