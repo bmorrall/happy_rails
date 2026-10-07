@@ -12,7 +12,7 @@ An action is an object that does one task, e.g. archiving a post. Any code can c
 
 Actions are the gateway to [service objects](../services/). A form, controller or job calls an action, and the action calls the services it needs, e.g. `Posts::SendNewsletter` calls `NewsletterClient`. An action has one `call` method. A service has a method for each thing it does.
 
-An action is not an [action form](../forms/#action-forms). An action form handles what the user submits for an action. An action is a separate object that does a task.
+An action is not a [command form](../forms/#command-forms). A command form handles what the user submits, and tells them whether it worked. An action is a separate object that does the task.
 
 Put actions in `app/actions/`, e.g. `Posts::ArchivePost` in `app/actions/posts/archive_post.rb`.
 

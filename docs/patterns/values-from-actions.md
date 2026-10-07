@@ -16,7 +16,7 @@ The action can't return the ID. These patterns get it to the caller anyway.
 
 A client for another service, e.g. `NewsletterClient`, is a request and reply object. It sends a request and returns the response, with no business logic. Returning a value is its whole job, so the no-return rule doesn't apply to it.
 
-An action is a command. It changes something. If the caller only needs a value and nothing should change, call the client directly. Wrap the client in an action when there's work to do with the reply, e.g. saving it.
+An action changes something, and returns nothing. If the caller only needs a value and nothing should change, call the client directly, as in [Services: Calling a service](../../guide/services/#calling-a-service). Wrap the client in an action when there's work to do with the reply, e.g. saving it.
 
 ## Save the value on a record
 

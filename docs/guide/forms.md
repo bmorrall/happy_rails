@@ -24,7 +24,7 @@ end
 
 ## Base class
 
-Give every form a base class, `ApplicationForm`, in `app/forms/application_form.rb`. It takes the current user and the params, so every form knows who is submitting it. A resource form or action form takes its resource as the first argument, before the current user, and keeps it in its own private `attr_reader`. It also includes `ActiveModel::Validations::Callbacks`, so forms can use `before_validation` and `after_validation`, and `ActiveModel::Attributes::Normalization`, so forms can use `normalizes`. `ActiveModel::Model` includes neither. `ActiveModel::Attributes::Normalization` needs Rails 8.1 or later.
+Give every form a base class, `ApplicationForm`, in `app/forms/application_form.rb`. It takes the current user and the params, so every form knows who is submitting it. A resource form or command form takes its resource as the first argument, before the current user, and keeps it in its own private `attr_reader`. It also includes `ActiveModel::Validations::Callbacks`, so forms can use `before_validation` and `after_validation`, and `ActiveModel::Attributes::Normalization`, so forms can use `normalizes`. `ActiveModel::Model` includes neither. `ActiveModel::Attributes::Normalization` needs Rails 8.1 or later.
 
 ```ruby
 class ApplicationForm
@@ -216,9 +216,9 @@ en:
       post: *post_attributes
 ```
 
-### Action forms
+### Command forms
 
-A form for an action, e.g. publishing a post, still wraps the resource, but it doesn't create or update it. Give it a custom `model_name`, so its params get their own key, e.g. `publication` for `Posts::PublicationsController`. Override `persisted?` to return `false` and `new_record?` to return `true`, so `form_with` sends a `POST`, not a `PATCH`.
+A command form tells the app to do something to a resource, e.g. publish a post. It still wraps the resource, but it doesn't create or update it. Like any form, its `submit` returns the resource, or `false` with errors, so the controller can tell the user what happened. The work itself is usually an [action](../actions/), which returns nothing. Give it a custom `model_name`, so its params get their own key, e.g. `publication` for `Posts::PublicationsController`. Override `persisted?` to return `false` and `new_record?` to return `true`, so `form_with` sends a `POST`, not a `PATCH`.
 
 ```ruby
 class PublishPostForm < ApplicationForm
