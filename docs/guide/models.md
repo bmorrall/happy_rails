@@ -209,9 +209,38 @@ end
 
 > **TODO:** Describe how you handle this.
 
+## Secrets
+
+Encrypt a column that stores a secret, e.g. an API key or an access token, with `encrypts`. Put it under `### Attributes ###`. Rails encrypts the value before it saves it, so a database dump, a backup or a logged query doesn't show the secret. The model still reads it as plain text, e.g. `integration.api_key`.
+
+```ruby
+class NewsletterServiceIntegration < ApplicationRecord
+  ### Attributes ###
+
+  encrypts :api_key
+
+  # ...
+end
+```
+
+Active Record Encryption needs its keys before the first `encrypts`. Run `bin/rails db:encryption:init`, and add the keys it prints to the app's credentials.
+
 ## Business logic
 
-> **TODO:** Describe how you handle this.
+A model never builds or calls a [service object](../services/). It changes and queries its own record. Work with another service goes in an action, which takes the record as an argument.
+
+A method on the model that builds a service would let any code holding the record call the service, e.g. a view.
+
+```ruby
+class NewsletterServiceIntegration < ApplicationRecord
+  # Don't do this
+  def client
+    NewsletterClient.for(self)
+  end
+end
+```
+
+> **TODO:** Describe how you handle the rest of this.
 
 ## Testing
 

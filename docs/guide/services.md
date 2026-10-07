@@ -81,6 +81,39 @@ class NewsletterClient
 end
 ```
 
+### Settings from a record
+
+Some settings are saved on a record, e.g. the API key and base URL on a `NewsletterServiceIntegration`. Build the service from the record with a class method on the service, e.g. `NewsletterClient.for(integration)`. `for` reads well, but any name that says where the settings come from works, e.g. `from_integration`. Pass the record's settings to `new` as keywords, and leave out the settings that are the same for every record. Those keep their `config.x` defaults.
+
+Make each setting that comes from the record a required keyword, with no default. A record without the setting then raises an `ArgumentError` when the service is built.
+
+```ruby
+class NewsletterClient
+  def self.for(integration)
+    new(
+      api_key: integration.api_key,
+      base_url: integration.base_url
+    )
+  end
+
+  def initialize(
+    api_key:,
+    base_url:,
+    api_path: Rails.application.config.x.newsletter_client.api_path!
+  )
+    @api_key = api_key
+    @base_url = base_url
+    @api_path = api_path
+  end
+
+  # ...
+end
+```
+
+Put the class method on the service, not a method on the record, e.g. `integration.client`. The service knows which settings it needs, so a new setting changes only the service. A method on the record would also hand a working client to any code that holds the record, e.g. a view, and skip the action. Pass the record to the action, and build the service there, e.g. `NewsletterClient.for(integration).create_newsletter(post)`.
+
+Encrypt the secrets on the record, e.g. `encrypts :api_key`. See [Models: Secrets](../models/#secrets).
+
 ## Kinds of services
 
 > **TODO:** Describe how you handle this.

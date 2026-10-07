@@ -17,6 +17,7 @@ This page describes the app, so you know what each example is talking about. The
 - **Comment**: a reply to a published post. Comments belong to a post, and are approved before other readers see them.
 - **Tag**: a label on a post, so readers can find related posts.
 - **Publication**: a record of each time a post is published, and who published it.
+- **NewsletterServiceIntegration**: the app's connection to the outside newsletter service, with its API key and base URL. An App Admin sets it up.
 
 ```ruby
 class Post < ApplicationRecord
