@@ -40,11 +40,11 @@ Put a shared concern in the `concerns/` directory of the classes that include it
 class Post < ApplicationRecord
   concerning :Publishing do
     included do
-      scope :published, -> { where.not(published_at: nil) }
+      scope :recently_published, -> { published.where(published_at: 1.week.ago..) }
     end
 
-    def publish
-      update(published_at: Time.current)
+    def recently_published?
+      published? && published_at >= 1.week.ago
     end
   end
 end

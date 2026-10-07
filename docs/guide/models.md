@@ -97,8 +97,8 @@ class Post < ApplicationRecord
   ### Public Methods ###
 
   concerning :Publishing do
-    def publish!
-      update!(status: :published)
+    def recently_published?
+      published? && published_at >= 1.week.ago
     end
   end
 
@@ -242,7 +242,7 @@ RSpec.describe Post do
   end
 
   describe "Publishing" do
-    describe "#publish!" do
+    describe "#recently_published?" do
       # ...
     end
   end
@@ -327,20 +327,6 @@ RSpec.describe Post do
       post = described_class.new(title: "  A title  ")
 
       expect(post.title).to eq("A title")
-    end
-  end
-end
-```
-
-When a callback reaches outside the record, it doesn't change an attribute. Put its examples in the `describe` block of the method that triggers it, e.g. `describe "#save"` for an `after_create_commit` callback, or `describe "#destroy"` for an `after_destroy_commit` callback. Check the effect, e.g. that a job is enqueued. Don't name the block after the callback method. It is private, and the examples never call it.
-
-```ruby
-RSpec.describe Post do
-  describe "#save" do
-    it "enqueues a NotifySubscribersJob when a new post is saved" do
-      post = build(:post)
-
-      expect { post.save! }.to have_enqueued_job(NotifySubscribersJob).with(post)
     end
   end
 end
