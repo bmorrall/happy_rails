@@ -18,9 +18,10 @@ Each convention is written twice: once in the guide for people, and once in the 
 | `docs/guide/validators.md` | `instructions/.github/instructions/happy_validators.instructions.md` |
 | `docs/guide/forms.md` | `instructions/.github/instructions/happy_forms.instructions.md` |
 | `docs/guide/actions.md` | `instructions/.github/instructions/happy_actions.instructions.md` |
+| `docs/guide/services.md` | `instructions/.github/instructions/happy_services.instructions.md` |
+| `docs/guide/jobs.md` | `instructions/.github/instructions/happy_jobs.instructions.md` |
 | `docs/guide/controllers.md` | `instructions/.github/instructions/happy_controllers.instructions.md` |
 | `docs/guide/views.md` | `instructions/.github/instructions/happy_views.instructions.md` |
-| `docs/guide/jobs.md` | `instructions/.github/instructions/happy_jobs.instructions.md` |
 | `docs/guide/mailers.md` | `instructions/.github/instructions/happy_mailers.instructions.md` |
 | `docs/guide/code-style.md` | `instructions/.github/instructions/happy_style.instructions.md` |
 | `docs/guide/gems/devise.md` | `instructions/.github/instructions/happy_devise.instructions.md` |

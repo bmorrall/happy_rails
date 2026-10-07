@@ -6,9 +6,11 @@ nav_order: 6
 
 # Actions
 
-How service objects are written and called.
+How actions are written and called.
 
-An action is a service object that does one task, e.g. archiving a post. Any code can call it, e.g. a controller, a form or a job.
+An action is an object that does one task, e.g. archiving a post. Any code can call it, e.g. a controller, a form or a job.
+
+Actions are the gateway to [service objects](../services/). A form, controller or job calls an action, and the action calls the services it needs, e.g. `Posts::SendNewsletter` calls `NewsletterClient`. An action has one `call` method. A service has a method for each thing it does.
 
 An action is not an [action form](../forms/#action-forms). An action form handles what the user submits for an action. An action is a separate object that does a task.
 
@@ -16,7 +18,7 @@ Put actions in `app/actions/`, e.g. `Posts::ArchivePost` in `app/actions/posts/a
 
 ## When to write an action
 
-Write an action for a unit of work that could be run from more than one place, e.g. a form, a job, the console or a rake task. Publishing a post is a good fit: a user publishes from a form, a job publishes scheduled posts, and a developer may publish one from the console to fix a problem. Each caller calls the same action, so the task works the same way everywhere.
+Write an action for a task that could be run from more than one place, e.g. a form, a job, the console or a rake task. Publishing a post is a good fit: a user publishes from a form, a job publishes scheduled posts, and a developer may publish one from the console to fix a problem. Each caller calls the same action, so the task works the same way everywhere.
 
 When only one place will ever do the work, keep it there, e.g. in the form's `submit` or the job's `perform`. Move it into an action when a second caller needs it.
 

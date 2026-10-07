@@ -4,8 +4,7 @@ applyTo: "app/actions/**/*.rb,spec/actions/**/*.rb"
 
 # Actions
 
-- Put service objects that do one task in `app/actions/`, e.g. `Posts::ArchivePost` in `app/actions/posts/archive_post.rb`.
-- Write an action for a unit of work that could be run from more than one place, e.g. a form, a job, the console or a rake task.
+- Write an action for one task that could be run from more than one place, e.g. a form, a job, the console or a rake task, and put it in `app/actions/`, e.g. `Posts::ArchivePost` in `app/actions/posts/archive_post.rb`.
 - Keep actions separate from action forms. An action form handles what the user submits, e.g. `PublishPostForm`. An action is its own object that does a task, e.g. `Posts::ArchivePost`.
 - Keep calls from one action to another rare. Call another action only when it is part of the same task, and no caller would want one without the other.
 - When the work needs more than one step, run the steps from a job, not from an action. Enqueue a job for a later step that can wait, e.g. `Posts::PublishPost.call(post, publisher: post.scheduled_by)` then `NotifySubscribersJob.perform_later(post)` in `PublishScheduledPostJob`. Keep `Posts::PublishPost` to publishing the post.
