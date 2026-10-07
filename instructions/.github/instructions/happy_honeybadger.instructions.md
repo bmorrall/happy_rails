@@ -1,5 +1,5 @@
 ---
-applyTo: "config/honeybadger.yml,app/models/**/*.rb,app/actions/**/*.rb,app/controllers/**/*.rb,app/jobs/**/*.rb"
+applyTo: "config/honeybadger.yml,app/models/**/*.rb,app/actions/**/*.rb,app/controllers/**/*.rb,app/jobs/**/*.rb,app/services/**/*.rb"
 ---
 
 # Honeybadger

@@ -122,7 +122,31 @@ When a service keeps connections open, share them through a connection pool on t
 
 ## Errors
 
-> **TODO:** Describe how you handle this.
+Give each service its own errors. Define an `Error` class inside the service, and a subclass for each failure a caller handles on its own, e.g. `NewsletterClient::UnprocessableError` when the newsletter service rejects a post. Callers then rescue the service's errors, not the errors of the HTTP library it happens to use.
+
+Rescue the library's errors inside the service, and raise the service's error instead. Ruby keeps the library's error as the `cause`.
+
+Give the error everything you'd want to know when the call fails: the request method and URL, the response status and the response body. The service is the only code that has them. With Honeybadger, the error adds them to the report with `to_honeybadger_context`. See [Honeybadger: Errors](../gems/honeybadger/#errors).
+
+```ruby
+class NewsletterClient
+  class Error < StandardError
+    def initialize(message = nil, http_method: nil, url: nil, status: nil, body: nil)
+      # ...
+    end
+  end
+
+  class UnprocessableError < Error; end
+
+  def create_newsletter(post)
+    # ...
+  rescue Faraday::UnprocessableEntityError => e
+    raise UnprocessableError.new(e.message, **details_from(e))
+  rescue Faraday::Error => e
+    raise Error.new(e.message, **details_from(e))
+  end
+end
+```
 
 ## Testing
 
