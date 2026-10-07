@@ -51,6 +51,36 @@ A form or controller may call a service directly when it only reads a value and 
 
 A job should call an action too. It may call a service directly only when the job is the only place that does the task, e.g. `NotifySubscribersJob` calls `NewsletterClient#deliver`. Move the call into an action when a second caller needs it, as in [Actions: When to write an action](../actions/#when-to-write-an-action).
 
+## Configuration
+
+Read a service's settings, e.g. an API key, from `Rails.application.config.x`. Give each service its own namespace, named after it, e.g. `config.x.newsletter_client`. Rails keeps `config.x` for app settings, so your keys never clash with a setting from Rails or a gem.
+
+Set the values in one place, e.g. `config/application.rb`, from credentials or `ENV`. The service reads only `config.x`, never `Rails.application.credentials` or `ENV`. Then there's one place to look for every setting the app has.
+
+```ruby
+# config/application.rb
+config.x.newsletter_client.api_key = Rails.application.credentials.dig(:newsletter_client, :api_key)
+config.x.newsletter_client.base_url = "https://api.newsletter.example"
+```
+
+Take each setting as a keyword argument to `initialize`, with the setting as its default. Callers then write `NewsletterClient.new`, and never pass the settings. The default is read each time the service is built, so a change to the config is always picked up. A spec can pass its own values instead of stubbing the config.
+
+Read each required setting with a bang, e.g. `api_key!`. It raises a `KeyError` when the setting is missing or blank, e.g. `:api_key is blank`, as soon as the service is built. Without the bang, a missing setting is `nil`, and the service fails later with a less helpful error, e.g. a 401 from the other service. The bang only works inside a namespace, e.g. `config.x.newsletter_client.api_key!`. Never put a setting straight on `config.x`, e.g. `config.x.newsletter_client_api_key`. Rails then returns an empty set of options for a missing key, not `nil`, and its bang never raises.
+
+```ruby
+class NewsletterClient
+  def initialize(
+    api_key: Rails.application.config.x.newsletter_client.api_key!,
+    base_url: Rails.application.config.x.newsletter_client.base_url!
+  )
+    @api_key = api_key
+    @base_url = base_url
+  end
+
+  # ...
+end
+```
+
 ## Kinds of services
 
 > **TODO:** Describe how you handle this.
