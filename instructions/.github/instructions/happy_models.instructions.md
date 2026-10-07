@@ -22,8 +22,8 @@ applyTo: "app/models/**/*.rb,spec/models/**/*.rb"
 - Test a normalisation in its attribute's `describe` block by building the record with the untidy value and reading it back, e.g. `it "is stripped"` with `expect(described_class.new(title: "  A title  ").title).to eq("A title")`. Never call `validate` or `save` for it.
 - When an attribute has `presence: true`, add `allow_blank: true` to its other validators, so a blank value only gets "can't be blank", e.g. `validates :title, presence: true, length: { maximum: TITLE_MAX_LENGTH, allow_blank: true }`.
 - Tidy values with `normalizes` under `### Attributes ###`, e.g. `normalizes :isbn, with: ->(isbn) { isbn.delete("-") }`. Never tidy a value in a `before_validation` callback or an overridden writer, except before Rails 7.1, which has no `normalizes`: then use `before_validation { self.title = title&.strip }` under `### Callbacks ###`.
+- Use callbacks only to change the record's own attributes, e.g. `before_save :set_published_at, if: :published?`. Never create, change or delete another record, enqueue a job, send an email or call another service from a callback, including `after_commit` callbacks. Do that work in the form, action or job that does the task, e.g. `NotifySubscribersJob.perform_later(post)` in `PublishPostForm#submit`. See https://bmorrall.github.io/happy_rails/patterns/side-effects-of-saving/ for where each kind of work goes. `dependent:` on an association is allowed, e.g. `has_many :comments, dependent: :destroy`.
 - In model specs, test an attribute that uses a custom validator with the validator's matcher, e.g. `it { is_expected.to validate_isbn_of(:isbn) }`. Never repeat the cases from the validator's own spec.
 - TODO: How to write validations and associations.
 - TODO: Where scopes and query logic go.
-- TODO: When callbacks are allowed.
 - TODO: Where business logic goes.

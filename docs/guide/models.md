@@ -158,7 +158,28 @@ Don't tidy a value in a `before_validation` callback, or by overriding its write
 
 ## Callbacks
 
-> **TODO:** Describe how you handle this.
+A callback only changes the record's own attributes, e.g. setting `published_at` before a published post is saved. Never use a callback to create, change or delete another record, enqueue a job, send an email or call another service. This includes `after_commit` callbacks.
+
+A callback runs on every save, wherever it comes from: a form, a job, the console, a seed file or a factory in a spec. Work in a callback that reaches outside the record runs in all of those places, even when the caller didn't want it. You also can't see it in the code that saves the record. Put that work in the form, action or job that does the task instead. The caller then shows everything that happens. See [Side Effects of Saving](../../patterns/side-effects-of-saving/) for where each kind of work goes.
+
+```ruby
+class Post < ApplicationRecord
+  ### Callbacks ###
+
+  before_save :set_published_at,
+    if: :published?
+
+  # ...
+
+  private
+
+  def set_published_at
+    self.published_at ||= Time.current
+  end
+end
+```
+
+`dependent:` on an association is not a callback you write. It keeps the data consistent when a record is deleted, e.g. `has_many :comments, dependent: :destroy`, so use it as usual.
 
 ## Enums
 
