@@ -117,6 +117,30 @@ class CreatePostForm < ApplicationForm
 end
 ```
 
+### Class methods
+
+When a class has private class methods, define its class methods in a `class << self` block. `private` inside the block then works as it does for instance methods. Otherwise use `def self.`, e.g. `def self.call` in `ApplicationAction`.
+
+```ruby
+class NewsletterClient
+  class << self
+    def for(integration)
+      # ...
+    end
+
+    def pool_for(base_url:)
+      # ...
+    end
+
+    private
+
+    def build_pool(base_url:)
+      # ...
+    end
+  end
+end
+```
+
 ### Expectations
 
 Build and assign values before `expect`, not inside its argument. Give each value its own line in the setup, then pass the variable to `expect`. Then the `expect` line only says what is checked, and each value has a name you can read.

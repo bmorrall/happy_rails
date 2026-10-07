@@ -16,24 +16,41 @@ The patterns below use the [connection_pool](https://github.com/mperham/connecti
 
 Keep the credentials out of the connection. A connection only needs the host, e.g. the `base_url`. Send the per-record settings, e.g. the API key, with each request. Then every record that uses the same host shares one pool, and building the service stays cheap: it only keeps the settings, and borrows a connection when it makes a request.
 
-Keep the pools in a `Concurrent::Map`, keyed by host, and create each one the first time it's needed with `compute_if_absent`. The map creates each pool once, even when threads race to create it, so you don't need a mutex.
+Keep the pools in a `Concurrent::Map`, keyed by host, and create each one the first time it's needed with `compute_if_absent`. The map creates each pool once, even when threads race to create it, so you don't need a mutex. Make the map a private constant, so only `pool_for` can add or read pools, and keep the code that builds a pool private.
+
+Take the pool as a keyword to `initialize`, with the pool for the service's host as its default. Then each method borrows from `pool`, and a spec can pass its own pool, as with any other setting. Only specs pass it, because a pool for the wrong host would send requests there.
 
 ```ruby
 class NewsletterClient
   POOLS = Concurrent::Map.new
+  private_constant :POOLS
 
-  def self.pool_for(base_url:)
-    POOLS.compute_if_absent({ base_url: }) do
+  class << self
+    def pool_for(base_url:)
+      POOLS.compute_if_absent({ base_url: }) do
+        build_pool(base_url:)
+      end
+    end
+
+    private
+
+    def build_pool(base_url:)
       ConnectionPool.new(size: Rails.application.config.x.newsletter_client.pool_size!) do
         Faraday.new(url: base_url) { |faraday| faraday.adapter :net_http_persistent }
       end
     end
   end
 
-  # ...
+  def initialize(
+    api_key:,
+    base_url:,
+    pool: self.class.pool_for(base_url:)
+  )
+    # ...
+  end
 
   def create_newsletter(post)
-    self.class.pool_for(base_url:).with do |connection|
+    pool.with do |connection|
       connection.post(
         "#{api_path}/newsletters",
         payload_for(post),
@@ -43,6 +60,8 @@ class NewsletterClient
   end
 end
 ```
+
+`pool_for` stays public, because the `pool:` default runs on the instance and calls it through `self.class`. Ruby doesn't allow that call to a private method.
 
 This works for a single service too. With one host, the map holds one pool, and you don't need an initializer.
 
@@ -56,10 +75,18 @@ Pass the connection settings to `pool_for` as keywords, from the service's own s
 
 ```ruby
 class NewsletterClient
-  POOLS = Concurrent::Map.new
+  # ...
 
-  def self.pool_for(base_url:, timeout_seconds:)
-    POOLS.compute_if_absent({ base_url:, timeout_seconds: }) do
+  class << self
+    def pool_for(base_url:, timeout_seconds:)
+      POOLS.compute_if_absent({ base_url:, timeout_seconds: }) do
+        build_pool(base_url:, timeout_seconds:)
+      end
+    end
+
+    private
+
+    def build_pool(base_url:, timeout_seconds:)
       ConnectionPool.new(size: Rails.application.config.x.newsletter_client.pool_size!) do
         Faraday.new(url: base_url, request: { timeout: timeout_seconds }) do |faraday|
           faraday.adapter :net_http_persistent
@@ -72,20 +99,17 @@ class NewsletterClient
     api_key:,
     base_url:,
     api_path: Rails.application.config.x.newsletter_client.api_path!,
-    timeout_seconds: Rails.application.config.x.newsletter_client.timeout_seconds!
+    timeout_seconds: Rails.application.config.x.newsletter_client.timeout_seconds!,
+    pool: self.class.pool_for(base_url:, timeout_seconds:)
   )
     # ...
-  end
-
-  def create_newsletter(post)
-    self.class.pool_for(base_url:, timeout_seconds:).with do |connection|
-      # ...
-    end
   end
 end
 ```
 
-The pool size is the exception. It's set for the whole process, so read it from `config.x` in `pool_for`, and leave it out of the key.
+A keyword's default can use the keywords before it, so the `pool:` default gets the `base_url:` and `timeout_seconds:` the service was built with.
+
+The pool size is the exception. It's set for the whole process, so read it from `config.x` in `build_pool`, and leave it out of the key.
 
 When a setting the block reads comes from a record and isn't shared, e.g. a client certificate for each integration, the key is effectively one pool per record. See [Pool per record](#pool-per-record).
 
@@ -94,8 +118,16 @@ When a setting the block reads comes from a record and isn't shared, e.g. a clie
 Use a pool per record only when the connection itself depends on the record, e.g. a client certificate for each integration. Pass that setting to `pool_for` as a keyword, and key the map on it, as in [What goes in the connection](#what-goes-in-the-connection). Each record then gets its own pool. A record whose setting changes gets a new pool too, because the key changes with it.
 
 ```ruby
-def self.pool_for(base_url:, client_certificate:)
-  POOLS.compute_if_absent({ base_url:, client_certificate: }) do
+class << self
+  def pool_for(base_url:, client_certificate:)
+    POOLS.compute_if_absent({ base_url:, client_certificate: }) do
+      build_pool(base_url:, client_certificate:)
+    end
+  end
+
+  private
+
+  def build_pool(base_url:, client_certificate:)
     ConnectionPool.new(size: Rails.application.config.x.newsletter_client.pool_size!) do
       Faraday.new(url: base_url, ssl: { client_cert: client_certificate }) do |faraday|
         faraday.adapter :net_http_persistent
