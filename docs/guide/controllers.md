@@ -569,7 +569,7 @@ end
 
 ## Rescuing errors
 
-When you rescue an error with `rescue_from`, pass `with:` and the name of a private method. Start the name with `handle_`, then add the error's name without the `Error` suffix, e.g. `handle_record_not_found` for `ActiveRecord::RecordNotFound`. Don't pass a block.
+When you rescue an error with `rescue_from`, pass `with:` and the name of a private method. Start the name with `handle_`, then add the error class's name in snake case, e.g. `handle_record_not_found` for `ActiveRecord::RecordNotFound` and `handle_not_authorized_error` for `Pundit::NotAuthorizedError`. Keep the `Error` suffix, so the name says it handles a failure. Don't pass a block.
 
 A named method is easy to find, and every handler starts the same way. A subclass can also override it to handle the error its own way, and call `super` for the default. You can't do that with a block. See [Pundit: Unauthorised requests](../gems/pundit/#unauthorised-requests) for an example.
 
@@ -602,7 +602,7 @@ end
 
 ### Other services failing
 
-When a controller calls an [action](../actions/) that calls another service, the service can fail, e.g. it returns a 500 or times out. That isn't part of the app's normal flow. The user didn't cause it, and can't fix it by changing what they submitted. Give the action an error class for this cause, e.g. `Posts::SendNewsletter::ServiceError`, as in [Actions: Error handling](../actions/#error-handling). Rescue it with `rescue_from`, and name the handler after the action and the error, without the `Error` suffix, e.g. `handle_send_newsletter_service`. Errors the user or a developer caused, e.g. invalid data, still belong in a form, as above.
+When a controller calls an [action](../actions/) that calls another service, the service can fail, e.g. it returns a 500 or times out. That isn't part of the app's normal flow. The user didn't cause it, and can't fix it by changing what they submitted. Give the action an error class for this cause, e.g. `Posts::SendNewsletter::ServiceError`, as in [Actions: Error handling](../actions/#error-handling). Rescue it with `rescue_from`, and name the handler after the action and the error, e.g. `handle_send_newsletter_service_error`. Errors the user or a developer caused, e.g. invalid data, still belong in a form, as above.
 
 In the handler, redirect with an alert. Write the alert as fixed text, and never show the error's message. It may hold the other service's reply, or details about your systems.
 
@@ -610,7 +610,7 @@ In the handler, redirect with an alert. Write the alert as fixed text, and never
 module Posts
   class NewslettersController < BaseController
     rescue_from Posts::SendNewsletter::ServiceError,
-      with: :handle_send_newsletter_service
+      with: :handle_send_newsletter_service_error
 
     # POST /posts/:post_id/newsletter
     def create
@@ -624,7 +624,7 @@ module Posts
 
     private
 
-    def handle_send_newsletter_service
+    def handle_send_newsletter_service_error
       redirect_to post_path(@post),
         alert: "Newsletter could not be sent. Please try again later."
     end
@@ -635,7 +635,7 @@ end
 An API controller renders the error instead, with a 5xx status, so the client knows its request wasn't the problem. Use `:bad_gateway` (502) when the other service failed, e.g. it returned a 500. Use `:gateway_timeout` (504) when the service took too long to reply. Use `:service_unavailable` (503) when the service can't be reached for now, e.g. it is down for maintenance. A 503 tells the client to try again later.
 
 ```ruby
-def handle_send_newsletter_service
+def handle_send_newsletter_service_error
   render json: { error: "Newsletter could not be sent. Please try again later." },
     status: :bad_gateway
 end

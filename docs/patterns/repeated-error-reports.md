@@ -63,7 +63,7 @@ end
 The action doesn't work on a resource, so it has no module. Call it wherever you would call `Honeybadger.notify`, e.g. in a `rescue_from` handler. Pass the context of each record the error affects, as for `Honeybadger.notify`. See [Honeybadger: Context](../../guide/gems/honeybadger/#context).
 
 ```ruby
-def handle_send_newsletter_service(error)
+def handle_send_newsletter_service_error(error)
   ReportThrottledError.call(error, context: { post: @post&.to_honeybadger_context })
 
   redirect_to post_path(@post),

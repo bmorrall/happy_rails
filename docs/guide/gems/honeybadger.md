@@ -23,13 +23,13 @@ Report a rescued error with `Honeybadger.notify`, not `Rails.error.report`. Then
 module Posts
   class NewslettersController < BaseController
     rescue_from Posts::SendNewsletter::ServiceError,
-      with: :handle_send_newsletter_service
+      with: :handle_send_newsletter_service_error
 
     # ...
 
     private
 
-    def handle_send_newsletter_service(error)
+    def handle_send_newsletter_service_error(error)
       Honeybadger.notify(error, context: { post: @post&.to_honeybadger_context })
 
       redirect_to post_path(@post),
@@ -87,7 +87,7 @@ end
 When you report an error, pass the context of each record the error affects, under the record's name. Each record's keys then stay apart, and the report shows which records were involved. Use `&.`, because the error may happen before a record is loaded, e.g. in a `before_action`.
 
 ```ruby
-def handle_create_comment_service(error)
+def handle_create_comment_service_error(error)
   Honeybadger.notify(error, context: {
     post: @post&.to_honeybadger_context,
     comment: @comment&.to_honeybadger_context

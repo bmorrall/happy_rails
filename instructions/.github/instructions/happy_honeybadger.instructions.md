@@ -5,7 +5,7 @@ applyTo: "config/honeybadger.yml,app/models/**/*.rb,app/actions/**/*.rb,app/cont
 # Honeybadger
 
 - Let errors the app doesn't rescue raise, so Honeybadger reports them.
-- Report an error the app rescues with `Honeybadger.notify`, never `Rails.error.report`, e.g. `Honeybadger.notify(error, context: { post: @post&.to_honeybadger_context })` in `handle_send_newsletter_service(error)` before the redirect.
+- Report an error the app rescues with `Honeybadger.notify`, never `Rails.error.report`, e.g. `Honeybadger.notify(error, context: { post: @post&.to_honeybadger_context })` in `handle_send_newsletter_service_error(error)` before the redirect.
 - Pass the error itself to `Honeybadger.notify`, e.g. `Honeybadger.notify(error)`, not a message, e.g. `Honeybadger.notify(error.message)`.
 - You may report an error that a form or a job handles as an expected outcome, e.g. `Posts::SendNewsletter::RejectedError`. Tag it `low_priority`, e.g. `Honeybadger.notify(e, context: { post: post.to_honeybadger_context }, tags: ["low_priority"])`.
 - Give each model that shows up in error reports a `to_honeybadger_context` method that returns a hash of what helps debug the record, in a `concerning :HoneybadgerContext` block under a `### Modules (Honeybadger) ###` heading, e.g. in `Comment`. Never name the block `concerning :Honeybadger`.

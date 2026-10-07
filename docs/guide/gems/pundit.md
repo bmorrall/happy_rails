@@ -28,12 +28,12 @@ module PunditAuthorization
       unless: :devise_controller?
 
     rescue_from Pundit::NotAuthorizedError,
-      with: :handle_not_authorized
+      with: :handle_not_authorized_error
   end
 
   private
 
-  def handle_not_authorized
+  def handle_not_authorized_error
     redirect_to root_url,
       alert: "You are not authorized to perform this action."
   end
@@ -144,7 +144,7 @@ end
 
 ### Unauthorised requests
 
-When a check fails, Pundit raises `Pundit::NotAuthorizedError`. Rescue it in the `PunditAuthorization` concern with a `handle_not_authorized` method, as in [Controllers: Rescuing errors](../../controllers/#rescuing-errors). Redirect to the root page with an alert. The root page is one every user can see, so the redirect never fails its own check.
+When a check fails, Pundit raises `Pundit::NotAuthorizedError`. Rescue it in the `PunditAuthorization` concern with a `handle_not_authorized_error` method, as in [Controllers: Rescuing errors](../../controllers/#rescuing-errors). Redirect to the root page with an alert. The root page is one every user can see, so the redirect never fails its own check.
 
 ```ruby
 module PunditAuthorization
@@ -154,19 +154,19 @@ module PunditAuthorization
     # ...
 
     rescue_from Pundit::NotAuthorizedError,
-      with: :handle_not_authorized
+      with: :handle_not_authorized_error
   end
 
   private
 
-  def handle_not_authorized
+  def handle_not_authorized_error
     redirect_to root_url,
       alert: "You are not authorized to perform this action."
   end
 end
 ```
 
-In a nested resource's `BaseController`, override `handle_not_authorized`. When the parent record is set and the user can see it, redirect to the parent instead. A user who may read a post but not comment on it goes back to the post, not to the root page. Otherwise call `super`, e.g. when the user can't see the post at all.
+In a nested resource's `BaseController`, override `handle_not_authorized_error`. When the parent record is set and the user can see it, redirect to the parent instead. A user who may read a post but not comment on it goes back to the post, not to the root page. Otherwise call `super`, e.g. when the user can't see the post at all.
 
 The `elsif` is optional. It redirects to the parent's index when the user can't see the parent but can see the list, e.g. a post that was unpublished. Keep `super` as the last case.
 
@@ -177,7 +177,7 @@ module Posts
 
     private
 
-    def handle_not_authorized
+    def handle_not_authorized_error
       if @post && policy(@post).show?
         redirect_to @post,
           alert: "You are not authorized to perform this action."
