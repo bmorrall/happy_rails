@@ -83,7 +83,7 @@ end
 
 ### Settings from a record
 
-Some settings are saved on a record, e.g. the API key and base URL on a `NewsletterServiceIntegration`. Build the service from the record with a class method on the service, e.g. `NewsletterClient.for(integration)`. `for` reads well, but any name that says where the settings come from works, e.g. `from_integration`. Pass the record's settings to `new` as keywords, and leave out the settings that are the same for every record. Those keep their `config.x` defaults.
+Some settings are saved on a record, e.g. the API key and base URL on a `NewsletterServiceIntegration`. Build the service from the record with a class method on the service, e.g. `NewsletterClient.for(integration)`. Name it `for`, or `for_` and what the settings come from, e.g. `for_integration`, when the service has more than one builder or `for` alone isn't clear. Pass the record's settings to `new` as keywords, and leave out the settings that are the same for every record. Those keep their `config.x` defaults.
 
 Make each setting that comes from the record a required keyword, with no default. A record without the setting then raises an `ArgumentError` when the service is built.
 
@@ -114,7 +114,7 @@ Put the class method on the service, not a method on the record, e.g. `integrati
 
 Encrypt the secrets on the record, e.g. `encrypts :api_key`. See [Models: Secrets](../models/#secrets).
 
-When a service keeps connections open, share them through a connection pool on the service, keyed on the connection settings. Take the pool as a keyword to `initialize`, with the shared pool as its default, e.g. `pool: self.class.pool_for(base_url:)`. Never let a pooled connection carry one set of credentials to a service built with another: send the credentials with each request, or include them in the key. See [Patterns: Connection Pools](../../patterns/connection-pools/).
+When a service keeps connections open, share them through a connection pool on the service, keyed on the connection settings. Take the pool as a required first argument to `initialize`, and build the service with a class method that finds the pool. Use `NewsletterClient.default` when every setting comes from `config.x`, and `NewsletterClient.for(integration)`, or e.g. `for_integration`, when the settings come from a record. The connection settings go only to the pool, and `initialize` takes the settings sent with each request, e.g. `new(pool_for(base_url: integration.base_url), api_key: integration.api_key)`. Never let a pooled connection carry one set of credentials to a service built with another: send the credentials with each request, or include them in the key. See [Patterns: Connection Pools](../../patterns/connection-pools/).
 
 ## Kinds of services
 

@@ -16,9 +16,11 @@ The patterns below use the [connection_pool](https://github.com/mperham/connecti
 
 Keep the credentials out of the connection. A connection only needs the host, e.g. the `base_url`. Send the per-record settings, e.g. the API key, with each request. Then every record that uses the same host shares one pool, and building the service stays cheap: it only keeps the settings, and borrows a connection when it makes a request.
 
-Keep the pools in a `Concurrent::Map`, keyed by host, and create each one the first time it's needed with `compute_if_absent`. The map creates each pool once, even when threads race to create it, so you don't need a mutex. Make the map a private constant, so only `pool_for` can add or read pools, and keep the code that builds a pool private.
+Keep the pools in a `Concurrent::Map`, keyed by host, and create each one the first time it's needed with `compute_if_absent`. The map creates each pool once, even when threads race to create it, so you don't need a mutex. Make the map a private constant, so only `pool_for` can add or read pools.
 
-Take the pool as a keyword to `initialize`, with the pool for the service's host as its default. Then each method borrows from `pool`, and a spec can pass its own pool, as with any other setting. Only specs pass it, because a pool for the wrong host would send requests there.
+Take the pool as the first argument to `initialize`, and make it required. Then each method borrows from `pool`. Build the service with a class method that finds the pool, e.g. `NewsletterClient.default` for the app-wide settings in `config.x`, or `NewsletterClient.for(integration)` for settings saved on a record. The connection settings, e.g. the `base_url`, go only to `pool_for`, and `initialize` takes the settings sent with each request, e.g. the `api_key`. Only the builders call `pool_for`, so keep it private, with the code that builds a pool.
+
+Never pass a pool from outside the service, because a pool for the wrong host would send requests there. Only specs and the service's own class methods pass one, e.g. `described_class.new(test_pool, api_key: "test-key")` in a spec.
 
 ```ruby
 class NewsletterClient
@@ -26,13 +28,27 @@ class NewsletterClient
   private_constant :POOLS
 
   class << self
+    def default
+      new(
+        pool_for(base_url: Rails.application.config.x.newsletter_client.base_url!),
+        api_key: Rails.application.config.x.newsletter_client.api_key!
+      )
+    end
+
+    def for(integration)
+      new(
+        pool_for(base_url: integration.base_url),
+        api_key: integration.api_key
+      )
+    end
+
+    private
+
     def pool_for(base_url:)
       POOLS.compute_if_absent({ base_url: }) do
         build_pool(base_url:)
       end
     end
-
-    private
 
     def build_pool(base_url:)
       ConnectionPool.new(size: Rails.application.config.x.newsletter_client.pool_size!) do
@@ -41,12 +57,10 @@ class NewsletterClient
     end
   end
 
-  def initialize(
-    api_key:,
-    base_url:,
-    pool: self.class.pool_for(base_url:)
-  )
-    # ...
+  def initialize(pool, api_key:, api_path: Rails.application.config.x.newsletter_client.api_path!)
+    @pool = pool
+    @api_key = api_key
+    @api_path = api_path
   end
 
   def create_newsletter(post)
@@ -61,9 +75,7 @@ class NewsletterClient
 end
 ```
 
-`pool_for` stays public, because the `pool:` default runs on the instance and calls it through `self.class`. Ruby doesn't allow that call to a private method.
-
-This works for a single service too. With one host, the map holds one pool, and you don't need an initializer.
+This works for a single service too. With one host, the map holds one pool, and you don't need an initializer. Build it with `NewsletterClient.default`.
 
 connection_pool 2.4 and later reload their pools after a fork, so the pools are safe with Puma in cluster mode. In development, reloading `NewsletterClient` replaces the map, and the next request builds new pools.
 
@@ -71,20 +83,25 @@ connection_pool 2.4 and later reload their pools after a fork, so the pools are 
 
 Put only the settings the connection needs in the pool's block, e.g. the host, timeouts, SSL options or a proxy. Send everything else with each request, e.g. the credentials, the `api_path` and other headers. Do this even with a single pool and fixed settings. A setting built into a pooled connection is read once, when the pool is created. A spec that builds the service with its own API key would still send the key from the pooled connection.
 
-Pass the connection settings to `pool_for` as keywords, from the service's own settings. Then they come from the service's `initialize`, with its `config.x` defaults, and a spec can pass its own. Key the map on every keyword, so services with different settings never share a pool.
+Pass the connection settings to `pool_for` as keywords, with `config.x` defaults for the app-wide ones, e.g. `timeout_seconds:`. `initialize` never takes them, so a service and its pool can't disagree about them. Key the map on every keyword, so different settings never share a pool.
 
 ```ruby
 class NewsletterClient
   # ...
 
   class << self
-    def pool_for(base_url:, timeout_seconds:)
+    # ...
+
+    private
+
+    def pool_for(
+      base_url:,
+      timeout_seconds: Rails.application.config.x.newsletter_client.timeout_seconds!
+    )
       POOLS.compute_if_absent({ base_url:, timeout_seconds: }) do
         build_pool(base_url:, timeout_seconds:)
       end
     end
-
-    private
 
     def build_pool(base_url:, timeout_seconds:)
       ConnectionPool.new(size: Rails.application.config.x.newsletter_client.pool_size!) do
@@ -95,19 +112,11 @@ class NewsletterClient
     end
   end
 
-  def initialize(
-    api_key:,
-    base_url:,
-    api_path: Rails.application.config.x.newsletter_client.api_path!,
-    timeout_seconds: Rails.application.config.x.newsletter_client.timeout_seconds!,
-    pool: self.class.pool_for(base_url:, timeout_seconds:)
-  )
+  def initialize(pool, api_key:, api_path: Rails.application.config.x.newsletter_client.api_path!)
     # ...
   end
 end
 ```
-
-A keyword's default can use the keywords before it, so the `pool:` default gets the `base_url:` and `timeout_seconds:` the service was built with.
 
 The pool size is the exception. It's set for the whole process, so read it from `config.x` in `build_pool`, and leave it out of the key.
 
@@ -119,13 +128,15 @@ Use a pool per record only when the connection itself depends on the record, e.g
 
 ```ruby
 class << self
+  # ...
+
+  private
+
   def pool_for(base_url:, client_certificate:)
     POOLS.compute_if_absent({ base_url:, client_certificate: }) do
       build_pool(base_url:, client_certificate:)
     end
   end
-
-  private
 
   def build_pool(base_url:, client_certificate:)
     ConnectionPool.new(size: Rails.application.config.x.newsletter_client.pool_size!) do

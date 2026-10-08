@@ -128,13 +128,9 @@ class NewsletterClient
       # ...
     end
 
-    def pool_for(base_url:)
-      # ...
-    end
-
     private
 
-    def build_pool(base_url:)
+    def pool_for(base_url:)
       # ...
     end
   end
