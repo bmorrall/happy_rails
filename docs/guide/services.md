@@ -83,6 +83,44 @@ class NewsletterClient
 end
 ```
 
+### Optional services
+
+Some apps run without a service, e.g. in development without a newsletter API key. Give the service a `configured?` class method, which checks its required settings without the bang. Code that can work without the service checks `configured?` first, and skips the work when it's `false`.
+
+The service knows which settings it needs, so a new required setting changes `configured?` in the same file. Don't add a separate `enabled` setting. It can say the service is on while its API key is missing.
+
+```ruby
+class NewsletterClient
+  def self.configured?
+    config = Rails.application.config.x.newsletter_client
+    config.api_key.present? && config.base_url.present?
+  end
+
+  # ...
+end
+```
+
+```ruby
+class NotifySubscribersJob < ApplicationJob
+  def perform(post)
+    return unless NewsletterClient.configured?
+
+    NewsletterClient.new.deliver(post)
+  end
+end
+```
+
+Never rescue the `KeyError` to find out whether a service is set up. That uses an exception for normal flow, and hides a real missing setting where the service is required.
+
+```ruby
+# Don't do this
+def perform(post)
+  NewsletterClient.new.deliver(post)
+rescue KeyError
+  nil
+end
+```
+
 ### Settings from a record
 
 Some settings are saved on a record, e.g. the API key and base URL on a `NewsletterServiceIntegration`. Build the service from the record with a class method on the service, e.g. `NewsletterClient.for(integration)`. Name it `for`, or `for_` and what the settings come from, e.g. `for_integration`, when the service has more than one builder or `for` alone isn't clear. Pass the record's settings to `new` as keywords, and leave out the settings that are the same for every record. Those keep their `config.x` defaults.
