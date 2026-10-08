@@ -49,6 +49,8 @@ end
 
 A form or controller may call a service directly when it only reads a value and nothing changes, e.g. a controller that shows a newsletter's open rate from `NewsletterClient#fetch_stats`. Anything that changes data, in the app or in the other service, goes through an action. See [Patterns: Values from Actions](../../patterns/values-from-actions/).
 
+A controller reads the value before the view renders. See [Controllers: Values from services](../controllers/#values-from-services).
+
 A job should call an action too. It may call a service directly only when the job is the only place that does the task, e.g. `NotifySubscribersJob` calls `NewsletterClient#deliver`. Move the call into an action when a second caller needs it, as in [Actions: When to write an action](../actions/#when-to-write-an-action).
 
 ## Configuration

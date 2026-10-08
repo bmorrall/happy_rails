@@ -109,6 +109,48 @@ class PostsController < ApplicationController
 end
 ```
 
+## Values from services
+
+When a page shows a value read from another service, e.g. a newsletter's open rate, read it in the action or a `set_` callback, before the view renders. Call the service from a private method, and assign the value to an instance variable.
+
+The action then shows every request the page makes. An error from the service is raised before any of the page renders, so the controller can rescue it.
+
+```ruby
+class PostsController < ApplicationController
+  # GET /posts/:id
+  def show
+    @newsletter_stats = fetch_newsletter_stats
+  end
+
+  private
+
+  def fetch_newsletter_stats
+    NewsletterClient.new.fetch_stats(@post.newsletter_id) if @post.newsletter_id?
+  end
+end
+```
+
+A helper method may give the value to the view, e.g. for a partial. It only returns the value the action read, and never calls the service:
+
+```ruby
+class PostsController < ApplicationController
+  helper_method :newsletter_stats
+
+  # ...
+
+  private
+
+  # Don't do this
+  def newsletter_stats
+    @newsletter_stats ||= NewsletterClient.new.fetch_stats(@post.newsletter_id)
+  end
+end
+```
+
+When a list shows a value for each record, read them all in one call, e.g. `NewsletterClient#fetch_all_stats`. Give the view a helper method that looks up one record's value, e.g. `newsletter_stats_for(post)`. Never make one request for each record.
+
+See [Patterns: Values from Services](../../patterns/values-from-services/) for examples and other options.
+
 ## Success and failure
 
 An action that changes a record, e.g. `create` or `update`, can succeed or fail. Write the happy case first, in an `if`, and the failure case in the `else`. Then each action reads the same way: what happens when it works, then what happens when it doesn't.

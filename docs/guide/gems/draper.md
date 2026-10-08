@@ -19,6 +19,20 @@ Keep decorator methods simple: a formatted value, a link, or a small element bui
 
 A decorator method only changes its output based on the record's state, e.g. `object.published?`, or on a record passed in its context. See [Context](#context). Never base it on the request, e.g. the current user, the params or a permission check. The method then returns the same value for the same records on every page, in a mailer or a broadcast, and its spec doesn't need a request. The `can_` permission checks are the one exception. See [Permissions](#permissions).
 
+Never call another service from a decorator, or pass one in its context. Read the value in the controller instead. See [Controllers: Values from services](../../controllers/#values-from-services).
+
+A list calls a decorator method once for each record, so a service call there makes one request for each record. The decorator spec would also have to stub the request.
+
+```ruby
+class PostDecorator < ApplicationDecorator
+  # Don't do this
+  def open_rate
+    stats = NewsletterClient.new.fetch_stats(object.newsletter_id)
+    h.number_to_percentage(stats.open_rate, precision: 1)
+  end
+end
+```
+
 When a decorator method shows a value that isn't known, e.g. `published_at` is `nil`, prefer to return `h.unknown_value_tag` over `nil`, or your app's own alternative if it already shows missing values another way. See [Views and Frontend: Helpers](../../views/#helpers).
 
 ## Naming and layout
@@ -132,6 +146,8 @@ class PostsController < ApplicationController
 end
 ```
 
+You may decorate a value read from another service the same way, when it needs formatting. Pass its decorator with `with:`, because the value isn't a model, e.g. `decorates_assigned :newsletter_stats, with: NewsletterStatsDecorator`. See [Patterns: Values from Services](../../../patterns/values-from-services/#decorate-it).
+
 Never call `decorate` in a view or a helper, e.g. `@post.decorate` in a template or `PostDecorator.new(post)` in a helper. Add a `decorates_assigned` to the controller instead. The view and its helpers then always get records that are already decorated, and the controller shows in one place which decorator each view uses.
 
 Only use Draper for HTML responses. An API endpoint that returns another format, e.g. JSON in `Api::V1`, doesn't use `decorates_assigned` or decorators. Decorator methods return markup for a page, e.g. `h.date_tag`, which an API client can't use.
@@ -183,7 +199,7 @@ class PostDecorator < ApplicationDecorator
 end
 ```
 
-Only pass records in the context, never the current user, the params or other request state.
+Only pass records in the context, or values the controller read from another service, e.g. the newsletter stats for a list of posts. See [Patterns: Values from Services](../../../patterns/values-from-services/#pass-the-values-to-the-decorators). Never pass the current user, the params, a service or other request state.
 
 ## Associations
 
