@@ -204,6 +204,36 @@ module Posts
 end
 ```
 
+When the action submits a [form](../forms/), assign the result of `submit` in the `if`, in brackets, e.g. `if (post = @create_post_form.submit)`. Use it only in the happy case. The brackets show the `=` is meant, not a typo for `==`.
+
+`submit` returns `false` when it fails. Assigned in the `if`, the result is only used once you know it worked, so a failed submit can't reach code that expects the resource.
+
+```ruby
+class PostsController < ApplicationController
+  # POST /posts
+  def create
+    @create_post_form = CreatePostForm.new(Post.new, current_user, post_params)
+
+    if (post = @create_post_form.submit)
+      redirect_to post,
+        notice: "Post was created."
+    else
+      render :new,
+        status: :unprocessable_entity
+    end
+  end
+end
+```
+
+```ruby
+# Don't do this
+result = @share_post_form.submit
+@preview_url = preview_post_url(result.post, token: result.token)
+
+if result
+  # ...
+```
+
 ## Flash messages
 
 Pick one pattern for flash messages in each app, and use it in every controller. The guide doesn't choose the wording for you. The Rails scaffold's `"Post was successfully created."` works, and so does a shorter `"Post was created."`. What matters is that every message follows the same pattern, so the app reads as one piece and the request specs know what to expect.
