@@ -143,6 +143,48 @@ module Posts
 end
 ```
 
+## Layout
+
+Write the parts of an action in this order:
+
+1. Error classes, e.g. `class Error < StandardError; end`
+2. `include` lines, e.g. `include ValidatedCallable`
+3. Validations
+4. `initialize`
+5. `call`
+6. `private`, then the `attr_reader`s, then any private methods
+
+Every action then reads the same way. The top says how it can fail and what it checks, and `call` sits right after `initialize`, so you see the task next to what it's given. Leave out a part the action doesn't have.
+
+Don't add comment headings, as in a model. An action has one public method, and the order alone is enough.
+
+```ruby
+module Posts
+  class PublishPost < ApplicationAction
+    class Error < StandardError; end
+
+    include ValidatedCallable
+
+    validates :post, :publisher,
+      presence: true,
+      unmodified: { allow_blank: true }
+
+    def initialize(post, publisher:)
+      @post = post
+      @publisher = publisher
+    end
+
+    def call
+      # ...
+    end
+
+    private
+
+    attr_reader :post, :publisher
+  end
+end
+```
+
 ## Arguments
 
 Pass an action the records it works on, never their IDs, e.g. `Posts::ArchivePost.call(post)`, not `Posts::ArchivePost.call(post.id)`. The caller finds the records, e.g. a controller loads the post, or a job gets it as an argument. The action never looks a record up, so it doesn't have to decide which records the caller is allowed to reach.
