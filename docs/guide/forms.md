@@ -453,6 +453,60 @@ rescue Posts::PublishPost::Error, Posts::ArchivePost::Error
 end
 ```
 
+### Values made during submit
+
+Return everything the caller needs from `submit`. Usually that's the resource. When `submit` makes a value the resource doesn't hold, return a read-only data object instead, with the resource and the value. Define it with `Data.define` at the top of the form, e.g. `SharePostForm::Result`, which holds the post and the preview link's token. The post saves only a digest of the token, so the token can't come from the post.
+
+```ruby
+class SharePostForm < ApplicationForm
+  Result = Data.define(:post, :token)
+
+  # ...
+
+  ### Public Methods ###
+
+  def submit
+    return false unless valid?
+
+    token = SecureRandom.urlsafe_base64
+    post.update!(preview_token_digest: Digest::SHA256.hexdigest(token))
+    Result.new(post:, token:)
+  end
+end
+```
+
+```ruby
+def create
+  @share_post_form = SharePostForm.new(@post, current_user)
+
+  if (result = @share_post_form.submit)
+    @preview_url = preview_post_url(result.post, token: result.token)
+    render :show
+  else
+    # ...
+  end
+end
+```
+
+Never keep a value made during `submit` on the form for the caller to read, e.g. in an `attr_reader`. The value is `nil` until `submit` runs, and when it fails. The caller has to know to call `submit` first, and to check its result before reading the value. A value returned from `submit` only exists when it succeeds.
+
+```ruby
+# Don't do this
+class SharePostForm < ApplicationForm
+  attr_reader :token
+
+  def submit
+    return false unless valid?
+
+    @token = SecureRandom.urlsafe_base64
+    # ...
+    post
+  end
+end
+```
+
+Use `Data`, not a `Struct` or a hash. A `Data` object can't be changed, and it raises an error when a value is missing, or when the caller asks for one it doesn't have.
+
 ## Testing
 
 Cover every `collection_for_<attribute>` method with a unit test, in `spec/forms/`. The form's select and its validation both use the collection. A wrong collection hides a choice from the user, or rejects a value the user is allowed to pick.
