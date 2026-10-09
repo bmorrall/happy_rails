@@ -73,6 +73,28 @@ Don't let the partial reach for `@post`.
 <p>By <%= @post.author.name %></p>
 ```
 
+### Data attributes
+
+Set data attributes with the `data:` option of a tag helper, e.g. `tag.div` or `content_tag`, or of another helper such as `link_to`. Never write them as HTML in the template.
+
+The helper turns each key into the attribute name, e.g. `turbo_frame:` into `data-turbo-frame`, and quotes and escapes each value. It turns a hash or an array into JSON, e.g. for a Stimulus value. Written by hand, you have to get each name, quote and `to_json` right yourself.
+
+```erb
+<%# app/views/posts/show.html.erb %>
+<%= tag.div data: { controller: "comments", comments_url_value: post_comments_path(@post) } do %>
+  <%= link_to "Show comments", post_comments_path(@post), data: { turbo_frame: "comments" } %>
+<% end %>
+```
+
+Don't write the data attributes in the HTML.
+
+```erb
+<%# app/views/posts/show.html.erb %>
+<div data-controller="comments" data-comments-url-value="<%= post_comments_path(@post) %>">
+  <a href="<%= post_comments_path(@post) %>" data-turbo-frame="comments">Show comments</a>
+</div>
+```
+
 ## Helpers
 
 Format primitive values with a helper, e.g. a date, a time or a boolean. Write one helper for each kind of value, and use it everywhere that value is shown: in templates, partials, other helpers, decorators and components. Every page then shows a date, or a yes or no, the same way, and you can change how they look in one place.
