@@ -505,6 +505,8 @@ class SharePostForm < ApplicationForm
 end
 ```
 
+When more than one form returns the same values, define the data object once in `app/models/`, and name it after what it holds, e.g. `PreviewLink = Data.define(:post, :token)` in `app/models/preview_link.rb`. Each form then returns a `PreviewLink`, and the controllers read it the same way.
+
 Use `Data`, not a `Struct` or a hash. A `Data` object can't be changed, and it raises an error when a value is missing, or when the caller asks for one it doesn't have.
 
 ## Testing
