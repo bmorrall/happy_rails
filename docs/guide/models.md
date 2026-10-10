@@ -356,13 +356,13 @@ A save callback runs on `save`, which needs a valid record, so build the record 
 RSpec.describe Post do
   describe "#published_at" do
     it "is set when a published post is saved" do
+      travel_to Time.zone.now
+
       post = build(:post, status: :published, published_at: nil)
 
-      freeze_time do
-        post.save!
+      post.save!
 
-        expect(post.published_at).to eq(Time.zone.now)
-      end
+      expect(post.published_at).to eq(Time.zone.now)
     end
 
     it "is not set when a draft post is saved" do

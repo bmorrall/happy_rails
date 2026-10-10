@@ -583,12 +583,14 @@ An action does one task, so its unit spec stays short. If the spec needs a lot o
 RSpec.describe Posts::ArchivePost do
   describe ".call" do
     it "archives the post and locks its comments" do
+      travel_to Time.zone.now
+
       post = instance_double(Post)
       comments = instance_double(ActiveRecord::Relation)
       allow(post).to receive(:comments).and_return(comments)
 
-      expect(post).to receive(:update!).with(archived_at: an_instance_of(ActiveSupport::TimeWithZone))
-      expect(comments).to receive(:update_all).with(locked: true, updated_at: an_instance_of(ActiveSupport::TimeWithZone))
+      expect(post).to receive(:update!).with(archived_at: Time.zone.now)
+      expect(comments).to receive(:update_all).with(locked: true, updated_at: Time.zone.now)
 
       described_class.call(post)
     end

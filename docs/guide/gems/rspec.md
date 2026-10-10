@@ -37,6 +37,37 @@ RSpec.configure do |config|
 end
 ```
 
+### Time helpers
+
+Include `ActiveSupport::Testing::TimeHelpers` for every spec, in `spec/support/time_helpers.rb`. Every spec can then fix the time with `travel_to`. rspec-rails sets the clock back after each example.
+
+```ruby
+# spec/support/time_helpers.rb
+RSpec.configure do |config|
+  config.include ActiveSupport::Testing::TimeHelpers
+end
+```
+
+When a spec checks a time, or the code works one out, e.g. which drafts no one has changed for a year, call `travel_to` on the example's first line, and leave a blank line after it. Then match each time exactly with `eq`. A loose match, e.g. `be_within(1.second)` or `an_instance_of(ActiveSupport::TimeWithZone)`, still passes when the code saves the wrong time.
+
+```ruby
+it "archives the posts" do
+  travel_to Time.zone.now
+
+  post = create(:post)
+
+  described_class.call(Post.where(id: post))
+
+  expect(post.reload.archived_at).to eq(Time.zone.now)
+end
+```
+
+Use `travel_to Time.zone.now` when the spec only needs the clock to stop, as above. When the code depends on the date, pass a fixed time that tests it, e.g. `travel_to Time.zone.local(2026, 10, 31, 23, 59)` for code that works out the end of a month.
+
+Avoid passing a block to `travel_to`. Call it on its own line, so the whole example runs at the same time, and the setup shows what time it is.
+
+`travel_to` stops the clock on a whole second. Databases store times at different precisions, but every one stores a whole second exactly, so the time you read back matches. Never pass `with_usec: true`. The database may then round the microseconds, and the match fails on one database but not another.
+
 ### Capybara matchers
 
 Include `Capybara::RSpecMatchers` in request specs and feature specs, in `spec/support/capybara.rb`. When a gem's specs check HTML too, add its spec type here, e.g. `type: :component` for [ViewComponent](../view_component/#setup). Request specs can then check the HTML in a response with the same matchers as feature specs, e.g. `have_link` or `have_field`. A matcher checks an element and its text, which `include` can't do.
