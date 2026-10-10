@@ -99,11 +99,9 @@ Only add a persona when the app gets a new role. Don't add one to fill out a spe
 
 Personas make it easier to see which scenarios need covering. For each action, ask what each persona should be able to do, and on which records. The Guest and the User often show the gaps: an action left open by mistake, or one that anyone who signs in can use. A persona who may act, but not on this record, finds the rest, e.g. a User editing a post someone else wrote.
 
-A persona whose role plays no part in the action doesn't need a scenario of its own in request and feature specs. It gets the same answer as the User, so the User's scenario covers it, and so does the policy spec, e.g. a Copy Editor or an Author publishing a post.
-
 ### Keep the ranks
 
-List personas in rank order everywhere they appear: in the table above, in permission checks, and in request and feature specs. Then every list of personas reads the same way. You can compare a policy with its spec at a glance, and a missing persona stands out.
+List personas in rank order everywhere they appear, e.g. in the table above and in permission checks. Then every list of personas reads the same way, and a missing persona stands out.
 
 ```ruby
 module Posts
@@ -117,4 +115,4 @@ end
 
 ### Personas in specs
 
-For how to write persona specs with RSpec and FactoryBot, see [RSpec and FactoryBot: Personas](../gems/rspec/#personas).
+See [Testing: Principles](../../testing/principles/).

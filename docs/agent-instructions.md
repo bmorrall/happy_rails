@@ -1,6 +1,6 @@
 ---
 title: Agent Instructions
-nav_order: 5
+nav_order: 6
 permalink: /agent-instructions/
 ---
 
@@ -43,15 +43,15 @@ The area files are:
 | File | Applies to |
 | --- | --- |
 | `happy_rails.instructions.md` | `**` |
-| `happy_models.instructions.md` | `app/models/**`, `spec/models/**` |
-| `happy_validators.instructions.md` | `app/validators/**`, `spec/validators/**` |
-| `happy_forms.instructions.md` | `app/forms/**`, `spec/forms/**` |
-| `happy_actions.instructions.md` | `app/actions/**`, `spec/actions/**` |
+| `happy_models.instructions.md` | `app/models/**` |
+| `happy_validators.instructions.md` | `app/validators/**` |
+| `happy_forms.instructions.md` | `app/forms/**` |
+| `happy_actions.instructions.md` | `app/actions/**` |
 | `happy_services.instructions.md` | `app/services/**`, `app/forms/**`, `app/controllers/**`, `app/jobs/**` |
-| `happy_jobs.instructions.md` | `app/jobs/**`, `lib/tasks/**`, `spec/jobs/**` |
-| `happy_controllers.instructions.md` | `app/controllers/**`, `config/routes.rb`, `spec/requests/**`, `spec/features/**` |
+| `happy_jobs.instructions.md` | `app/jobs/**`, `lib/tasks/**` |
+| `happy_controllers.instructions.md` | `app/controllers/**`, `config/routes.rb` |
 | `happy_views.instructions.md` | `app/views/**`, `app/helpers/**`, `app/javascript/**` |
-| `happy_mailers.instructions.md` | `app/mailers/**`, `app/views/*_mailer/**`, `spec/mailers/**` |
+| `happy_mailers.instructions.md` | `app/mailers/**`, `app/views/*_mailer/**` |
 
 [Code Style](../guide/code-style/) has its own file. It holds my style preferences, not Happy Rails conventions. If your app has its own style, delete it:
 
@@ -63,16 +63,39 @@ Each [gem](../guide/gems/) has its own file. If your app does not use a gem, del
 
 | File | Gem | Applies to |
 | --- | --- | --- |
-| `happy_devise.instructions.md` | Devise | `config/routes.rb`, `app/models/user.rb`, `app/controllers/users/**`, `app/views/devise/**`, `spec/requests/users/**` |
-| `happy_draper.instructions.md` | Draper | `app/decorators/**`, `app/controllers/**`, `app/views/**`, `app/helpers/**`, `spec/decorators/**`, `spec/support/**` |
+| `happy_devise.instructions.md` | Devise | `config/routes.rb`, `app/models/user.rb`, `app/controllers/users/**`, `app/views/devise/**` |
+| `happy_draper.instructions.md` | Draper | `app/decorators/**`, `app/controllers/**`, `app/views/**`, `app/helpers/**` |
 | `happy_honeybadger.instructions.md` | Honeybadger | `app/models/**`, `app/actions/**`, `app/controllers/**`, `app/jobs/**`, `app/services/**` |
-| `happy_pundit.instructions.md` | Pundit | `app/policies/**`, `app/controllers/**`, `app/views/**`, `app/forms/**`, `spec/policies/**` |
-| `happy_rspec.instructions.md` | RSpec and FactoryBot | `spec/**` |
-| `happy_shoulda_matchers.instructions.md` | Shoulda Matchers | `spec/models/**`, `spec/forms/**` |
-| `happy_simple_form.instructions.md` | Simple Form | `app/models/**`, `app/views/**`, `app/inputs/**`, `app/helpers/**`, `config/initializers/simple_form.rb`, `spec/requests/**`, `spec/features/**`, `spec/support/**` |
-| `happy_view_component.instructions.md` | ViewComponent | `app/components/**`, `spec/components/**`, `spec/support/**` |
-| `happy_webmock.instructions.md` | WebMock and VCR | `spec/**` |
+| `happy_pundit.instructions.md` | Pundit | `app/policies/**`, `app/controllers/**`, `app/views/**`, `app/forms/**` |
+| `happy_simple_form.instructions.md` | Simple Form | `app/models/**`, `app/views/**`, `app/inputs/**`, `app/helpers/**`, `config/initializers/simple_form.rb` |
+| `happy_view_component.instructions.md` | ViewComponent | `app/components/**` |
 | `happy_wisper.instructions.md` | Wisper | `app/actions/**` |
+
+## RSpec files
+
+The rules for specs are in their own `happy_rspec_*` files, one for each area and gem, to match the [Testing](../testing/) pages. If your app does not use RSpec, delete all of them. If it does not use a gem, delete that gem's `happy_rspec_` file too.
+
+| File | Applies to |
+| --- | --- |
+| `happy_rspec.instructions.md` | `spec/**` |
+| `happy_rspec_models.instructions.md` | `spec/models/**` |
+| `happy_rspec_validators.instructions.md` | `spec/validators/**` |
+| `happy_rspec_forms.instructions.md` | `spec/forms/**` |
+| `happy_rspec_actions.instructions.md` | `spec/actions/**` |
+| `happy_rspec_services.instructions.md` | `spec/services/**` |
+| `happy_rspec_jobs.instructions.md` | `spec/jobs/**`, `spec/features/**` |
+| `happy_rspec_controllers.instructions.md` | `spec/requests/**`, `spec/features/**` |
+| `happy_rspec_views.instructions.md` | `spec/helpers/**`, `spec/requests/**` |
+| `happy_rspec_mailers.instructions.md` | `spec/mailers/**` |
+| `happy_rspec_devise.instructions.md` | `spec/requests/users/**` |
+| `happy_rspec_draper.instructions.md` | `spec/decorators/**`, `spec/support/**` |
+| `happy_rspec_honeybadger.instructions.md` | `spec/**` |
+| `happy_rspec_pundit.instructions.md` | `spec/policies/**` |
+| `happy_rspec_shoulda_matchers.instructions.md` | `spec/models/**`, `spec/forms/**` |
+| `happy_rspec_simple_form.instructions.md` | `spec/requests/**`, `spec/features/**`, `spec/support/**` |
+| `happy_rspec_view_component.instructions.md` | `spec/components/**`, `spec/support/**` |
+| `happy_rspec_webmock.instructions.md` | `spec/**` |
+| `happy_rspec_wisper.instructions.md` | `spec/**` |
 
 ## Setup skill
 

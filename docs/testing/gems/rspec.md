@@ -1,7 +1,7 @@
 ---
 title: RSpec and FactoryBot
 parent: Gems
-grand_parent: The Guide
+grand_parent: Testing
 nav_order: 5
 ---
 
@@ -199,7 +199,7 @@ get post_path(post)
 
 ### Persona traits
 
-Give the user factory one trait for each role on the whole app, named after the role, e.g. `:app_admin`, `:publishing_manager` and `:copy_editor`. Use a trait for a flag on the user too, e.g. `:employee`. Define the traits in rank order. A plain `create(:user)` is the User persona, with no role. See [Principles: Personas](../../principles/#personas).
+Give the user factory one trait for each role on the whole app, named after the role, e.g. `:app_admin`, `:publishing_manager` and `:copy_editor`. Use a trait for a flag on the user too, e.g. `:employee`. Define the traits in rank order. A plain `create(:user)` is the User persona, with no role. See [Principles: Personas](../../../guide/principles/#personas).
 
 ```ruby
 FactoryBot.define do
@@ -230,9 +230,9 @@ Write a request spec for every controller. See [Controllers and Routes: Request 
 
 ### Personas
 
-Write a context for the personas each action needs, as described in [Principles: Personas](../../principles/#personas).
+Write a context for the personas each action needs, as described in [Principles: Personas](../../../guide/principles/#personas).
 
-Only write persona contexts for actions where access depends on who the user is. Some actions don't check a user at all, e.g. an API that authenticates with a shared token, or a callback from another service. Leave out the persona contexts for these. Write a context for each way the request can be authenticated instead, e.g. `"with an access token"`, `"with an invalid access token"` and `"without an access token"`. See [Controllers and Routes: Authentication](../../controllers/#authentication).
+Only write persona contexts for actions where access depends on who the user is. Some actions don't check a user at all, e.g. an API that authenticates with a shared token, or a callback from another service. Leave out the persona contexts for these. Write a context for each way the request can be authenticated instead, e.g. `"with an access token"`, `"with an invalid access token"` and `"without an access token"`. See [Controllers and Routes: Authentication](../../../guide/controllers/#authentication).
 
 ```ruby
 RSpec.describe "Api::V1::Posts" do
@@ -461,7 +461,7 @@ Write at least one feature spec for every controller that serves pages, so that 
 
 Use `RSpec.feature` and name it after the feature under test, e.g. `RSpec.feature "Post Publishing"`. Write each example as a `scenario`.
 
-Start each scenario's name with the persona carrying out the task, then say what they want to achieve, e.g. `scenario "Publishing Manager publishes a post"`. Order the scenarios by persona rank, as in [Principles: Personas](../../principles/#personas).
+Start each scenario's name with the persona carrying out the task, then say what they want to achieve, e.g. `scenario "Publishing Manager publishes a post"`. Order the scenarios by persona rank, as in [Principles: Personas](../../../guide/principles/#personas).
 
 Write scenarios for what a persona can do, not for what they can't. Request specs and policy specs already cover the actions a persona isn't allowed to take. Only add a scenario for something a persona can't do when it guards against a regression, e.g. a bug that let them do it before, or when the action is critical, e.g. a Guest must never see a draft post.
 

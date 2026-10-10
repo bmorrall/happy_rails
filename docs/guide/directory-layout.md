@@ -94,4 +94,4 @@ end
 
 ## Testing
 
-> **TODO:** Describe how you handle this.
+See [Testing: Directory Layout](../../testing/directory-layout/).
