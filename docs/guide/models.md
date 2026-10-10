@@ -106,13 +106,13 @@ class Post < ApplicationRecord
   private
 
   def published_at_cannot_be_in_the_future
-    return if published_at.blank? || published_at <= Time.current
+    return if published_at.blank? || published_at <= Time.zone.now
 
     errors.add(:published_at, "can't be in the future")
   end
 
   def set_published_at
-    self.published_at ||= Time.current
+    self.published_at ||= Time.zone.now
   end
 end
 ```
@@ -198,7 +198,7 @@ class Post < ApplicationRecord
   private
 
   def set_published_at
-    self.published_at ||= Time.current
+    self.published_at ||= Time.zone.now
   end
 end
 ```
@@ -361,7 +361,7 @@ RSpec.describe Post do
       freeze_time do
         post.save!
 
-        expect(post.published_at).to eq(Time.current)
+        expect(post.published_at).to eq(Time.zone.now)
       end
     end
 

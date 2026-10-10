@@ -55,7 +55,7 @@ These are the tasks the examples use. Each one shows up on more than one page.
 - **Publish a post.** A Publishing Manager or an App Admin publishes a post with `POST /posts/:post_id/publication`, and can unpublish it with `DELETE /posts/:post_id/publication`. The `Posts::PublishPost` action does the work.
 - **Share a draft.** The Author can make a preview link for a draft post, with `POST /posts/:post_id/preview_link`, so others can read it before it's published. `SharePostForm` makes the link's token, and the post saves only a digest of it. The app shows the link once, right after it's made.
 - **Schedule a post.** A post can be published at a later time. The user who schedules it is saved as `scheduled_by`, and `PublishScheduledPostJob` publishes it at `publish_at`.
-- **Archive a post.** `Posts::ArchivePost` archives an old post and locks its comments.
+- **Archive a post.** `Posts::ArchivePost` archives an old post and locks its comments. `Posts::ArchivePosts` archives many posts at once, e.g. every post an author wrote.
 - **Check a post's links.** Before a post is published, the app checks the links in it. `Posts::RecordLinkCheck` saves the result on the post.
 - **Notify subscribers.** When a post is published, `NotifySubscribersJob` sends it to an outside newsletter service through `NewsletterClient`.
 - **Show newsletter stats.** A post's page shows the open rate of its newsletter, and the posts list shows it for each post that was sent. `NewsletterClient#fetch_stats` reads the stats for one newsletter, and `NewsletterClient#fetch_all_stats` reads them for many newsletters at once, keyed by newsletter ID.

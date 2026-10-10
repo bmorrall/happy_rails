@@ -36,7 +36,7 @@ module Posts
     attr_reader :post, :publisher
 
     def mark_published
-      post.update!(status: :published, published_at: Time.current)
+      post.update!(status: :published, published_at: Time.zone.now)
     end
 
     def create_publication

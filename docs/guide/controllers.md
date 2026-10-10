@@ -446,7 +446,7 @@ end
 ```ruby
 RSpec.describe "Posts::Comments" do
   describe "POST /posts/:post_id/comments" do
-    let(:published_post) { create(:post, published_at: Time.current) }
+    let(:published_post) { create(:post, published_at: Time.zone.now) }
 
     it "redirects to the post" do
       post post_comments_path(published_post), params: { comment: { body: "Hello" } }

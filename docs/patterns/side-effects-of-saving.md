@@ -59,8 +59,8 @@ module Posts
 
     def call
       ActiveRecord::Base.transaction do
-        post.update!(archived_at: Time.current)
-        post.comments.update_all(locked: true)
+        post.update!(archived_at: Time.zone.now)
+        post.comments.update_all(locked: true, updated_at: Time.zone.now)
       end
     end
   end

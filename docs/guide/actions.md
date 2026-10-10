@@ -79,8 +79,8 @@ module Posts
     def call
       ActiveRecord::Base.transaction do
         Posts::UnpublishPost.call(post) if post.published?
-        post.update!(archived_at: Time.current)
-        post.comments.update_all(locked: true)
+        post.update!(archived_at: Time.zone.now)
+        post.comments.update_all(locked: true, updated_at: Time.zone.now)
       end
     rescue ActiveRecord::RecordInvalid, Posts::UnpublishPost::Error => e
       raise Error, e.message
@@ -131,8 +131,8 @@ module Posts
 
     def call
       ActiveRecord::Base.transaction do
-        post.update!(archived_at: Time.current)
-        post.comments.update_all(locked: true)
+        post.update!(archived_at: Time.zone.now)
+        post.comments.update_all(locked: true, updated_at: Time.zone.now)
       end
     end
 
@@ -231,6 +231,49 @@ Posts::PublishPost.call(post, publisher: current_user)
 Posts::PublishPost.call(post, publisher: current_user, title:)
 ```
 
+### Many records
+
+When an action works on many records, pass the records in, e.g. `Posts::ArchivePosts.call(author.posts)`, never their IDs. Name the action in the plural. The caller picks the records, as it does for one record, and the action works on every record it's given.
+
+Pass a relation or an association, or an array of records, but pick one for each action, and have every caller pass the same kind. Don't let the action accept both, e.g. by checking `posts.is_a?(Array)`. A relation and an array don't respond to the same methods, e.g. `update_all` and `find_each` only work on a relation, so code written for one breaks on the other.
+
+Prefer a relation when there could be many records. An array loads every record into memory at once. A relation lets the action write them all in one statement, or load them in batches.
+
+When the task can be done in SQL, write every record at once, e.g. with `update_all`. Wrap the writes in a transaction, as for any action that writes more than once.
+
+`update_all` and `delete_all` skip the model's callbacks and validations, and `delete_all` skips `dependent:` too. Check the model before you use them. If a callback runs when an attribute you change is saved, loop over the records instead, as below. For example, `Post` sets `published_at` in a callback when a post is published, so `posts.update_all(status: :published)` would leave `published_at` blank.
+
+`update_all` doesn't set `updated_at` either. Pass it yourself, e.g. `update_all(locked: true, updated_at: Time.zone.now)`, so the records show when they last changed, and caches keyed on `updated_at` expire.
+
+```ruby
+module Posts
+  class ArchivePosts < ApplicationAction
+    def initialize(posts)
+      @posts = posts
+    end
+
+    def call
+      now = Time.zone.now
+
+      ActiveRecord::Base.transaction do
+        Comment.where(post: posts).update_all(locked: true, updated_at: now)
+        posts.update_all(archived_at: now, updated_at: now)
+      end
+    end
+
+    private
+
+    attr_reader :posts
+  end
+end
+```
+
+Update the relation's own records last, e.g. the posts after their comments. A relation is a query, so each statement runs it again. Say the caller passed `author.posts.where(archived_at: nil)`. If the posts were archived first, the query would then find no posts, and no comments would be locked.
+
+When each record needs the model's validations, callbacks or a lock, load them with `find_each`, or loop with `each` over an array, and call the single-record action for each one, e.g. `posts.find_each { |post| Posts::ArchivePost.call(post) }`. Avoid wrapping the loop in a transaction. Each record then commits on its own, so a long run doesn't hold its locks until the end.
+
+Prefer `find_each` to `each` when you loop over a relation. `each` loads every record at once, and `find_each` loads them in batches of 1,000, so memory stays flat however many records match. Note that `find_each` orders the records by their primary key, and ignores any order on the relation.
+
 ## Authorisation and validation
 
 An action runs outside a request, so it doesn't authorise the user or validate what they submitted. The caller does that before it calls the action. A controller authorises the request, and a form validates the user's input. When a job calls the action, the request that enqueued the job has already done both. The action trusts its caller, and does its task.
@@ -316,8 +359,8 @@ module Posts
 
     def call
       ActiveRecord::Base.transaction do
-        post.update!(archived_at: Time.current)
-        post.comments.update_all(locked: true)
+        post.update!(archived_at: Time.zone.now)
+        post.comments.update_all(locked: true, updated_at: Time.zone.now)
       end
     rescue ActiveRecord::RecordInvalid => e
       raise Error, e.message
@@ -374,8 +417,8 @@ When an action writes more than once, wrap the writes in a transaction, so eithe
 ```ruby
 def call
   ActiveRecord::Base.transaction do
-    post.update!(archived_at: Time.current)
-    post.comments.update_all(locked: true)
+    post.update!(archived_at: Time.zone.now)
+    post.comments.update_all(locked: true, updated_at: Time.zone.now)
   end
 end
 ```
@@ -484,8 +527,8 @@ For a job, set `enqueue_after_transaction_commit` in the job class, as in [Jobs:
 ```ruby
 def call
   ActiveRecord::Base.transaction do
-    post.update!(archived_at: Time.current)
-    post.comments.update_all(locked: true)
+    post.update!(archived_at: Time.zone.now)
+    post.comments.update_all(locked: true, updated_at: Time.zone.now)
   end
 
   ActiveRecord.after_all_transactions_commit do
@@ -545,7 +588,7 @@ RSpec.describe Posts::ArchivePost do
       allow(post).to receive(:comments).and_return(comments)
 
       expect(post).to receive(:update!).with(archived_at: an_instance_of(ActiveSupport::TimeWithZone))
-      expect(comments).to receive(:update_all).with(locked: true)
+      expect(comments).to receive(:update_all).with(locked: true, updated_at: an_instance_of(ActiveSupport::TimeWithZone))
 
       described_class.call(post)
     end
