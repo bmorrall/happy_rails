@@ -609,19 +609,36 @@ it "raises an Error when the post is invalid" do
 end
 ```
 
+Avoid stubbing another action the action calls. Let it run with real records, and check what both actions did, e.g. that the post is unpublished and archived. A stub only checks that the other action was called. It still passes when the other action is broken, or when it's called with the wrong arguments. To check that the action raises its own `Error` in place of the other action's, set up records that make the other action fail for real.
+
+```ruby
+it "unpublishes and archives a published post" do
+  travel_to Time.zone.now
+
+  post = create(:post, status: :published)
+
+  described_class.call(post)
+
+  expect(post.reload).not_to be_published
+  expect(post.archived_at).to eq(Time.zone.now)
+end
+```
+
 When the action's work is a query, e.g. `update_all`, or a `where` the action builds itself, test it with real records. Pass in a real relation, then check the records afterwards, including one the action must leave alone. A stubbed spec only checks which methods were called. It still passes when the `where` picks the wrong records, or when the statements run in the wrong order.
 
 ```ruby
 RSpec.describe Posts::ArchivePosts do
   describe ".call" do
     it "archives the posts and locks their comments" do
+      travel_to Time.zone.now
+
       post = create(:post)
       comment = create(:comment, post:)
       other_comment = create(:comment)
 
       described_class.call(Post.where(archived_at: nil, id: post))
 
-      expect(post.reload.archived_at).to be_present
+      expect(post.reload.archived_at).to eq(Time.zone.now)
       expect(comment.reload).to be_locked
       expect(other_comment.reload).not_to be_locked
     end
@@ -630,6 +647,8 @@ end
 ```
 
 The relation picks posts that aren't archived yet, so the spec fails if the action archives the posts before it locks their comments. `other_comment` checks that the action doesn't lock comments on other posts.
+
+This includes an action that loads the records itself, e.g. with `find_each`, and calls another action for each one. Check every record afterwards.
 
 The unit spec checks the action alone. The request and job specs for its callers let it run for real, so between them they check that it works with the rest of the app.
 
