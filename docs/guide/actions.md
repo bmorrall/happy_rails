@@ -77,6 +77,8 @@ module Posts
     # ...
 
     def call
+      return if post.archived_at?
+
       ActiveRecord::Base.transaction do
         Posts::UnpublishPost.call(post) if post.published?
         post.update!(archived_at: Time.zone.now)
@@ -130,6 +132,8 @@ module Posts
     end
 
     def call
+      return if post.archived_at?
+
       ActiveRecord::Base.transaction do
         post.update!(archived_at: Time.zone.now)
         post.comments.update_all(locked: true, updated_at: Time.zone.now)
@@ -230,6 +234,8 @@ Posts::PublishPost.call(post, publisher: current_user)
 # Do
 Posts::PublishPost.call(post, publisher: current_user, title:)
 ```
+
+When the action builds a query on a record's association in more than one step, e.g. `post.comments.where(locked: false)`, call a method on the model instead, e.g. `post.unlocked_comments`, not `post.comments.unlocked`. See [Models: Scopes and queries](../models/#scopes-and-queries).
 
 ### Many records
 
@@ -358,6 +364,8 @@ module Posts
     # ...
 
     def call
+      return if post.archived_at?
+
       ActiveRecord::Base.transaction do
         post.update!(archived_at: Time.zone.now)
         post.comments.update_all(locked: true, updated_at: Time.zone.now)
@@ -416,6 +424,8 @@ When an action writes more than once, wrap the writes in a transaction, so eithe
 
 ```ruby
 def call
+  return if post.archived_at?
+
   ActiveRecord::Base.transaction do
     post.update!(archived_at: Time.zone.now)
     post.comments.update_all(locked: true, updated_at: Time.zone.now)
@@ -530,6 +540,8 @@ For a job, set `enqueue_after_transaction_commit` in the job class, as in [Jobs:
 
 ```ruby
 def call
+  return if post.archived_at?
+
   ActiveRecord::Base.transaction do
     post.update!(archived_at: Time.zone.now)
     post.comments.update_all(locked: true, updated_at: Time.zone.now)
@@ -577,7 +589,7 @@ To record that the transaction itself failed, call the `Record` action in a `res
 
 ### Action specs
 
-Write an action spec as a unit spec. Stub and mock the models and other objects the action uses, and check that the action calls them with the right arguments. Name the `describe` block `".call"`, after the method the spec calls.
+Write an action spec as a unit spec, and name the `describe` block `".call"`, after the method the spec calls. Stub the methods the action calls on the records it's given, e.g. `update!` on the post, and check that it calls them with the right arguments. Use real records instead when the action runs a query, loops over records, or calls another action, as below.
 
 Use `instance_double`, e.g. `instance_double(Post)`, not a plain `double`. See [RSpec: Doubles, build_stubbed or create](../gems/rspec/#doubles-build_stubbed-or-create).
 
@@ -589,7 +601,7 @@ RSpec.describe Posts::ArchivePost do
     it "archives the post and locks its comments" do
       travel_to Time.zone.now
 
-      post = instance_double(Post)
+      post = instance_double(Post, archived_at?: false)
       comments = instance_double(ActiveRecord::Relation)
       allow(post).to receive(:comments).and_return(comments)
 
@@ -606,7 +618,7 @@ Stub a collaborator to raise an error, to check that the action raises its own `
 
 ```ruby
 it "raises an Error when the post is invalid" do
-  post = instance_double(Post)
+  post = instance_double(Post, archived_at?: false)
   allow(post).to receive(:update!).and_raise(ActiveRecord::RecordInvalid)
 
   expect { described_class.call(post) }.to raise_error(described_class::Error)

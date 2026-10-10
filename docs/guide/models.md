@@ -178,7 +178,56 @@ end
 
 ## Scopes and queries
 
-> **TODO:** Describe how you handle this.
+When code outside the model builds a query on a record's association in more than one step, e.g. `post.comments.where(locked: false)`, give the model a method that returns it, e.g. `Post#unlocked_comments`. The caller then talks to the post, not to the post's comments and the `where` behind them. The method only reads. The caller still does any writes, e.g. `post.unlocked_comments.update_all(locked: true, updated_at: Time.zone.now)` in an action.
+
+When only one task uses the method, put it in a `concerning` block named after that task, e.g. `concerning :Archiving`. The block shows which task the method is for. When another task needs it too, move it out of the block, under Public Methods.
+
+```ruby
+class Post < ApplicationRecord
+  # ...
+
+  ### Public Methods ###
+
+  concerning :Archiving do
+    def unlocked_comments
+      comments.where(locked: false)
+    end
+  end
+end
+```
+
+The method can use a scope on the associated model, e.g. `scope :unlocked, -> { where(locked: false) }` on `Comment`, so `Post#unlocked_comments` returns `comments.unlocked`. The caller still calls the method, e.g. `post.unlocked_comments`, never `post.comments.unlocked`. A spec for the caller then stubs one method on the post, not a chain.
+
+```ruby
+class Comment < ApplicationRecord
+  ### Scopes ###
+
+  scope :unlocked, -> { where(locked: false) }
+
+  # ...
+end
+```
+
+```ruby
+class Post < ApplicationRecord
+  # ...
+
+  concerning :Archiving do
+    def unlocked_comments
+      comments.unlocked
+    end
+  end
+end
+```
+
+Don't build the chain in the action.
+
+```ruby
+# Don't do this
+post.comments.where(locked: false).update_all(locked: true, updated_at: Time.zone.now)
+```
+
+> **TODO:** Describe how you handle the rest of this.
 
 ## Callbacks
 
