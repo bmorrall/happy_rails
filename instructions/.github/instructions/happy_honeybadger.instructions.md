@@ -1,5 +1,5 @@
 ---
-applyTo: "config/honeybadger.yml,app/models/**/*.rb,app/actions/**/*.rb,app/controllers/**/*.rb,app/jobs/**/*.rb,app/services/**/*.rb"
+applyTo: "app/models/**/*.rb,app/actions/**/*.rb,app/controllers/**/*.rb,app/jobs/**/*.rb,app/services/**/*.rb"
 ---
 
 # Honeybadger
@@ -15,9 +15,7 @@ applyTo: "config/honeybadger.yml,app/models/**/*.rb,app/actions/**/*.rb,app/cont
 - When you report an error, pass the context of each record it affects under the record's name, with `&.`, e.g. `Honeybadger.notify(error, context: { post: @post&.to_honeybadger_context, comment: @comment&.to_honeybadger_context })`.
 - Give a client's error for another service a `to_honeybadger_context` method with the request and response details, e.g. `request_method:`, `request_url:`, `response_status:` and `response_body: body&.truncate(1_000)` in `NewsletterClient::Error`.
 - Keep an error's `to_honeybadger_context` flat, and start its keys with `request_` and `response_`. Never add request or response headers. Truncate the response body, e.g. `body&.truncate(1_000)`. Leave out the query string when the service takes a key in the URL.
-- Pass on the cause's context with the `HoneybadgerCauseContext` concern in `app/models/concerns/honeybadger_cause_context.rb`, which defines `to_honeybadger_context` as `cause.respond_to?(:to_honeybadger_context) ? cause.to_honeybadger_context : {}`.
-- Include `HoneybadgerCauseContext` in the highest error class that an action raises in place of another error, usually the action's `Error`, e.g. `class Error < StandardError; include HoneybadgerCauseContext; end` in `Posts::SendNewsletter`. Never include it again in the error classes for each cause, e.g. `ServiceError < Error`.
-- TODO: How to set up Honeybadger.
+- Pass on the cause's context by including the `HoneybadgerCauseContext` concern from `app/models/concerns/honeybadger_cause_context.rb` in the highest error class that an action raises in place of another error, usually the action's `Error`, e.g. `class Error < StandardError; include HoneybadgerCauseContext; end` in `Posts::SendNewsletter`. Never include it again in the error classes for each cause, e.g. `ServiceError < Error`.
 - TODO: How to keep sensitive data out of error reports.
 - TODO: How to report errors from jobs.
 - TODO: How to test error reporting.

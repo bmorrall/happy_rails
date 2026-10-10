@@ -39,7 +39,15 @@ Every rule in an instruction file must match the guide. Do not add a rule to one
 
 `docs/guide/code-style.md` holds my own style preferences. They are optional, so readers can delete `happy_style.instructions.md`. Rules for agents only go in its "For agents" section, as a short line each, so the guide still lists every rule in the file.
 
-If you change an `applyTo` glob, also update the "Applies to" table in `docs/agent-instructions.md`. Prefix every instruction file name with `happy_`, so it does not overwrite a reader's own instruction files. If you add or rename an instruction file, also update the tables in `docs/agent-instructions.md` and `instructions/README.md`.
+If you change an `applyTo` glob, also update the "Applies to" tables in `docs/agent-instructions.md`. Prefix every instruction file name with `happy_`, so it does not overwrite a reader's own instruction files. If you add or rename an instruction file, also update the tables in `docs/agent-instructions.md` and `instructions/README.md`.
+
+## Setup files
+
+Rules for steps an agent does once, when it sets up the app, go in a separate file with a `happy_setup_` prefix, e.g. `happy_setup_actions.instructions.md` for `happy_actions.instructions.md`. A setup step writes a base class, a shared concern, an initialiser, a config setting or a file in `spec/support`, e.g. `ApplicationAction` or `config.include ActiveJob::TestHelper, type: :job`. Rules that apply each time an agent writes code stay in the main file, e.g. "Inherit every action from `ApplicationAction`".
+
+- When a rule mixes both, split it: the setup part goes in the setup file, and the main file keeps the part an agent follows each time, e.g. "Never add `verify_authorized` to individual controllers".
+- Set the setup file's `applyTo` to the files the setup creates or changes, e.g. `app/actions/application_action.rb,app/actions/concerns/**/*.rb`. Don't list these files in the main file's glob only for setup rules.
+- Only add a setup file when the area has setup steps. Each setup file matches the same guide page as its main file, usually its `## Setup` section, and its rules follow the guide's order.
 
 ## Writing a guide page
 
@@ -67,7 +75,7 @@ When agents should follow a pattern by default, write it as a rule in the guide 
 ## Adding a gem
 
 - Add a page to `docs/guide/gems/` with `parent: Gems` and `grand_parent: The Guide` in its front matter.
-- Add a matching `happy_<gem>.instructions.md` file, and add both to the table above.
+- Add a matching `happy_<gem>.instructions.md` file, and add both to the table above. If the gem has setup steps, also add `happy_setup_<gem>.instructions.md`.
 - Keep gems in alphabetical order: in `nav_order`, in the tables, and in the list in `instructions/README.md`.
 - Keep each gem's rules in its own file, so readers who do not use the gem can delete the file.
 

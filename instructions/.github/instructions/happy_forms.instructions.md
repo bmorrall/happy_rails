@@ -7,7 +7,7 @@ applyTo: "app/forms/**/*.rb,spec/forms/**/*.rb"
 - If the app uses a gem for form objects, e.g. Reform, follow the gem's conventions and ignore the rules below.
 - Put form objects in `app/forms/`, e.g. `CreatePostForm` in `app/forms/create_post_form.rb`.
 - Name a form after its action and resource, e.g. `CreatePostForm`, `UpdatePostForm` or `PublishPostForm`.
-- Inherit every form from `ApplicationForm` in `app/forms/application_form.rb`, which includes `ActiveModel::Model`, `ActiveModel::Attributes`, `ActiveModel::Attributes::Normalization` (Rails 8.1 or later) and `ActiveModel::Validations::Callbacks`, takes the current user and the params in `initialize(current_user, params = {})`, and keeps `current_user` in a private `attr_reader`.
+- Inherit every form from `ApplicationForm` in `app/forms/application_form.rb`, which takes the current user and the params in `initialize(current_user, params = {})`.
 - Group form object declarations under comment headings in this order: `### Attributes ###`, `### Collections ###`, `### Validations ###`, `### Callbacks ###`, `### Public Methods ###`.
 - Put a form's setup at the top, without a heading, in this order: `self.model_name`, any `delegate` lines, then `initialize`. Put `submit` under `### Public Methods ###`, and private methods last, after `private`, e.g. `attr_reader :post`.
 - Under `### Collections ###`, write a `collection_for_<attribute>` method for each attribute with a fixed set of choices, and use it in the attribute's validation, e.g. `collection_for_status` returning `Post.statuses.keys`, and `validates :status, inclusion: { in: ->(form) { form.collection_for_status } }`.

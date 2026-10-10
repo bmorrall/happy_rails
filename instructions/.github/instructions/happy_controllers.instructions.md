@@ -32,12 +32,11 @@ applyTo: "app/controllers/**/*.rb,config/routes.rb,spec/requests/**/*.rb,spec/fe
 - When actions accept different attributes, replace the params method with one method per action, named with a `_for_<action>` suffix, e.g. `post_params_for_create` and `post_params_for_update`. Do not keep a plain `post_params` next to them.
 - Write each action's permit list in full, even if attributes repeat, e.g. `post_params_for_create` permits `:title, :body, :slug` and `post_params_for_update` permits `:title, :body`. Do not build one list from another.
 - Always use a gem or a built-in Rails authentication method to authenticate requests, e.g. `http_basic_authenticate_with`. Never write a custom solution.
-- Put the authentication check in `ApplicationController`, e.g. `before_action :authenticate_user!`, never in individual controllers. To make an action public, use `skip_before_action` with an `only:` list of just those actions, e.g. `skip_before_action :authenticate_user!, only: %i[index show]` in `PostsController`.
+- Never put the authentication check in individual controllers. `ApplicationController` runs it for every action. To make an action public, use `skip_before_action` with an `only:` list of just those actions, e.g. `skip_before_action :authenticate_user!, only: %i[index show]` in `PostsController`.
 - Use Devise to authenticate users who sign in.
 - When an API authenticates differently, put its check in the top-most controller that every API controller inherits from, e.g. `before_action :authenticate` in `Api::V1::BaseController`, with `Api::V1::PostsController < BaseController`.
 - When you use a built-in Rails authentication method, keep usernames, passwords and tokens in Rails credentials or environment variables, never in code, e.g. `Rails.application.credentials.api_token`.
 - Compare secrets with `ActiveSupport::SecurityUtils.secure_compare`, never `==`, e.g. `authenticate_or_request_with_http_token { |token, _options| ActiveSupport::SecurityUtils.secure_compare(token, Rails.application.credentials.api_token) }`.
-- Only accept credentials over HTTPS, e.g. `config.force_ssl = true` in production.
 - In request specs, give every action's `describe` block at least one scenario for an unauthenticated user, e.g. `context "when not signed in"` that expects a redirect to `new_user_session_path`, or `context "without an access token"` that expects `have_http_status(:unauthorized)` for an API.
 - Handle each `rescue_from` with a private method passed with `with:`. Name the method `handle_` followed by the error class's name in snake case, keeping any `Error` suffix, e.g. `rescue_from ActiveRecord::RecordNotFound, with: :handle_record_not_found` and `rescue_from Pundit::NotAuthorizedError, with: :handle_not_authorized_error`. Never pass a block to `rescue_from`.
 - To handle an error differently in a subclass, override its `handle_` method and call `super` for the default, e.g. `handle_not_authorized_error` in `Posts::BaseController`.
@@ -52,7 +51,7 @@ applyTo: "app/controllers/**/*.rb,config/routes.rb,spec/requests/**/*.rb,spec/fe
 - Use Pundit to authorise requests. Follow the Pundit instructions for how to write each check.
 - Start every action with an authorisation check on its first line, before it loads more data, changes a record or renders anything, e.g. the check comes before `@post.update(post_params)` in `update`.
 - Leave a blank line after the authorisation check, unless it is the only line in the action, e.g. a blank line between the check and `@post.update(post_params)` in `update`.
-- Make every controller require an authorisation check by default. Set this up once in `ApplicationController`, never in individual controllers.
+- Never set up the default authorisation check in individual controllers. `ApplicationController` already requires it.
 - When an action needs no authorisation check, opt out on the action's first line, e.g. in `PagesController#about`. Never opt out for the whole controller, because that also covers actions added later.
 - Keep routes RESTful. Model a custom action as a resource of its own whenever you can.
 - Give every `resources` and `resource` call an `only:` list that matches the controller's actions, e.g. `resources :posts, only: %i[index show]`. Never use `except:`. Leave `only:` off only when the controller has all seven standard actions.
