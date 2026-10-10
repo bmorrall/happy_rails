@@ -7,7 +7,7 @@ applyTo: "**"
 This is a Rails app that follows the Happy Rails conventions:
 https://bmorrall.github.io/happy_rails/
 
-Follow these rules for all changes. Area-specific rules are in `.github/instructions/`.
+Follow these rules for all changes. Area-specific rules are in `.github/instructions/`. To set up the app for these rules, e.g. when `ApplicationAction` does not exist yet, use the `happy-rails-setup` skill in `.github/skills/happy-rails-setup/`.
 
 ## General
 
