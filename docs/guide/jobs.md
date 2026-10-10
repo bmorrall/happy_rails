@@ -174,7 +174,7 @@ Test a job the way you test a controller with a request spec. Run it with `perfo
 
 Name the `describe` block `".perform_now"`, after the method the spec calls, not `"#perform"`.
 
-Stub only the HTTP requests the job makes to other services, and check that it made them. When a service's SDK has its own stubs, e.g. `stub_responses` in the AWS SDK, use them instead. See [WebMock and VCR](../gems/webmock/).
+Stub only the HTTP requests the job makes to other services, and check that it made them. Use the service's stub helpers from `spec/support`, and check the stub each one returns. When a service's SDK has its own stubs, e.g. `stub_responses` in the AWS SDK, use them instead. See [WebMock and VCR](../gems/webmock/).
 
 ```ruby
 class NotifySubscribersJob < ApplicationJob
@@ -190,9 +190,8 @@ end
 RSpec.describe NotifySubscribersJob do
   describe ".perform_now" do
     it "sends the post to the newsletter service" do
-      post = create(:post, title: "Hello World")
-      newsletter_request = stub_request(:post, "https://newsletter.example.com/posts")
-        .with(body: hash_including(title: "Hello World"))
+      post = create(:post)
+      newsletter_request = stub_newsletter_create
 
       described_class.perform_now(post)
 
@@ -223,7 +222,7 @@ RSpec.describe NotifySubscribersJob do
   describe ".perform_later" do
     it "does nothing when the post was deleted" do
       post = create(:post)
-      newsletter_request = stub_request(:post, "https://newsletter.example.com/posts")
+      newsletter_request = stub_newsletter_create
 
       described_class.perform_later(post)
       post.destroy
@@ -263,7 +262,7 @@ RSpec.feature "Post Publishing" do
     post = create(:post, title: "Hello World")
 
     # AND the newsletter service accepts the post
-    newsletter_request = stub_request(:post, "https://newsletter.example.com/posts")
+    newsletter_request = stub_newsletter_create
 
     # WHEN I publish the post
     visit post_path(post)
