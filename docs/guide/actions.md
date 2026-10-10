@@ -490,6 +490,10 @@ This includes the caller's transaction. Rails joins a nested `transaction` block
 
 When the action doesn't need the service's reply, don't call the service from the action. Enqueue a job that calls it instead, e.g. `NotifySubscribersJob`. The job waits until the outermost transaction commits, as in [Jobs: Enqueueing after a transaction](../jobs/#enqueueing-after-a-transaction), so it is safe however the action is called.
 
+When a call to another service should be retried if it fails, run it in a job of its own that does nothing else, e.g. `NotifySubscribersJob`. A job retries all of `perform`, so a retry then repeats only that call. The steps before it have already committed, and don't run again.
+
+When a user is waiting for the reply, call the action directly, and don't retry it. The user sees that it failed and can try again, as in [Controllers and Routes: Other services failing](../controllers/#other-services-failing).
+
 When the action needs the reply, it must never run inside a transaction. Include a `NonTransactionalCallable` concern, in `app/actions/concerns/non_transactional_callable.rb`. It raises an error when the action is called inside a transaction, so the first caller that wraps it fails in its specs. The transactions that wrap each spec can't be joined, so the check ignores them.
 
 ```ruby

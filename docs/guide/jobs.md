@@ -84,6 +84,8 @@ end
 
 A job may run more than once, e.g. when it retries. Write the action so a second run is safe, e.g. it does nothing if the post is already published. See [Actions: Locks](../actions/#locks).
 
+A job that calls another service does only that, so a retry repeats only the call. Run the steps before it in another job, or in the caller. See [Actions: Other services](../actions/#other-services).
+
 An action that writes more than once has its own transaction. Open a transaction in `perform` only to combine several actions into one unit. Call any `Record` action before or after that transaction, never inside it. To record that the transaction failed, call the `Record` action in a `rescue` or `ensure` on `perform`. See [Actions: Transactions](../actions/#transactions).
 
 ### Jobs that run at a set time
