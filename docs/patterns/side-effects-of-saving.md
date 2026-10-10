@@ -58,8 +58,6 @@ module Posts
     # ...
 
     def call
-      return if post.archived_at?
-
       ActiveRecord::Base.transaction do
         post.update!(archived_at: Time.zone.now)
         post.comments.update_all(locked: true, updated_at: Time.zone.now)

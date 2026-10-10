@@ -77,8 +77,6 @@ module Posts
     # ...
 
     def call
-      return if post.archived_at?
-
       ActiveRecord::Base.transaction do
         Posts::UnpublishPost.call(post) if post.published?
         post.update!(archived_at: Time.zone.now)
@@ -132,8 +130,6 @@ module Posts
     end
 
     def call
-      return if post.archived_at?
-
       ActiveRecord::Base.transaction do
         post.update!(archived_at: Time.zone.now)
         post.comments.update_all(locked: true, updated_at: Time.zone.now)
@@ -366,8 +362,6 @@ module Posts
     # ...
 
     def call
-      return if post.archived_at?
-
       ActiveRecord::Base.transaction do
         post.update!(archived_at: Time.zone.now)
         post.comments.update_all(locked: true, updated_at: Time.zone.now)
@@ -426,8 +420,6 @@ When an action writes more than once, wrap the writes in a transaction, so eithe
 
 ```ruby
 def call
-  return if post.archived_at?
-
   ActiveRecord::Base.transaction do
     post.update!(archived_at: Time.zone.now)
     post.comments.update_all(locked: true, updated_at: Time.zone.now)
@@ -542,8 +534,6 @@ For a job, set `enqueue_after_transaction_commit` in the job class, as in [Jobs:
 
 ```ruby
 def call
-  return if post.archived_at?
-
   ActiveRecord::Base.transaction do
     post.update!(archived_at: Time.zone.now)
     post.comments.update_all(locked: true, updated_at: Time.zone.now)
@@ -603,7 +593,7 @@ RSpec.describe Posts::ArchivePost do
     it "archives the post and locks its comments" do
       travel_to Time.zone.now
 
-      post = instance_double(Post, archived_at?: false)
+      post = instance_double(Post)
       comments = instance_double(ActiveRecord::Relation)
       allow(post).to receive(:comments).and_return(comments)
 
@@ -620,7 +610,7 @@ Stub a collaborator to raise an error, to check that the action raises its own `
 
 ```ruby
 it "raises an Error when the post is invalid" do
-  post = instance_double(Post, archived_at?: false)
+  post = instance_double(Post)
   allow(post).to receive(:update!).and_raise(ActiveRecord::RecordInvalid)
 
   expect { described_class.call(post) }.to raise_error(described_class::Error)
@@ -634,7 +624,7 @@ it "archives a published post and locks its comments" do
   travel_to Time.zone.now
 
   comments = instance_double(ActiveRecord::Relation)
-  post = instance_double(Post, archived_at?: false, published?: true, comments:)
+  post = instance_double(Post, published?: true, comments:)
   allow(post).to receive(:update!)
 
   expect(post).to receive(:update!).with(archived_at: Time.zone.now)
