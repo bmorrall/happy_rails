@@ -101,8 +101,6 @@ Format primitive values with a helper, e.g. a date, a time or a boolean. Write o
 
 Avoid putting helpers in `ApplicationHelper`. Group related helpers in their own helper file. Name each file `<Things>Helper` after what it covers, in the plural, like the `PostsHelper` that Rails generates for a resource, e.g. `DatesHelper` for dates and times, and `BooleansHelper` for booleans. Each file then stays small, and its helper spec covers one kind of value. Rails includes every helper in `app/helpers` in every view, so you don't lose anything by splitting them up.
 
-Give each helper that builds a simple view element a matcher, so specs check for it the same way everywhere. See [RSpec: Matchers for helpers](../gems/rspec/#matchers-for-helpers).
-
 ```ruby
 # app/helpers/dates_helper.rb
 module DatesHelper
@@ -193,21 +191,4 @@ Avoid `form_for` and `form_tag`, which `form_with` replaces. Avoid `form_with` w
 
 ## Testing
 
-Never write a view spec. A view spec renders a template on its own, with data you set up by hand, so it can pass while the real page is broken. It also repeats what other specs already check.
-
-Test each part of a page where its logic lives:
-
-- **Templates and partials:** request specs. Each branch in a view the action renders needs at least one example. See [Controllers and Routes: Request specs](../controllers/#request-specs).
-- **Components:** component specs. See [ViewComponent: Testing](../gems/view_component/#testing).
-- **Decorators:** decorator specs. See [Draper: Testing](../gems/draper/#testing).
-- **Helpers:** helper specs.
-
-{: .rant }
-> Turn off view specs in the RSpec generator, so `rails generate` doesn't create them.
->
-> ```ruby
-> # config/application.rb
-> config.generators do |g|
->   g.test_framework :rspec, view_specs: false
-> end
-> ```
+See [Testing: Views and Frontend](../../testing/views/).

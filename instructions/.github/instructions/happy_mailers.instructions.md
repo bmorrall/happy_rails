@@ -1,5 +1,5 @@
 ---
-applyTo: "app/mailers/**/*.rb,app/views/*_mailer/**/*,spec/mailers/**/*.rb"
+applyTo: "app/mailers/**/*.rb,app/views/*_mailer/**/*"
 ---
 
 # Mailers
@@ -8,4 +8,3 @@ applyTo: "app/mailers/**/*.rb,app/views/*_mailer/**/*,spec/mailers/**/*.rb"
 - Never render a page component in a mailer template, e.g. `Posts::CardComponent`. For markup repeated across emails, write a component under a `Mailers::` namespace that takes plain values and full URLs and uses inline styles, e.g. `render Mailers::ButtonComponent.new(label: "Read post", url: post_url(@post))`.
 - TODO: How to name and lay out mailers, e.g. `PostMailer`.
 - TODO: How to write mailer previews.
-- TODO: How to write mailer specs.

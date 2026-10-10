@@ -171,4 +171,4 @@ end
 
 ## Testing
 
-> **TODO:** Describe how you handle this.
+See [Testing: Honeybadger](../../../testing/gems/honeybadger/).

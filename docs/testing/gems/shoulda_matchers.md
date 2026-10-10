@@ -1,7 +1,7 @@
 ---
 title: Shoulda Matchers
 parent: Gems
-grand_parent: The Guide
+grand_parent: Testing
 nav_order: 6
 ---
 
@@ -27,7 +27,7 @@ RSpec.describe Post do
 end
 ```
 
-Use the same matchers for validations on [form objects](../../forms/). Shoulda Matchers only includes them in `type: :model` specs, so include them for form specs in `spec/support/shoulda_matchers.rb`. Form specs get `type: :form` from [RSpec: Form specs](../rspec/#form-specs).
+Use the same matchers for validations on [form objects](../../../guide/forms/). Shoulda Matchers only includes them in `type: :model` specs, so include them for form specs in `spec/support/shoulda_matchers.rb`. Form specs get `type: :form` from [RSpec: Form specs](../rspec/#form-specs).
 
 ```ruby
 # spec/support/shoulda_matchers.rb

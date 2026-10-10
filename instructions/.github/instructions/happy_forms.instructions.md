@@ -1,5 +1,5 @@
 ---
-applyTo: "app/forms/**/*.rb,spec/forms/**/*.rb"
+applyTo: "app/forms/**/*.rb"
 ---
 
 # Forms
@@ -38,5 +38,3 @@ applyTo: "app/forms/**/*.rb,spec/forms/**/*.rb"
 - Open a transaction in `submit` only to combine several actions, or an action and the form's own save, into one unit, e.g. `Posts::PublishPost.call(post, publisher: current_user)` and `Posts::ArchivePost.call(previous_post)` in one `ActiveRecord::Base.transaction` block. Don't wrap a single action in a transaction.
 - Call a `Record` action before or after the transaction block in `submit`, never inside it, e.g. `Posts::RecordLinkCheck.call(post)` before `ActiveRecord::Base.transaction do`. To record that the transaction failed, call it in a `rescue` or `ensure` on `submit`.
 - When `submit` makes a value the resource doesn't hold, return a `Data` object with the resource and the value, never a method or `attr_reader` on the form that `submit` sets, e.g. `attr_reader :token`. Define the `Data` object at the top of the form, e.g. `Result = Data.define(:post, :token)` in `SharePostForm`, with `submit` returning `Result.new(post:, token:)`. When more than one form returns the same values, define the `Data` object once in `app/models/`, named after what it holds, e.g. `PreviewLink = Data.define(:post, :token)` in `app/models/preview_link.rb`. Never use a `Struct` or a hash for it.
-- Cover every `collection_for_<attribute>` method with a unit test in `spec/forms/`, e.g. `describe "#collection_for_status"` in `spec/forms/create_post_form_spec.rb`.
-- In form specs, test an attribute that uses a custom validator with the validator's matcher, e.g. `it { is_expected.to validate_isbn_of(:isbn) }`. Never repeat the cases from the validator's own spec.

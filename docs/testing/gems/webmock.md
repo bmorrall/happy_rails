@@ -1,7 +1,7 @@
 ---
 title: WebMock and VCR
 parent: Gems
-grand_parent: The Guide
+grand_parent: Testing
 nav_order: 9
 ---
 

@@ -15,4 +15,3 @@ applyTo: "app/services/**/*.rb,app/forms/**/*.rb,app/controllers/**/*.rb,app/job
 - TODO: Which kinds of service objects to write.
 - Give each service its own errors: an `Error < StandardError` class inside the service, and a subclass for each failure a caller handles on its own, e.g. `NewsletterClient::UnprocessableError < Error`. Rescue the HTTP library's errors in the service and raise the service's error, e.g. `rescue Faraday::Error => e` then `raise Error.new(e.message, ...)`. Never let a library's error escape a service.
 - Give a service's error the details of the failed call as keywords, e.g. `http_method:`, `url:`, `status:` and `body:` on `NewsletterClient::Error`.
-- TODO: How to test services.

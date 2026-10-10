@@ -1,6 +1,6 @@
 # Pundit setup
 
-Rules: `.github/instructions/happy_pundit.instructions.md`
+Rules: `.github/instructions/happy_pundit.instructions.md`, `.github/instructions/happy_rspec_pundit.instructions.md`
 
 - Put Pundit's setup in a `PunditAuthorization` concern in `app/controllers/concerns/pundit_authorization.rb`, with `include Pundit::Authorization` and `after_action :verify_authorized, unless: :devise_controller?` in its `included` block. Rescue failed checks in the concern with `rescue_from Pundit::NotAuthorizedError, with: :handle_not_authorized_error`, and in the private `handle_not_authorized_error` method, redirect to the root page with an alert. Copy `assets/app/controllers/concerns/pundit_authorization.rb`.
 - Add `include PunditAuthorization` to `ApplicationController`.

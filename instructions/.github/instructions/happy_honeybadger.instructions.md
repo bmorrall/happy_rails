@@ -18,4 +18,3 @@ applyTo: "app/models/**/*.rb,app/actions/**/*.rb,app/controllers/**/*.rb,app/job
 - Pass on the cause's context by including the `HoneybadgerCauseContext` concern from `app/models/concerns/honeybadger_cause_context.rb` in the highest error class that an action raises in place of another error, usually the action's `Error`, e.g. `class Error < StandardError; include HoneybadgerCauseContext; end` in `Posts::SendNewsletter`. Never include it again in the error classes for each cause, e.g. `ServiceError < Error`.
 - TODO: How to keep sensitive data out of error reports.
 - TODO: How to report errors from jobs.
-- TODO: How to test error reporting.

@@ -4,6 +4,8 @@ applyTo: "spec/**/*.rb"
 
 # RSpec and FactoryBot
 
+- In request and feature specs, do not cover a persona whose role plays no part in the action. The User persona covers it, and so does the policy spec.
+- List personas in rank order in request and feature specs, as in permission checks, e.g. `context "as an app admin"` before `context "as a publishing manager"`, then `context "as a user"` and `context "when not signed in"`.
 - Put spec setup in `spec/support`, not in `spec/rails_helper.rb`, with one file for each gem or concern, named after it, each with its own `RSpec.configure` block, e.g. `config.include FactoryBot::Syntax::Methods` in `spec/support/factory_bot.rb`.
 - When a spec checks a time, or the code works one out, call `travel_to` on the example's first line, with a blank line after it, and match each time exactly with `eq`, e.g. `expect(post.reload.archived_at).to eq(Time.zone.now)`. Never match a time with `be_within` or `an_instance_of(ActiveSupport::TimeWithZone)`.
 - Use `travel_to Time.zone.now` when the spec only needs the clock to stop. When the code depends on the date, pass a fixed time that tests it, e.g. `travel_to Time.zone.local(2026, 10, 31, 23, 59)` for code that works out the end of a month. Never pass `with_usec: true` to `travel_to`.

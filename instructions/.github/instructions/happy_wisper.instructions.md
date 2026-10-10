@@ -8,4 +8,3 @@ applyTo: "app/actions/**/*.rb"
 - TODO: How to publish events.
 - TODO: How to write listeners.
 - TODO: Where to subscribe listeners.
-- TODO: How to test events and listeners.

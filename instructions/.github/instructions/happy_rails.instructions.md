@@ -29,8 +29,7 @@ Follow these rules for all changes. Area-specific rules are in `.github/instruct
 - Only add a persona with more than one role when it changes the outcome, compared with the persona with only its highest role.
 - Put a persona with more than one role in the group of its highest role, straight after the persona with only that role.
 - When you add or change an action, cover what each persona may do, and on which records. Include a persona who may act on some records but not this one, e.g. a user who did not create the record.
-- In request and feature specs, do not cover a persona whose role plays no part in the action. The User persona covers it, and so does the policy spec.
-- List personas in rank order everywhere: in permission checks, and in request and feature specs.
+- List personas in rank order everywhere, e.g. in permission checks.
 
 ## Project layout
 

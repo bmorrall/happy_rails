@@ -27,4 +27,4 @@ Authentication with [Devise](https://github.com/heartcombo/devise).
 
 ## Testing
 
-> **TODO:** Describe how you handle this.
+See [Testing: Devise](../../../testing/gems/devise/).

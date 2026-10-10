@@ -50,4 +50,4 @@ end
 
 ## Testing
 
-> **TODO:** Describe how you handle this.
+See [Testing: Wisper](../../../testing/gems/wisper/).
