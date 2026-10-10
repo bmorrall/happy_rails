@@ -676,6 +676,8 @@ end
 
 When a controller calls an [action](../actions/) that calls another service, the service can fail, e.g. it returns a 500 or times out. That isn't part of the app's normal flow. The user didn't cause it, and can't fix it by changing what they submitted. Give the action an error class for this cause, e.g. `Posts::SendNewsletter::ServiceError`, as in [Actions: Error handling](../actions/#error-handling). Rescue it with `rescue_from`, and name the handler after the action and the error, e.g. `handle_send_newsletter_service_error`. Errors the user or a developer caused, e.g. invalid data, still belong in a form, as above.
 
+Always rescue `ServiceError` itself, even when you also rescue its subclasses. It is the catch-all: it covers every way the service can fail, including a cause added later. A subclass can have its own handler, e.g. when an API returns another status for a timeout, as below.
+
 In the handler, redirect with an alert. Write the alert as fixed text, and never show the error's message. It may hold the other service's reply, or details about your systems.
 
 ```ruby
@@ -704,12 +706,30 @@ module Posts
 end
 ```
 
-An API controller renders the error instead, with a 5xx status, so the client knows its request wasn't the problem. Use `:bad_gateway` (502) when the other service failed, e.g. it returned a 500. Use `:gateway_timeout` (504) when the service took too long to reply. Use `:service_unavailable` (503) when the service can't be reached for now, e.g. it is down for maintenance. A 503 tells the client to try again later.
+An API controller renders the error instead, with a 5xx status, so the client knows its request wasn't the problem. Render `ServiceError` with `:bad_gateway` (502), which says the other service failed.
+
+When the client should get another status for one cause, give the action a subclass of `ServiceError` for it, e.g. `Posts::SendNewsletter::TimeoutError`, and rescue it with its own handler. Use `:gateway_timeout` (504) when the service took too long to reply. Use `:service_unavailable` (503) when the service can't be reached for now, e.g. it is down for maintenance. A 503 tells the client to try again later.
+
+Declare the subclass's `rescue_from` after the one for `ServiceError`. Rails checks the handlers from the last one declared to the first, so the subclass's handler must come last to be found first.
 
 ```ruby
+rescue_from Posts::SendNewsletter::ServiceError,
+  with: :handle_send_newsletter_service_error
+rescue_from Posts::SendNewsletter::TimeoutError,
+  with: :handle_send_newsletter_timeout_error
+
+# ...
+
+private
+
 def handle_send_newsletter_service_error
   render json: { error: "Newsletter could not be sent. Please try again later." },
     status: :bad_gateway
+end
+
+def handle_send_newsletter_timeout_error
+  render json: { error: "Newsletter could not be sent. Please try again later." },
+    status: :gateway_timeout
 end
 ```
 
