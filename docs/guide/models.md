@@ -220,11 +220,28 @@ class Post < ApplicationRecord
 end
 ```
 
+The same goes for a query that starts from a class, e.g. the comments on a relation of posts. Give the class a method that builds it, e.g. `Comment.on_posts(posts)`, not `Comment.where(post: posts)` in the caller. A spec for the caller can then stub the class method, e.g. `allow(Comment).to receive(:on_posts).with(posts)`.
+
+```ruby
+class Comment < ApplicationRecord
+  # ...
+
+  concerning :Archiving do
+    class_methods do
+      def on_posts(posts)
+        where(post: posts)
+      end
+    end
+  end
+end
+```
+
 Don't build the chain in the action.
 
 ```ruby
 # Don't do this
 post.comments.where(locked: false).update_all(locked: true, updated_at: Time.zone.now)
+Comment.where(post: posts).update_all(locked: true, updated_at: Time.zone.now)
 ```
 
 > **TODO:** Describe how you handle the rest of this.

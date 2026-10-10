@@ -235,7 +235,7 @@ Posts::PublishPost.call(post, publisher: current_user)
 Posts::PublishPost.call(post, publisher: current_user, title:)
 ```
 
-When the action builds a query on a record's association in more than one step, e.g. `post.comments.where(locked: false)`, call a method on the model instead, e.g. `post.unlocked_comments`, not `post.comments.unlocked`. See [Models: Scopes and queries](../models/#scopes-and-queries).
+When the action builds a query on a record's association in more than one step, e.g. `post.comments.where(locked: false)`, call a method on the model instead, e.g. `post.unlocked_comments`, not `post.comments.unlocked`. Do the same for a query that starts from a class, e.g. `Comment.on_posts(posts)`, not `Comment.where(post: posts)`. See [Models: Scopes and queries](../models/#scopes-and-queries).
 
 ### Many records
 
@@ -262,7 +262,7 @@ module Posts
       now = Time.zone.now
 
       ActiveRecord::Base.transaction do
-        Comment.where(post: posts).update_all(locked: true, updated_at: now)
+        Comment.on_posts(posts).update_all(locked: true, updated_at: now)
         posts.update_all(archived_at: now, updated_at: now)
       end
     end
@@ -589,11 +589,11 @@ To record that the transaction itself failed, call the `Record` action in a `res
 
 ### Action specs
 
-Write an action spec as a unit spec, and name the `describe` block `".call"`, after the method the spec calls. Stub the methods the action calls on the records it's given, e.g. `update!` on the post, and check that it calls them with the right arguments. Use real records instead when the action runs a query, loops over records, or calls another action, as below.
+Write an action spec as a unit spec, and name the `describe` block `".call"`, after the method the spec calls. Stub everything the action calls, and check that it calls each one with the right arguments. Avoid creating records, even when the action runs a query. The request and job specs for its callers run the action for real, so its unit spec only checks what the action asks for.
 
 Use `instance_double`, e.g. `instance_double(Post)`, not a plain `double`. See [RSpec: Doubles, build_stubbed or create](../gems/rspec/#doubles-build_stubbed-or-create).
 
-An action does one task, so its unit spec stays short. If the spec needs a lot of stubs to set up, the action is often doing too much. Split it into smaller actions. If the action is simple but its objects take a lot of stubbing, e.g. a chain of associations, build real records with `create` instead, e.g. `create(:post)`. The action writes to the database, so `build_stubbed` can't stand in.
+An action does one task, so its unit spec stays short. If the spec needs a lot of stubs to set up, the action is often doing too much. Split it into smaller actions. If a chain of calls is hard to stub, move the chain into a method on the model, so the spec stubs one method. See [Models: Scopes and queries](../models/#scopes-and-queries).
 
 ```ruby
 RSpec.describe Posts::ArchivePost do
@@ -625,22 +625,24 @@ it "raises an Error when the post is invalid" do
 end
 ```
 
-Avoid stubbing another action the action calls. Let it run with real records, and check what both actions did, e.g. that the post is unpublished and archived. A stub only checks that the other action was called. It still passes when the other action is broken, or when it's called with the wrong arguments. To check that the action raises its own `Error` in place of the other action's, set up records that make the other action fail for real.
+An action that calls another action is a caller too, so the other action is invisible to its spec, as in [Specs for callers](#specs-for-callers). Avoid stubbing it. Let it run on the same doubles, and check the result, e.g. that the post is archived and its comments are locked. You can then change how the other action works, and the spec only fails if the result changes. To check that the action raises its own `Error` in place of the other action's, stub a record method the other action calls to raise.
 
 ```ruby
-it "unpublishes and archives a published post" do
+it "archives a published post and locks its comments" do
   travel_to Time.zone.now
 
-  post = create(:post, status: :published)
+  comments = instance_double(ActiveRecord::Relation)
+  post = instance_double(Post, archived_at?: false, published?: true, comments:)
+  allow(post).to receive(:update!)
+
+  expect(post).to receive(:update!).with(archived_at: Time.zone.now)
+  expect(comments).to receive(:update_all).with(locked: true, updated_at: Time.zone.now)
 
   described_class.call(post)
-
-  expect(post.reload).not_to be_published
-  expect(post.archived_at).to eq(Time.zone.now)
 end
 ```
 
-When the action's work is a query, e.g. `update_all`, or a `where` the action builds itself, test it with real records. Pass in a real relation, then check the records afterwards, including one the action must leave alone. A stubbed spec only checks which methods were called. It still passes when the `where` picks the wrong records, or when the statements run in the wrong order.
+When the action writes to a relation, stub the method that returns it, e.g. `post.unlocked_comments` or `Comment.on_posts(posts)`, to return an `instance_double(ActiveRecord::Relation)`. Then expect the write on it. Pass a relation double in as the records, e.g. `posts` for `Posts::ArchivePosts`.
 
 ```ruby
 RSpec.describe Posts::ArchivePosts do
@@ -648,23 +650,20 @@ RSpec.describe Posts::ArchivePosts do
     it "archives the posts and locks their comments" do
       travel_to Time.zone.now
 
-      post = create(:post)
-      comment = create(:comment, post:)
-      other_comment = create(:comment)
+      posts = instance_double(ActiveRecord::Relation)
+      comments = instance_double(ActiveRecord::Relation)
+      allow(Comment).to receive(:on_posts).with(posts).and_return(comments)
 
-      described_class.call(Post.where(archived_at: nil, id: post))
+      expect(comments).to receive(:update_all).with(locked: true, updated_at: Time.zone.now)
+      expect(posts).to receive(:update_all).with(archived_at: Time.zone.now, updated_at: Time.zone.now)
 
-      expect(post.reload.archived_at).to eq(Time.zone.now)
-      expect(comment.reload).to be_locked
-      expect(other_comment.reload).not_to be_locked
+      described_class.call(posts)
     end
   end
 end
 ```
 
-The relation picks posts that aren't archived yet, so the spec fails if the action archives the posts before it locks their comments. `other_comment` checks that the action doesn't lock comments on other posts.
-
-This includes an action that loads the records itself, e.g. with `find_each`, and calls another action for each one. Check every record afterwards.
+When the action loops with `find_each`, stub it to yield doubles, e.g. `allow(posts).to receive(:find_each).and_yield(post)`.
 
 The unit spec checks the action alone. The request and job specs for its callers let it run for real, so between them they check that it works with the rest of the app.
 
