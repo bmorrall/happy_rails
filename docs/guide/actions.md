@@ -327,6 +327,8 @@ The check catches a caller that breaks the rule, e.g. a form that sets `post.tit
 
 A failed check means a developer called the action wrongly. It is a bug, not an outcome the user can expect, so never use it to control what the app does next. Never rescue `ActiveModel::ValidationError` from an action, and never raise it again as the action's `Error`. Let it fail loudly, so the bug shows up in your specs and error reports. When a user can cause the failure, check it in the form instead, where the user can see the error.
 
+In the action's own spec, stub `has_changes_to_save?` to return `false` on each record double that `unmodified:` checks, e.g. `instance_double(Post, has_changes_to_save?: false)`. `UnmodifiedValidator` calls it on the record.
+
 Don't test the argument checks in request or job specs, e.g. that `Posts::PublishPost` raises `ActiveModel::ValidationError` for a post with unsaved changes. Every spec that calls the action already runs them, and fails if the controller or job passes the wrong arguments. Test each validator once, in its own spec.
 
 ## Return values
@@ -664,6 +666,36 @@ end
 ```
 
 When the action loops with `find_each`, stub it to yield doubles, e.g. `allow(posts).to receive(:find_each).and_yield(post)`.
+
+When the action takes a lock, stub `with_lock` to yield, e.g. `allow(post).to receive(:with_lock).and_yield`. The block then runs against the same double. To test the check inside the lock, return one answer for the check before the lock and another for the check inside it, e.g. `allow(post).to receive(:published?).and_return(false, true)`.
+
+```ruby
+RSpec.describe Posts::PublishPost do
+  describe ".call" do
+    it "publishes a draft" do
+      publisher = instance_double(User)
+      publications = instance_double(ActiveRecord::Relation)
+      post = instance_double(Post, published?: false, has_changes_to_save?: false, publications:)
+      allow(post).to receive(:with_lock).and_yield
+
+      expect(post).to receive(:update!).with(status: :published)
+      expect(publications).to receive(:create!).with(publisher:)
+
+      described_class.call(post, publisher:)
+    end
+
+    it "does nothing when the post is published while it waits for the lock" do
+      post = instance_double(Post, has_changes_to_save?: false)
+      allow(post).to receive(:published?).and_return(false, true)
+      allow(post).to receive(:with_lock).and_yield
+
+      expect(post).not_to receive(:update!)
+
+      described_class.call(post, publisher: instance_double(User))
+    end
+  end
+end
+```
 
 The unit spec checks the action alone. The request and job specs for its callers let it run for real, so between them they check that it works with the rest of the app.
 
