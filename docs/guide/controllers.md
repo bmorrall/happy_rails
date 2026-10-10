@@ -204,7 +204,7 @@ module Posts
 end
 ```
 
-When the action submits a [form](../forms/), assign the result of `submit` in the `if`, in brackets, e.g. `if (post = @create_post_form.submit)`. Use it only in the happy case. The brackets show the `=` is meant, not a typo for `==`.
+When the action submits a [form](../forms/) and needs the result, assign the result of `submit` in the `if`, in brackets, e.g. `if (post = @create_post_form.submit)`. Use it only in the happy case. When it doesn't need the result, don't assign it, e.g. `if @archive_post_form.submit`. The brackets show the `=` is meant, not a typo for `==`.
 
 `submit` returns `false` when it fails. Assigned in the `if`, the result is only used once you know it worked, so a failed submit can't reach code that expects the resource.
 
