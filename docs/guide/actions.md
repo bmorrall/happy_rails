@@ -593,7 +593,7 @@ RSpec.describe Posts::ArchivePost do
     it "archives the post and locks its comments" do
       travel_to Time.zone.now
 
-      post = instance_double(Post)
+      post = instance_double(Post, published?: false)
       comments = instance_double(ActiveRecord::Relation)
       allow(post).to receive(:comments).and_return(comments)
 
@@ -610,27 +610,34 @@ Stub a collaborator to raise an error, to check that the action raises its own `
 
 ```ruby
 it "raises an Error when the post is invalid" do
-  post = instance_double(Post)
+  post = instance_double(Post, published?: false)
   allow(post).to receive(:update!).and_raise(ActiveRecord::RecordInvalid)
 
   expect { described_class.call(post) }.to raise_error(described_class::Error)
 end
 ```
 
-An action that calls another action is a caller too, so the other action is invisible to its spec, as in [Specs for callers](#specs-for-callers). Avoid stubbing it. Let it run on the same doubles, and check the result, e.g. that the post is archived and its comments are locked. You can then change how the other action works, and the spec only fails if the result changes. To check that the action raises its own `Error` in place of the other action's, stub a record method the other action calls to raise.
+When the action calls another action, stub that action, and check that the action calls it with the right arguments, e.g. `expect(Posts::UnpublishPost).to receive(:call).with(post)`. The other action has its own spec, so this spec only checks that the action asks for it. To check that the action raises its own `Error` in place of the other action's, stub the other action to raise its `Error`.
 
 ```ruby
-it "archives a published post and locks its comments" do
+it "unpublishes a published post before archiving it" do
   travel_to Time.zone.now
 
   comments = instance_double(ActiveRecord::Relation)
   post = instance_double(Post, published?: true, comments:)
-  allow(post).to receive(:update!)
+  allow(comments).to receive(:update_all)
 
+  expect(Posts::UnpublishPost).to receive(:call).with(post)
   expect(post).to receive(:update!).with(archived_at: Time.zone.now)
-  expect(comments).to receive(:update_all).with(locked: true, updated_at: Time.zone.now)
 
   described_class.call(post)
+end
+
+it "raises an Error when the post can't be unpublished" do
+  post = instance_double(Post, published?: true)
+  allow(Posts::UnpublishPost).to receive(:call).and_raise(Posts::UnpublishPost::Error)
+
+  expect { described_class.call(post) }.to raise_error(described_class::Error)
 end
 ```
 
@@ -682,6 +689,25 @@ RSpec.describe Posts::PublishPost do
       expect(post).not_to receive(:update!)
 
       described_class.call(post, publisher: instance_double(User))
+    end
+  end
+end
+```
+
+When the action calls a chain of methods, e.g. `PublishScheduledPostJob.set(wait_until: post.publish_at).perform_later(post)` in `Posts::EnqueuePublish`, stub the chain with `allow(...).to receive_message_chain`. After the call, check each step's arguments with `have_received`. Use `allow`, not `expect`. `have_received` only works on a stub, and `with` on the chain only checks the last step.
+
+```ruby
+RSpec.describe Posts::EnqueuePublish do
+  describe ".call" do
+    it "enqueues the post to publish at its publish time" do
+      publish_at = Time.zone.local(2026, 10, 31, 9, 0)
+      post = instance_double(Post, publish_at:)
+      allow(PublishScheduledPostJob).to receive_message_chain(:set, :perform_later)
+
+      described_class.call(post)
+
+      expect(PublishScheduledPostJob).to have_received(:set).with(wait_until: publish_at)
+      expect(PublishScheduledPostJob.set).to have_received(:perform_later).with(post)
     end
   end
 end
