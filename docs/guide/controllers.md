@@ -733,7 +733,7 @@ def handle_send_newsletter_timeout_error
 end
 ```
 
-In the request spec, stub the service to fail, and check the redirect and the alert. Match the whole flash, so the spec fails if the alert ever includes the service's reply.
+In the request spec, stub the service to fail, and check the redirect and the alert. Match the whole flash, so the spec fails if the alert ever includes the service's reply. Stub a timeout the same way, with `.to_timeout` in place of `.to_return(status: 500)`. See [WebMock and VCR: Stubbing requests](../gems/webmock/#stubbing-requests).
 
 ```ruby
 it "redirects with an alert when the newsletter service fails" do
@@ -1044,7 +1044,7 @@ RSpec.describe "Posts::Publications" do
 end
 ```
 
-When the action calls another service during the request, stub only the HTTP request, and check that the action made it, e.g. `newsletter_request = stub_request(:post, "https://newsletter.example.com/posts")` then `expect(newsletter_request).to have_been_requested`. See [WebMock and VCR](../gems/webmock/).
+When the action calls another service during the request, stub only the HTTP request, and check that the action made it, e.g. `newsletter_request = stub_request(:post, "https://newsletter.example.com/posts")` then `expect(newsletter_request).to have_been_requested`. When a service's SDK has its own stubs, e.g. `stub_responses` in the AWS SDK, use them instead. See [WebMock and VCR](../gems/webmock/).
 
 See [RSpec: Request specs](../gems/rspec/#request-specs) for how to write the contexts inside each block.
 

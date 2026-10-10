@@ -59,4 +59,5 @@ These are the tasks the examples use. Each one shows up on more than one page.
 - **Check a post's links.** Before a post is published, the app checks the links in it. `Posts::RecordLinkCheck` saves the result on the post.
 - **Notify subscribers.** When a post is published, `NotifySubscribersJob` sends it to an outside newsletter service through `NewsletterClient`.
 - **Show newsletter stats.** A post's page shows the open rate of its newsletter, and the posts list shows it for each post that was sent. `NewsletterClient#fetch_stats` reads the stats for one newsletter, and `NewsletterClient#fetch_all_stats` reads them for many newsletters at once, keyed by newsletter ID.
+- **Back up a post.** When a post is published, `BackupPostJob` saves a copy of it to S3 through `PostBackupBucket`, a service around `Aws::S3::Client`.
 - **Clean up drafts.** `PurgeAbandonedDraftsJob` runs on a schedule and deletes drafts no one has touched in a long time.
