@@ -607,6 +607,28 @@ it "raises an Error when the post is invalid" do
 end
 ```
 
+When the action's work is a query, e.g. `update_all`, or a `where` the action builds itself, test it with real records. Pass in a real relation, then check the records afterwards, including one the action must leave alone. A stubbed spec only checks which methods were called. It still passes when the `where` picks the wrong records, or when the statements run in the wrong order.
+
+```ruby
+RSpec.describe Posts::ArchivePosts do
+  describe ".call" do
+    it "archives the posts and locks their comments" do
+      post = create(:post)
+      comment = create(:comment, post:)
+      other_comment = create(:comment)
+
+      described_class.call(Post.where(archived_at: nil, id: post))
+
+      expect(post.reload.archived_at).to be_present
+      expect(comment.reload).to be_locked
+      expect(other_comment.reload).not_to be_locked
+    end
+  end
+end
+```
+
+The relation picks posts that aren't archived yet, so the spec fails if the action archives the posts before it locks their comments. `other_comment` checks that the action doesn't lock comments on other posts.
+
 The unit spec checks the action alone. The request and job specs for its callers let it run for real, so between them they check that it works with the rest of the app.
 
 ### Specs for callers
