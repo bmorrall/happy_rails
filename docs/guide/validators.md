@@ -38,7 +38,20 @@ validates :title, length: { maximum: 100, allow_blank: true }
 
 Name the arguments to `validate_each` as Rails does: `record`, `attribute` and `value`. The validator then reads the same wherever it is used, e.g. in a model, a form or an action.
 
-> **TODO:** Describe how you handle this.
+Name a validator after the check it makes, not the kind of value it checks. When the check matches a pattern, end the name with `Format`, e.g. `PhoneNumberFormatValidator`, not `PhoneNumberValidator`. The option and the spec matcher put the attribute's name next to the validator's, and the attribute is often named after the kind of value, so a validator named the same way doubles up. A name for the check reads like Rails' own `format:` and `length:`.
+
+```ruby
+validates :phone_number,
+  phone_number_format: { allow_blank: true }
+```
+
+```ruby
+# Don't do this
+validates :phone_number,
+  phone_number: { allow_blank: true }
+```
+
+A validator for a state of a record is already named after its check, e.g. `UnmodifiedValidator` and `PersistedValidator`.
 
 ### Blank values
 
@@ -65,7 +78,7 @@ validates :post,
 When a value has to match a pattern, e.g. a UUID, inherit from Rails' `ActiveModel::Validations::FormatValidator`, and give it the pattern in `initialize`. The validator then works like `format:`. It adds `:invalid`, it handles `allow_blank:`, `message:` and `strict:`, and every caller checks the same pattern.
 
 ```ruby
-class UuidValidator < ActiveModel::Validations::FormatValidator
+class UuidFormatValidator < ActiveModel::Validations::FormatValidator
   UUID_FORMAT = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/
 
   def initialize(options)
@@ -88,21 +101,21 @@ Use it like any other validator, e.g. on the ID a caller generates with `SecureR
 
 ```ruby
 validates :newsletter_id,
-  uuid: { allow_blank: true }
+  uuid_format: { allow_blank: true }
 ```
 
-Use a format validator only when matching the pattern is the whole rule. If a value also needs another check, e.g. a check digit, write an `ActiveModel::EachValidator` instead, as in [Example: IsbnValidator](#example-isbnvalidator).
+Inherit from `FormatValidator` only when matching the pattern is the whole rule. If a value also needs another check, e.g. a check digit, write an `ActiveModel::EachValidator` instead, and still end its name with `Format`, as in [Example: IsbnFormatValidator](#example-isbnformatvalidator).
 
-### Example: IsbnValidator
+### Example: IsbnFormatValidator
 
-An ISBN has to match a pattern, and its last digit has to be the right check digit. `IsbnValidator` checks both, and follows every rule above:
+An ISBN has to match a pattern, and its last digit has to be the right check digit. `IsbnFormatValidator` checks both, and follows every rule above:
 
 - It doesn't skip blank values, and checks `value.to_s`, so `nil` fails as `:invalid_isbn` rather than raising. The caller passes `allow_blank: true`, as in [Blank values](#blank-values).
 - An ISBN with the wrong format or check digit fails with its own symbol, `:invalid_isbn`, with its message in the locale file.
 - Every `errors.add` passes `**options`, so `message:` and `strict:` still work.
 
 ```ruby
-class IsbnValidator < ActiveModel::EachValidator
+class IsbnFormatValidator < ActiveModel::EachValidator
   ISBN_FORMAT = /\A(?:\d{9}[\dX]|97[89]\d{10})\z/
 
   def validate_each(record, attribute, value)
@@ -140,7 +153,7 @@ en:
 ```ruby
 validates :isbn,
   presence: true,
-  isbn: { allow_blank: true }
+  isbn_format: { allow_blank: true }
 ```
 
 The validator checks the value as it is, so an ISBN with hyphens fails. Tidy the value in the model first, e.g. `normalizes :isbn, with: ->(isbn) { isbn.delete("-") }`.

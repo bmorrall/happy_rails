@@ -10,14 +10,14 @@ How I test custom validators.
 
 For the code itself, see [Validators](../../guide/validators/).
 
-Write a unit spec for each validator, in `spec/validators/`, e.g. `spec/validators/isbn_validator_spec.rb`. Test the validator on its own, as if any app could use it. You MUST NOT test it with one of the app's models or forms, e.g. `Post`. The validator doesn't know about them, and neither does its spec.
+Write a unit spec for each validator, in `spec/validators/`, e.g. `spec/validators/isbn_format_validator_spec.rb`. Test the validator on its own, as if any app could use it. You MUST NOT test it with one of the app's models or forms, e.g. `Post`. The validator doesn't know about them, and neither does its spec.
 
-Build the validator under test with `described_class`, and run it against a stand-in record. You MUST NOT rely on the option name to find it, e.g. `validates :value, isbn: true`. Then the spec runs the class it describes, even if the option name and the class name stop matching.
+Build the validator under test with `described_class`, and run it against a stand-in record. You MUST NOT rely on the option name to find it, e.g. `validates :value, isbn_format: true`. Then the spec runs the class it describes, even if the option name and the class name stop matching.
 
 Make the stand-in record a `Struct` with one attribute, called `value`, that includes `ActiveModel::Validations`. Give it a `name`, which Rails needs to build error messages. Pass the validator's options in each example, e.g. `message:`.
 
 ```ruby
-RSpec.describe IsbnValidator do
+RSpec.describe IsbnFormatValidator do
   subject(:record) { record_class.new }
 
   let(:record_class) do
@@ -65,18 +65,18 @@ You MUST NOT test Rails' own options, e.g. `allow_blank:` or `strict:`. Rails ha
 
 ## Models and forms that use a validator
 
-A model or form spec checks that an attribute uses the validator, not every case the validator handles. The validator's own spec covers those. Give each validator a matcher named after it, e.g. `validate_isbn_of` for `IsbnValidator`. The matcher checks one value the validator allows and one it rejects, with Shoulda Matchers' `allow_value`, as for any validation. See [Shoulda Matchers: Validations](../gems/shoulda_matchers/#validations).
+A model or form spec checks that an attribute uses the validator, not every case the validator handles. The validator's own spec covers those. Give each validator a matcher named after it, e.g. `validate_isbn_format_of` for `IsbnFormatValidator`. The matcher checks one value the validator allows and one it rejects, with Shoulda Matchers' `allow_value`, as for any validation. See [Shoulda Matchers: Validations](../gems/shoulda_matchers/#validations).
 
 Check what the validator does, not that it's declared. You MUST NOT look it up with `validators_on`, for the same reason the guide never tests that a callback is registered.
 
 Put the matcher in a module named after the validator, with a `SpecHelpers` suffix, in `spec/support/`. Include it for model specs and form specs, with `type: :model` and `type: :form`. See [RSpec: Form specs](../gems/rspec/#form-specs).
 
 ```ruby
-# spec/support/isbn_validator_spec_helpers.rb
-module IsbnValidatorSpecHelpers
+# spec/support/isbn_format_validator_spec_helpers.rb
+module IsbnFormatValidatorSpecHelpers
   extend RSpec::Matchers::DSL
 
-  matcher :validate_isbn_of do |attribute|
+  matcher :validate_isbn_format_of do |attribute|
     chain(:with_message) { |message| @message = message }
 
     match(notify_expectation_failures: true) do |record|
@@ -87,8 +87,8 @@ module IsbnValidatorSpecHelpers
 end
 
 RSpec.configure do |config|
-  config.include IsbnValidatorSpecHelpers, type: :model
-  config.include IsbnValidatorSpecHelpers, type: :form
+  config.include IsbnFormatValidatorSpecHelpers, type: :model
+  config.include IsbnFormatValidatorSpecHelpers, type: :form
 end
 ```
 
@@ -96,7 +96,7 @@ Use the matcher in the `describe` block of the attribute. When the attribute set
 
 ```ruby
 describe "#isbn" do
-  it { is_expected.to validate_isbn_of(:isbn) }
+  it { is_expected.to validate_isbn_format_of(:isbn) }
 end
 ```
 

@@ -93,7 +93,7 @@ end
 
 Test validations and associations with Shoulda Matchers. See [Shoulda Matchers: Validations](../gems/shoulda_matchers/#validations) and [Shoulda Matchers: Associations](../gems/shoulda_matchers/#associations).
 
-Test an attribute that uses a custom validator with the validator's matcher, e.g. `it { is_expected.to validate_isbn_of(:isbn) }`. You MUST NOT repeat the cases from the validator's own spec. See [Validators: Models and forms that use a validator](../validators/#models-and-forms-that-use-a-validator).
+Test an attribute that uses a custom validator with the validator's matcher, e.g. `it { is_expected.to validate_isbn_format_of(:isbn) }`. You MUST NOT repeat the cases from the validator's own spec. See [Validators: Models and forms that use a validator](../validators/#models-and-forms-that-use-a-validator).
 
 ## Scopes
 
