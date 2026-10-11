@@ -44,7 +44,7 @@ The area files are:
 | --- | --- |
 | `happy_rails.instructions.md` | `**` |
 | `happy_models.instructions.md` | `app/models/**` |
-| `happy_validators.instructions.md` | `app/validators/**` |
+| `happy_validators.instructions.md` | `app/validators/**`, `app/models/**`, `app/forms/**` |
 | `happy_forms.instructions.md` | `app/forms/**` |
 | `happy_actions.instructions.md` | `app/actions/**` |
 | `happy_services.instructions.md` | `app/services/**`, `app/forms/**`, `app/controllers/**`, `app/jobs/**` |
@@ -108,7 +108,7 @@ Ask your agent to set up Happy Rails to run it, e.g. "Set up this app for Happy 
 | `references/rspec.md` | `spec/rails_helper.rb`, `spec/support/time_helpers.rb`, `spec/support/capybara.rb`, `spec/support/forms.rb` |
 | `references/actions.md` | `ApplicationAction`, `ValidatedCallable`, `NonTransactionalCallable` |
 | `references/forms.md` | `ApplicationForm` |
-| `references/validators.md` | `UnmodifiedValidator`, `raise_on_missing_translations` |
+| `references/validators.md` | `UnmodifiedValidator`, `PersistedValidator`, `raise_on_missing_translations` |
 | `references/jobs.md` | `spec/support/active_job.rb` |
 | `references/controllers.md` | `ApplicationController`, `force_ssl` |
 | `references/views.md` | `UnknownValuesHelper` |

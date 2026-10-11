@@ -14,9 +14,29 @@ Put custom validators in `app/validators/`, e.g. `UnmodifiedValidator` in `app/v
 
 > **TODO:** Describe how you handle this.
 
+## Declaring validations
+
+Give each attribute one `validates` call, with every validator it needs. Then all the checks on an attribute are in one place, and a reader doesn't have to search the class for more.
+
+```ruby
+validates :title,
+  presence: true,
+  length: { maximum: 100, allow_blank: true }
+```
+
+Don't split an attribute's validators across several calls.
+
+```ruby
+# Don't do this
+validates :title, presence: true
+validates :title, length: { maximum: 100, allow_blank: true }
+```
+
 ## Writing a validator
 
 ### Naming and layout
+
+Name the arguments to `validate_each` as Rails does: `record`, `attribute` and `value`. The validator then reads the same wherever it is used, e.g. in a model, a form or an action.
 
 > **TODO:** Describe how you handle this.
 
@@ -25,6 +45,8 @@ Put custom validators in `app/validators/`, e.g. `UnmodifiedValidator` in `app/v
 Rails' own validators, other than `presence`, check a blank value like any other, e.g. `length: { minimum: 3 }` fails for `nil`. Pass `allow_blank: true` or `allow_nil: true` to skip blank values. A custom validator that inherits from `ActiveModel::EachValidator` gets both options for free. Rails checks them before it calls `validate_each`.
 
 Write custom validators the same way. Never skip a blank value inside `validate_each`. Treat it like any other value that fails the check, and let the caller decide with `allow_blank` or `allow_nil`. Then every validator in the app handles blank values the same way.
+
+Never raise on a blank value, or on a value of another kind, either. Rails' validators don't: `format` checks `value.to_s`, so `nil` fails as `:invalid`, and `numericality` fails `nil` as `:not_a_number`. Fail the value with the validator's own error instead, e.g. with `value.to_s` or `&.`.
 
 When an attribute also has `presence: true`, add `allow_blank: true` to its other validators. A blank value then gets one error, "can't be blank", not a stack of errors that all say it's missing.
 
@@ -37,23 +59,6 @@ validates :post,
   presence: true,
   unmodified: { allow_blank: true }
 ```
-
-### Values of the wrong kind
-
-A validator usually checks a value by calling a method on it, e.g. `has_changes_to_save?`. Check that the value responds to that method first. When it doesn't, add `:invalid`. A value of the wrong kind then fails like any other bad value, instead of passing quietly or raising `NoMethodError`.
-
-```ruby
-class ExampleValidator < ActiveModel::EachValidator
-  def validate_each(record, attribute, value)
-    return record.errors.add(attribute, :invalid, **options) unless value.respond_to?(:example?)
-    return if value.example?
-
-    record.errors.add(attribute, :example, **options)
-  end
-end
-```
-
-Name the arguments to `validate_each` as Rails does: `record`, `attribute` and `value`. The validator then reads the same wherever it is used, e.g. in a model, a form or an action.
 
 ### Format validators
 
@@ -92,8 +97,7 @@ Use a format validator only when matching the pattern is the whole rule. If a va
 
 An ISBN must match a pattern, and its last digit must be the right check digit. `IsbnValidator` checks both, and follows every rule above:
 
-- A value that isn't a string fails as `:invalid`, as in [Values of the wrong kind](#values-of-the-wrong-kind).
-- It doesn't skip blank values. The caller passes `allow_blank: true`, as in [Blank values](#blank-values).
+- It doesn't skip blank values, and checks `value.to_s`, so `nil` fails as `:invalid_isbn` rather than raising. The caller passes `allow_blank: true`, as in [Blank values](#blank-values).
 - An ISBN with the wrong format or check digit fails with its own symbol, `:invalid_isbn`, with its message in the locale file.
 - Every `errors.add` passes `**options`, so `message:` and `strict:` still work.
 
@@ -102,13 +106,16 @@ class IsbnValidator < ActiveModel::EachValidator
   ISBN_FORMAT = /\A(?:\d{9}[\dX]|97[89]\d{10})\z/
 
   def validate_each(record, attribute, value)
-    return record.errors.add(attribute, :invalid, **options) unless value.respond_to?(:to_str)
-    return if ISBN_FORMAT.match?(value) && valid_check_digit?(value)
+    return if valid_isbn?(value.to_s)
 
     record.errors.add(attribute, :invalid_isbn, **options)
   end
 
   private
+
+  def valid_isbn?(isbn)
+    ISBN_FORMAT.match?(isbn) && valid_check_digit?(isbn)
+  end
 
   def valid_check_digit?(isbn)
     digits = isbn.chars.map { |char| char == "X" ? 10 : char.to_i }
@@ -193,13 +200,12 @@ Validators that most apps need. Add the ones you use to `app/validators/`.
 
 ### UnmodifiedValidator
 
-`UnmodifiedValidator` checks that a record has no unsaved changes. Use it in an action that includes `ValidatedCallable`, on each record argument, e.g. `validates :post, presence: true, unmodified: { allow_blank: true }`. It catches a caller that passes a record with unsaved changes, which the guide never allows. See [Actions: Arguments](../actions/#arguments) and [Actions: Checking arguments](../actions/#checking-arguments).
+`UnmodifiedValidator` checks that a record has no unsaved changes. Use it in an action that includes `ValidatedCallable`, to check a record argument, e.g. `validates :post, presence: true, unmodified: { allow_blank: true }`. It catches a caller that passes a record with unsaved changes, which the guide never allows. See [Actions: Arguments](../actions/#arguments) and [Actions: Checking arguments](../actions/#checking-arguments).
 
 ```ruby
 class UnmodifiedValidator < ActiveModel::EachValidator
   def validate_each(record, attribute, value)
-    return record.errors.add(attribute, :invalid, **options) unless value.respond_to?(:has_changes_to_save?)
-    return unless value.has_changes_to_save?
+    return if value&.has_changes_to_save? == false
 
     record.errors.add(attribute, :modified, **options)
   end
@@ -216,7 +222,7 @@ en:
       modified: "has unsaved changes"
 ```
 
-Unmodified means no unsaved changes at all, whether the record is saved or not. A new record built with values, e.g. `Post.new(title:)`, has changes to save, so it fails the check. A value that isn't a record, e.g. an ID, fails as `:invalid`, as in [Values of the wrong kind](#values-of-the-wrong-kind). So does `nil`, so add `allow_blank: true` next to `presence: true`. A missing argument then only gets "can't be blank". See [Blank values](#blank-values).
+Unmodified means no unsaved changes at all, whether the record is saved or not. A new record built with values, e.g. `Post.new(title:)`, has changes to save, so it fails the check. `nil` fails as `:modified` too, rather than raising. Add `allow_blank: true` next to `presence: true`, so a missing argument only gets "can't be blank". See [Blank values](#blank-values).
 
 ```ruby
 module Posts
@@ -233,6 +239,46 @@ end
 ```
 
 A failed check is a bug in the caller, so never rescue it. See [Actions: Checking arguments](../actions/#checking-arguments).
+
+### PersistedValidator
+
+`PersistedValidator` checks that a record is saved. Use it in an action that includes `ValidatedCallable`, on each record argument the action needs to be saved, e.g. one it passes to a job, or one it creates records for. It catches a caller that passes a record that was never saved, or has been deleted.
+
+```ruby
+class PersistedValidator < ActiveModel::EachValidator
+  def validate_each(record, attribute, value)
+    return if value&.persisted?
+
+    record.errors.add(attribute, :not_persisted, **options)
+  end
+end
+```
+
+Add the error with a symbol, `:not_persisted`, and put its default message in the locale file, as in [Default messages](#default-messages).
+
+```yaml
+# config/locales/en.yml
+en:
+  errors:
+    messages:
+      not_persisted: "must be saved"
+```
+
+`nil` fails as `:not_persisted`, like any other value that isn't saved, as in [Blank values](#blank-values). Still add `allow_blank: true` next to `presence: true`, so a missing argument only gets "can't be blank".
+
+```ruby
+module Posts
+  class SendNewsletter < ApplicationAction
+    include ValidatedCallable
+
+    validates :post,
+      presence: true,
+      persisted: { allow_blank: true }
+
+    # ...
+  end
+end
+```
 
 ## Testing
 

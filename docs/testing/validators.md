@@ -46,12 +46,6 @@ RSpec.describe IsbnValidator do
     expect(record.errors[:value]).to eq(["is not a valid ISBN"])
   end
 
-  it "rejects a value that isn't a string" do
-    validate(9780306406157)
-
-    expect(record.errors).to be_of_kind(:value, :invalid)
-  end
-
   it "uses the message it is given" do
     validate("9780306406158", message: "is not an ISBN we know")
 
@@ -64,7 +58,7 @@ Check each error by its type, with `be_of_kind`, and by its message. The type is
 
 - each kind of valid value, e.g. an ISBN-10 and an ISBN-13
 - each way a value can fail, e.g. the wrong format or the wrong check digit
-- a value of the wrong kind, e.g. an integer, and a blank value, e.g. `nil`
+- a blank value, e.g. `nil`
 - an option the validator passes on, e.g. `message:`
 
 Don't test Rails' own options, e.g. `allow_blank:` or `strict:`. Rails handles them, and passing `**options` is enough for them to work.

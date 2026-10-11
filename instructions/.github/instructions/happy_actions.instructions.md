@@ -28,7 +28,9 @@ applyTo: "app/actions/**/*.rb"
 - When each record needs the model's validations, callbacks or a lock, load them with `find_each`, or loop with `each` over an array, and call the single-record action for each, e.g. `posts.find_each { |post| Posts::ArchivePost.call(post) }`. Avoid wrapping that loop in a transaction.
 - Prefer `find_each` to `each` when you loop over a relation, e.g. `posts.find_each`, not `posts.each`.
 - Never authorise the user or validate user input in an action. Do both in the caller before it calls the action, e.g. `authorize @post` in the controller and validations in the form. Trust the caller, and do the task.
-- To check an action's arguments, include `ValidatedCallable` from `app/actions/concerns/validated_callable.rb`, then validate them, e.g. `validates :post, :publisher, presence: true, unmodified: { allow_blank: true }` in `Posts::PublishPost`.
+- To check an action's arguments, include `ValidatedCallable` from `app/actions/concerns/validated_callable.rb`, then validate them, e.g. `validates :post, :publisher, presence: true` in `Posts::PublishPost`.
+- When an action checks that a record argument has no unsaved changes, use `unmodified: { allow_blank: true }`, e.g. `validates :post, presence: true, unmodified: { allow_blank: true }` in `Posts::PublishPost`.
+- When an action needs a record argument to be saved, e.g. it passes the record to a job, validate it with `persisted: { allow_blank: true }`, e.g. `validates :post, presence: true, persisted: { allow_blank: true }` in `Posts::SendNewsletter`.
 - Never use an action's argument validations to control the app's flow. Never rescue `ActiveModel::ValidationError` from an action, and never raise it again as the action's `Error`.
 - Never return a value from an action, and never use the value an action returns.
 - When a caller needs a value from an action's work, have the action save it on a record the caller holds, and read it from the record after the call, e.g. `@post.newsletter_id` after `Posts::SendNewsletter.call(@post)`.

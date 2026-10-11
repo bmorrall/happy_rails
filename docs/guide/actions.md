@@ -319,6 +319,8 @@ end
 
 `unmodified:` checks that a record argument has no unsaved changes, as in [Arguments](#arguments). It uses an `UnmodifiedValidator` in `app/validators/`. See [Validators: UnmodifiedValidator](../validators/#unmodifiedvalidator).
 
+When the action needs a record argument to be saved, e.g. it passes the record to a job, validate it with `persisted:`, e.g. `persisted: { allow_blank: true }`. It uses a `PersistedValidator`. See [Validators: PersistedValidator](../validators/#persistedvalidator).
+
 The check catches a caller that breaks the rule, e.g. a form that sets `post.title` before it calls the action. It fails in the caller's specs, before `with_lock` or `update!` can hit the changes.
 
 A failed check means a developer called the action wrongly. It is a bug, not an outcome the user can expect, so never use it to control what the app does next. Never rescue `ActiveModel::ValidationError` from an action, and never raise it again as the action's `Error`. Let it fail loudly, so the bug shows up in your specs and error reports. When a user can cause the failure, check it in the form instead, where the user can see the error.
