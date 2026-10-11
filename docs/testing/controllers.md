@@ -155,7 +155,7 @@ end
 
 ## Authentication
 
-Every action's `describe` block in the request spec has at least one scenario for an unauthenticated user. This catches an action that was left open by mistake, e.g. a `skip_before_action` that covers more actions than it should.
+Every action's `describe` block in the request spec has at least one scenario for an unauthenticated user. This catches an action that was left open by mistake, e.g. a `skip_before_action` that covers more actions than it means to.
 
 ```ruby
 RSpec.describe "Posts" do
@@ -331,9 +331,9 @@ RSpec.describe "Posts" do
 end
 ```
 
-Don't stub the models, forms, actions, services or other classes the action calls, e.g. with `allow_any_instance_of(Post).to receive(:publish)` or `allow(Posts::ArchivePost).to receive(:call)`. Check what the action does instead: the records it changes, the response, the flash and the jobs it enqueues. Then the spec fails when any part of the action breaks, not only the controller's own lines. To test how the controller handles an action's `Error`, set up records that make the action fail for real. Don't test the action's argument checks, e.g. `unmodified:`, because every request that calls the action already runs them. See [Actions: Specs for callers](../actions/#specs-for-callers).
+You MUST NOT stub the models, forms, actions, services or other classes the action calls, e.g. with `allow_any_instance_of(Post).to receive(:publish)` or `allow(Posts::ArchivePost).to receive(:call)`. Check what the action does instead: the records it changes, the response, the flash and the jobs it enqueues. Then the spec fails when any part of the action breaks, not only the controller's own lines. To test how the controller handles an action's `Error`, set up records that make the action fail for real. You MUST NOT test the action's argument checks, e.g. `unmodified:`, because every request that calls the action already runs them. See [Actions: Specs for callers](../actions/#specs-for-callers).
 
-Check that the action enqueues each job, with its arguments, using `have_enqueued_job`. Don't run the job in the request spec. The job spec checks what the job does, and a feature spec runs it. See [Testing: Jobs](../jobs/).
+Check that the action enqueues each job, with its arguments, using `have_enqueued_job`. You MUST NOT run the job in the request spec. The job spec checks what the job does, and a feature spec runs it. See [Testing: Jobs](../jobs/).
 
 ```ruby
 module Posts
@@ -377,7 +377,7 @@ See [RSpec: Request specs](../gems/rspec/#request-specs) for how to write the co
 
 ## Feature specs
 
-Write at least one feature spec for every controller that serves pages. Between them, its scenarios must cover the happy path of every HTML route in the controller. Request specs test each route on its own, but only a feature spec shows that a persona can reach the route through the app and finish the task. A route no scenario visits may have no link or button to it. This doesn't cover routes that only serve other formats, e.g. `GET /posts.json`, or controllers for an API. You can still write feature specs for them, as described in [RSpec: API endpoints](../gems/rspec/#api-endpoints).
+Write at least one feature spec for every controller that serves pages. Between them, cover the happy path of every HTML route in the controller. Request specs test each route on its own, but only a feature spec shows that a persona can reach the route through the app and finish the task. A route no scenario visits might have no link or button to it. This doesn't cover routes that only serve other formats, e.g. `GET /posts.json`, or controllers for an API. You can still write feature specs for them, as described in [RSpec: API endpoints](../gems/rspec/#api-endpoints).
 
 A scenario can cover more than one controller, and one feature spec can cover routes from several. Start from the tasks each persona carries out, in persona rank order, then check that every route is covered. See [RSpec: Feature specs](../gems/rspec/#feature-specs) for how to write them.
 

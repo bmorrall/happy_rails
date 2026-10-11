@@ -18,7 +18,7 @@ Put actions in `app/actions/`, e.g. `Posts::ArchivePost` in `app/actions/posts/a
 
 ## When to write an action
 
-Write an action for a task that could be run from more than one place, e.g. a form, a job, the console or a rake task. Publishing a post is a good fit: a user publishes from a form, a job publishes scheduled posts, and a developer may publish one from the console to fix a problem. Each caller calls the same action, so the task works the same way everywhere.
+Write an action for a task that could be run from more than one place, e.g. a form, a job, the console or a rake task. Publishing a post is a good fit: a user publishes from a form, a job publishes scheduled posts, and a developer might publish one from the console to fix a problem. Each caller calls the same action, so the task works the same way everywhere.
 
 When only one place will ever do the work, keep it there, e.g. in the form's `submit` or the job's `perform`. Move it into an action when a second caller needs it.
 
@@ -43,9 +43,9 @@ end
 
 When several forms and jobs run the same steps, see [Patterns: Multi-Step Processes](../../patterns/multi-step-processes/) for ways to share them.
 
-An action can enqueue a job. The job's work doesn't run in the action, so it doesn't add a step that the action has to retry or roll back. If the action enqueues inside a transaction, make sure the job waits for the transaction to commit. See [Jobs: Enqueueing after a transaction](../jobs/#enqueueing-after-a-transaction).
+An action MAY enqueue a job. The job's work doesn't run in the action, so it doesn't add a step that the action has to retry or roll back. If the action enqueues inside a transaction, make sure the job waits for the transaction to commit. See [Jobs: Enqueueing after a transaction](../jobs/#enqueueing-after-a-transaction).
 
-When enqueuing a job takes more than a plain `perform_later`, e.g. working out when the job should run and what it should run with, put it in an action, and start the action's name with `Enqueue`, e.g. `Posts::EnqueuePublish`. Every caller then enqueues the job the same way. The name tells the caller that the work happens later, not by the time the action returns. For a plain `perform_later`, enqueue the job in the caller.
+When enqueuing a job takes more than a plain `perform_later`, e.g. working out when the job runs and what it runs with, put it in an action, and start the action's name with `Enqueue`, e.g. `Posts::EnqueuePublish`. Every caller then enqueues the job the same way. The name tells the caller that the work happens later, not by the time the action returns. For a plain `perform_later`, enqueue the job in the caller.
 
 ```ruby
 module Posts
@@ -93,7 +93,7 @@ Rescue the other action's error outside the transaction block. Its writes join y
 
 Raise the error for the same cause. When the other action raises a `ServiceError`, raise your own `ServiceError`, not your plain `Error`, e.g. `rescue Posts::SendNewsletter::ServiceError` then `raise ServiceError, e.message`. Put that `rescue` before the one for the other action's `Error`. A controller that rescues your `ServiceError` then still sees the service failing, as in [Controllers and Routes: Other services failing](../controllers/#other-services-failing). See [Error handling](#error-handling) for error classes for each cause.
 
-If your action should carry on when the other action fails, the other action isn't part of your task. Run it as a separate step from a job instead.
+If your action needs to carry on when the other action fails, the other action isn't part of your task. Run it as a separate step from a job instead.
 
 ## Naming
 
@@ -156,7 +156,7 @@ Write the parts of an action in this order:
 
 Every action then reads the same way. The top says how it can fail and what it checks, and `call` sits right after `initialize`, so you see the task next to what it's given. Leave out a part the action doesn't have.
 
-Don't add comment headings, as in a model. An action has one public method, and the order alone is enough.
+You MUST NOT add comment headings, as in a model. An action has one public method, and the order alone is enough.
 
 ```ruby
 module Posts
@@ -187,7 +187,7 @@ end
 
 ## Arguments
 
-Pass an action the records it works on, never their IDs, e.g. `Posts::ArchivePost.call(post)`, not `Posts::ArchivePost.call(post.id)`. The caller finds the records, e.g. a controller loads the post, or a job gets it as an argument. The action never looks a record up, so it doesn't have to decide which records the caller is allowed to reach.
+Pass an action the records it works on, not their IDs, e.g. `Posts::ArchivePost.call(post)`, not `Posts::ArchivePost.call(post.id)`. The caller finds the records, e.g. a controller loads the post, or a job gets it as an argument. The action never looks a record up, so it doesn't have to decide which records the caller is allowed to reach.
 
 Make the resource the action works on the first positional argument. Pass every other argument as a keyword, e.g. `Posts::PublishPost.call(post, publisher: current_user)`. The call then reads as the task and the record it works on, and each other value is named where it is passed. You can also add a keyword later without changing the order of the arguments in every caller.
 
@@ -220,7 +220,9 @@ end
 
 When an action needs a user, name the keyword after the role the user plays, e.g. `publisher:`. See [Principles: The signed-in user](../principles/#the-signed-in-user).
 
-Never pass a record with unsaved changes to an action. The action can't tell which values are saved. When it saves the record, e.g. with `update!`, it saves the caller's changes too, without anyone asking it to. When it locks the record, `with_lock` raises an error instead, as in [Locks](#locks). Save the changes first, or pass the new values to the action as keywords, e.g. `Posts::PublishPost.call(post, publisher:, title:)`, and let the action set them.
+You SHOULD NOT pass a record with unsaved changes to an action. The action can't tell which values are saved. When it saves the record, e.g. with `update!`, it saves the caller's changes too, without anyone asking it to. When it locks the record, `with_lock` raises an error instead, as in [Locks](#locks). Save the changes first, or pass the new values to the action as keywords, e.g. `Posts::PublishPost.call(post, publisher:, title:)`, and let the action set them.
+
+The exception is an action whose task is to save a new record the caller built, e.g. `Posts::CopyPost`, which saves a copy of a post with copies of its associations. Then saving every value is the point.
 
 ```ruby
 # Don't
@@ -235,9 +237,9 @@ When the action builds a query on a record's association in more than one step, 
 
 ### Many records
 
-When an action works on many records, pass the records in, e.g. `Posts::ArchivePosts.call(author.posts)`, never their IDs. Name the action in the plural. The caller picks the records, as it does for one record, and the action works on every record it's given.
+When an action works on many records, pass the records in, e.g. `Posts::ArchivePosts.call(author.posts)`, not their IDs. Name the action in the plural. The caller picks the records, as it does for one record, and the action works on every record it's given.
 
-Pass a relation or an association, or an array of records, but pick one for each action, and have every caller pass the same kind. Don't let the action accept both, e.g. by checking `posts.is_a?(Array)`. A relation and an array don't respond to the same methods, e.g. `update_all` and `find_each` only work on a relation, so code written for one breaks on the other.
+Pass a relation or an association, or an array of records, but pick one for each action, and have every caller pass the same kind. You MUST NOT let the action accept both, e.g. by checking `posts.is_a?(Array)`. A relation and an array don't respond to the same methods, e.g. `update_all` and `find_each` only work on a relation, so code written for one breaks on the other.
 
 Prefer a relation when there could be many records. An array loads every record into memory at once. A relation lets the action write them all in one statement, or load them in batches.
 
@@ -282,7 +284,7 @@ An action runs outside a request, so it doesn't authorise the user or validate w
 
 ### Checking arguments
 
-You may add a last check that an action was given proper arguments, as a safety check for developers. Put it in a `ValidatedCallable` concern in `app/actions/concerns/validated_callable.rb`. It adds `ActiveModel::Validations` to the action, and runs `validate!` before `call`.
+You MAY add a last check that an action was given proper arguments, as a safety check for developers. Put it in a `ValidatedCallable` concern in `app/actions/concerns/validated_callable.rb`. It adds `ActiveModel::Validations` to the action, and runs `validate!` before `call`.
 
 ```ruby
 module ValidatedCallable
@@ -323,13 +325,13 @@ When the action needs a record argument to be saved, e.g. it passes the record t
 
 The check catches a caller that breaks the rule, e.g. a form that sets `post.title` before it calls the action. It fails in the caller's specs, before `with_lock` or `update!` can hit the changes.
 
-A failed check means a developer called the action wrongly. It is a bug, not an outcome the user can expect, so never use it to control what the app does next. Never rescue `ActiveModel::ValidationError` from an action, and never raise it again as the action's `Error`. Let it fail loudly, so the bug shows up in your specs and error reports. When a user can cause the failure, check it in the form instead, where the user can see the error.
+A failed check means a developer called the action wrongly. It is a bug, not an outcome the user can expect, so you MUST NOT use it to control what the app does next. You MUST NOT rescue `ActiveModel::ValidationError` when you call an action, and you MUST NOT raise it again as the action's `Error`. Let it fail loudly, so the bug shows up in your specs and error reports. When a user can cause the failure, check it in the form instead, where the user can see the error.
 
 See [Testing: Actions](../../testing/actions/#checking-arguments) for specs of actions that check their arguments.
 
 ## Return values
 
-An action does its task and returns nothing. The caller doesn't check a result, so don't return one from `call`, and don't use the value it returns. `ApplicationAction.call` returns `nil`, so a caller can't come to depend on whatever the last line of `call` returns.
+An action does its task and returns nothing. The caller doesn't check a result, so you MUST NOT return one from `call`, and you MUST NOT use the value it returns. `ApplicationAction.call` returns `nil`, so a caller can't come to depend on whatever the last line of `call` returns.
 
 ```ruby
 Posts::ArchivePost.call(post)
@@ -344,15 +346,15 @@ When the other service accepts an ID from you, generate the ID in the caller and
 
 When an API client tracks a request to another service, create a record for the request first, with an ID of your own, e.g. `has_secure_token :reference` on `NewsletterDelivery`. Send your ID to the service, and give the client your ID, not the service's. Then the client has an ID even if the call fails, and never depends on the other service.
 
-Don't pass a value back through a block or a result object. Both are a return value in disguise.
+You MUST NOT pass a value back through a block or a result object. Both are a return value in disguise.
 
 See [Patterns: Values from Actions](../../patterns/values-from-actions/) for examples and other options.
 
 ## Error handling
 
-If the task fails, raise an error, e.g. with `update!`, rather than returning `false`. Let an error that no caller should handle pass through as it is.
+If the task fails, raise an error, e.g. with `update!`, rather than returning `false`. Let an error that no caller is meant to handle pass through as it is.
 
-When a caller is meant to handle an error, write a custom `Error` class inside the action, and inherit it from `StandardError`. In `call`, rescue the errors the caller should handle and raise them again as the action's `Error`. The caller then rescues one error class, e.g. `Posts::ArchivePost::Error`, and doesn't need to know which errors the action's code can raise. Ruby keeps the original error as the new error's `cause`, so a report of the new error shows the original too. See [Honeybadger: Reporting errors](../gems/honeybadger/#reporting-errors) for reporting an error the caller rescues.
+When a caller is meant to handle an error, write a custom `Error` class inside the action, and inherit it from `StandardError`. In `call`, rescue the errors the caller is meant to handle and raise them again as the action's `Error`. The caller then rescues one error class, e.g. `Posts::ArchivePost::Error`, and doesn't need to know which errors the action's code can raise. Ruby keeps the original error as the new error's `cause`, so a report of the new error shows the original too. See [Honeybadger: Reporting errors](../gems/honeybadger/#reporting-errors) for reporting an error the caller rescues.
 
 ```ruby
 module Posts
@@ -387,7 +389,7 @@ rescue Posts::ArchivePost::Error
 end
 ```
 
-An action can fail for more than one cause, and its callers may handle each cause differently. Give each cause its own error class, and inherit it from the action's `Error`. A caller rescues the class for the cause it handles, or `Error` to handle them all.
+An action can fail for more than one cause, and its callers might handle each cause differently. Give each cause its own error class, and inherit it from the action's `Error`. A caller rescues the class for the cause it handles, or `Error` to handle them all.
 
 ```ruby
 module Posts
@@ -446,9 +448,9 @@ end
 
 When an action relies on a lock, take the lock inside the action with `with_lock`. It opens a transaction, or joins the caller's, and reloads the record. Keep the lock next to the code it protects, not in the caller.
 
-`with_lock` raises an error if the record has unsaved changes, because reloading would throw them away. This is one reason to [never pass a record with unsaved changes](#arguments) to an action. When the action needs new values, set them inside the lock, so the check and the whole update happen together.
+`with_lock` raises an error if the record has unsaved changes, because reloading would throw them away. This is one reason not to [pass a record with unsaved changes](#arguments) to an action. When the action needs new values, set them inside the lock, so the check and the whole update happen together.
 
-You may check the condition before you take the lock, to skip the lock when the work is plainly not needed. Always check it again inside the lock, because another process may have changed the record while you waited for it.
+You MAY check the condition before you take the lock, to skip the lock when the work is plainly not needed. Always check it again inside the lock, because another process might have changed the record while you waited for it.
 
 ```ruby
 module Posts
@@ -469,7 +471,7 @@ module Posts
 end
 ```
 
-Use `next` to leave a `transaction` or `with_lock` block early, never `return`. What a `return` inside the block does has changed between Rails versions, and depends on the app's config: it may commit or roll back. `next` ends the block, and the transaction commits as normal.
+Use `next` to leave a `transaction` or `with_lock` block early, not `return`. What a `return` inside the block does has changed between Rails versions, and depends on the app's config: it might commit or roll back. `next` ends the block, and the transaction commits as normal.
 
 When the check fails, decide what the caller needs to know. If the work is already done, e.g. the post is already published, do nothing. The action is then safe to retry, e.g. from a job. If the caller needs to know, e.g. to show a form error, raise the action's `Error`. Do the same thing in the check before the lock and the check inside it, so the result doesn't depend on timing.
 
@@ -477,7 +479,7 @@ When an action locks more than one record, lock them in the same order every tim
 
 ### Other services
 
-Never call another service inside a transaction. The transaction keeps its locks and its database connection while it waits for the reply. A rollback can't undo the call either. Call the service first, then save its reply in the transaction.
+You MUST NOT call another service inside a transaction. The transaction keeps its locks and its database connection while it waits for the reply. A rollback can't undo the call either. Call the service first, then save its reply in the transaction.
 
 ```ruby
 def call
@@ -492,13 +494,7 @@ end
 
 This includes the caller's transaction. Rails joins a nested `transaction` block to the one around it, so calling the service before the action's own transaction isn't enough. If a form or another action calls this action inside a transaction, the service call is inside it too.
 
-When the action doesn't need the service's reply, don't call the service from the action. Enqueue a job that calls it instead, e.g. `NotifySubscribersJob`. The job waits until the outermost transaction commits, as in [Jobs: Enqueueing after a transaction](../jobs/#enqueueing-after-a-transaction), so it is safe however the action is called.
-
-When a call to another service should be retried if it fails, run it in a job of its own that does nothing else, e.g. `NotifySubscribersJob`. A job retries all of `perform`, so a retry then repeats only that call. The steps before it have already committed, and don't run again.
-
-When a user is waiting for the reply, call the action directly, and don't retry it. The user sees that it failed and can try again, as in [Controllers and Routes: Other services failing](../controllers/#other-services-failing).
-
-When the action needs the reply, it must never run inside a transaction. Include a `NonTransactionalCallable` concern, in `app/actions/concerns/non_transactional_callable.rb`. It raises an error when the action is called inside a transaction, so the first caller that wraps it fails in its specs. The transactions that wrap each spec can't be joined, so the check ignores them.
+When the action needs the reply, you MUST NOT call it inside a transaction. Include a `NonTransactionalCallable` concern, in `app/actions/concerns/non_transactional_callable.rb`. It raises an error when the action is called inside a transaction, so the first caller that wraps it fails in its specs. The transactions that wrap each spec can't be joined, so the check ignores them.
 
 ```ruby
 module NonTransactionalCallable
@@ -526,9 +522,15 @@ module Posts
 end
 ```
 
+When the action doesn't need the service's reply, you MUST NOT call the service from the action. Enqueue a job that calls it instead, e.g. `NotifySubscribersJob`. The job waits until the outermost transaction commits, as in [Jobs: Enqueueing after a transaction](../jobs/#enqueueing-after-a-transaction), so it is safe however the action is called.
+
+When a call to another service needs to be retried if it fails, run it in a job of its own that does nothing else, e.g. `NotifySubscribersJob`. A job retries all of `perform`, so a retry then repeats only that call. The steps before it have already committed, and don't run again.
+
+When a user is waiting for the reply, call the action directly, and you MUST NOT retry it. The user sees that it failed and can try again, as in [Controllers and Routes: Other services failing](../controllers/#other-services-failing).
+
 ### Work after the commit
 
-Some work must wait until the records are committed, e.g. a job that loads them, or a Turbo broadcast that shows them. An action can't do this after its own transaction block, because its caller may still have a transaction open.
+Some work needs to wait until the records are committed, e.g. a job that loads them, or a Turbo broadcast that shows them. An action can't do this after its own transaction block, because its caller might still have a transaction open.
 
 For a job, set `enqueue_after_transaction_commit` in the job class, as in [Jobs: Enqueueing after a transaction](../jobs/#enqueueing-after-a-transaction). For any other work, wrap it in `ActiveRecord.after_all_transactions_commit`. The block runs once the outermost transaction commits, never if it rolls back, and at once if no transaction is open.
 
@@ -547,29 +549,45 @@ end
 
 ### Rolling back
 
-Never raise `ActiveRecord::Rollback` in an action. In a nested block, Rails swallows it: the block stops, but the caller's transaction carries on and commits. Raise a real error instead, so the whole transaction rolls back.
+You MUST NOT raise `ActiveRecord::Rollback` in an action. In a nested block, Rails swallows it: the block stops, but the caller's transaction carries on and commits. Raise a real error instead, so the whole transaction rolls back.
 
 Rescue errors to raise them again as the action's `Error` outside the transaction block, as in [Error handling](#error-handling). By then the transaction has already rolled back.
 
-### Records that must survive a rollback
+### Records that survive a rollback
 
-Some actions save a fact about what happened, e.g. whether a check passed or failed. That fact must stay saved even when other work fails. Start the name of these actions with `Record`, e.g. `Posts::RecordLinkCheck`, which saves `link_check_status` on the post. The name tells the caller that this write must not roll back with the rest.
+Some actions save a fact about what happened, e.g. whether a check passed or failed. That fact needs to stay saved even when other work fails. Start the name of these actions with `Record`, e.g. `Posts::RecordLinkCheck`, which saves `link_check_status` on the post. The name tells the caller that this write stays saved when the rest rolls back.
 
-Never call a `Record` action inside a transaction. Call it before or after the transaction block. A write inside a transaction rolls back with it, even in a nested block with `requires_new: true`. That only adds a savepoint, which rolls back when the outer transaction does.
+You MUST NOT call a `Record` action inside a transaction. Call it before or after the transaction block. A write inside a transaction rolls back with it, even in a nested block with `requires_new: true`. That only adds a savepoint, which rolls back when the outer transaction does.
+
+Include `NonTransactionalCallable` in every `Record` action, as in [Other services](#other-services). A caller that wraps the action in a transaction then fails in its specs.
 
 ```ruby
-def submit
-  return false unless valid?
+# app/actions/posts/record_link_check.rb
+module Posts
+  class RecordLinkCheck < ApplicationAction
+    include NonTransactionalCallable
 
-  Posts::RecordLinkCheck.call(post)
-  return false if post.link_check_failed?
-
-  ActiveRecord::Base.transaction do
-    Posts::PublishPost.call(post, publisher: current_user)
-    Posts::ArchivePost.call(previous_post)
+    # ...
   end
+end
 
-  post
+# app/forms/publish_post_form.rb
+class PublishPostForm < ApplicationForm
+  # ...
+
+  def submit
+    return false unless valid?
+
+    Posts::RecordLinkCheck.call(post)
+    return false if post.link_check_failed?
+
+    ActiveRecord::Base.transaction do
+      Posts::PublishPost.call(post, publisher: current_user)
+      Posts::ArchivePost.call(previous_post)
+    end
+
+    post
+  end
 end
 ```
 

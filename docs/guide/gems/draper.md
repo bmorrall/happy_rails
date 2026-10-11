@@ -15,11 +15,11 @@ Use a decorator method for presentation logic about one record, e.g. `post.publi
 
 Keep helpers for general view elements that aren't about one record, e.g. `success_badge`, `date_tag` or `yes_no_tag`. The decorator builds its output with those helpers through `h`, e.g. `h.date_tag(object.published_at)`, so each element is marked up the same way everywhere. See [Views and Frontend: Helpers](../../views/#helpers).
 
-Keep decorator methods simple: a formatted value, a link, or a small element built with a helper, e.g. `status_badge`. Never render a component or a partial from a decorator, e.g. `h.render(Posts::CardComponent.new(post: object))`. Render it in the view instead. The template then shows every part of the page it renders, and the decorator spec only checks simple values, not a whole component.
+Keep decorator methods simple: a formatted value, a link, or a small element built with a helper, e.g. `status_badge`. You MUST NOT render a component or a partial from a decorator, e.g. `h.render(Posts::CardComponent.new(post: object))`. Render it in the view instead. The template then shows every part of the page it renders, and the decorator spec only checks simple values, not a whole component.
 
-A decorator method only changes its output based on the record's state, e.g. `object.published?`, or on a record passed in its context. See [Context](#context). Never base it on the request, e.g. the current user, the params or a permission check. The method then returns the same value for the same records on every page, in a mailer or a broadcast, and its spec doesn't need a request. The `can_` permission checks are the one exception. See [Permissions](#permissions).
+A decorator method only changes its output based on the record's state, e.g. `object.published?`, or on a record passed in its context. See [Context](#context). You MUST NOT base it on the request, e.g. the current user, the params or a permission check. The method then returns the same value for the same records on every page, in a mailer or a broadcast, and its spec doesn't need a request. The `can_` permission checks are the one exception. See [Permissions](#permissions).
 
-Never call another service from a decorator, or pass one in its context. Read the value in the controller instead. See [Controllers: Values from services](../../controllers/#values-from-services).
+You MUST NOT call another service from a decorator, or pass one in its context. Read the value in the controller instead. See [Controllers: Values from services](../../controllers/#values-from-services).
 
 A list calls a decorator method once for each record, so a service call there makes one request for each record. The decorator spec would also have to stub the request.
 
@@ -95,7 +95,7 @@ end
 
 ## Decorating in controllers
 
-Never decorate an instance variable in a controller. Assign the plain record to the instance variable, and use `decorates_assigned` to decorate it for the view.
+You MUST NOT decorate an instance variable in a controller. Assign the plain record to the instance variable, and use `decorates_assigned` to decorate it for the view.
 
 The controller then works with the model the whole way through. Authorisation, saving and redirects all get the record, not a decorator that wraps it. `decorates_assigned` adds a helper method with the same name as the instance variable, which decorates the record the first time the view calls it.
 
@@ -128,7 +128,7 @@ end
 
 Avoid `delegate_all`, unless you're working in legacy code that already relies on it. Delegate each model method the view reads by name, e.g. `delegate :title`, and read the model through `object` inside the decorator. The decorator then lists every value the view can read, and its specs can cover each one. With `delegate_all`, the view can read any value from the model through the decorator, and nothing shows which ones it uses.
 
-Only delegate a model method when the view shows its value as it is, e.g. `title`. When a value needs consistent formatting, e.g. a date or a status, write a decorator method for it, e.g. `published_on`, and don't delegate the raw attribute.
+Only delegate a model method when the view shows its value as it is, e.g. `title`. When a value needs consistent formatting, e.g. a date or a status, write a decorator method for it, e.g. `published_on`, and you MUST NOT delegate the raw attribute.
 
 The view calls the helper method instead of the instance variable:
 
@@ -146,13 +146,13 @@ class PostsController < ApplicationController
 end
 ```
 
-You may decorate a value read from another service the same way, when it needs formatting. Pass its decorator with `with:`, because the value isn't a model, e.g. `decorates_assigned :newsletter_stats, with: NewsletterStatsDecorator`. See [Patterns: Values from Services](../../../patterns/values-from-services/#decorate-it).
+You MAY decorate a value read from another service the same way, when it needs formatting. Pass its decorator with `with:`, because the value isn't a model, e.g. `decorates_assigned :newsletter_stats, with: NewsletterStatsDecorator`. See [Patterns: Values from Services](../../../patterns/values-from-services/#decorate-it).
 
-Never call `decorate` in a view or a helper, e.g. `@post.decorate` in a template or `PostDecorator.new(post)` in a helper. Add a `decorates_assigned` to the controller instead. The view and its helpers then always get records that are already decorated, and the controller shows in one place which decorator each view uses.
+You MUST NOT call `decorate` in a view or a helper, e.g. `@post.decorate` in a template or `PostDecorator.new(post)` in a helper. Add a `decorates_assigned` to the controller instead. The view and its helpers then always get records that are already decorated, and the controller shows in one place which decorator each view uses.
 
 Only use Draper for HTML responses. An API endpoint that returns another format, e.g. JSON in `Api::V1`, doesn't use `decorates_assigned` or decorators. Decorator methods return markup for a page, e.g. `h.date_tag`, which an API client can't use.
 
-Don't use Draper in mailers either. A mailer has no request and no signed-in user, so a `can_` check fails, and a decorator's links use `_path` helpers, which give relative URLs that break in an email. In a mailer template, use the plain record and your helpers directly, with `_url` helpers for links. Values still look the same as on the page, because the helpers do the formatting. See [Mailers: Templates](../../mailers/#templates).
+You MUST NOT use Draper in mailers either. A mailer has no request and no signed-in user, so a `can_` check fails, and a decorator's links use `_path` helpers, which give relative URLs that break in an email. In a mailer template, use the plain record and your helpers directly, with `_url` helpers for links. Values still look the same as on the page, because the helpers do the formatting. See [Mailers: Templates](../../mailers/#templates).
 
 ```erb
 <%# app/views/post_mailer/published.html.erb %>
@@ -199,7 +199,7 @@ class PostDecorator < ApplicationDecorator
 end
 ```
 
-Only pass records in the context, or values the controller read from another service, e.g. the newsletter stats for a list of posts. See [Patterns: Values from Services](../../../patterns/values-from-services/#pass-the-values-to-the-decorators). Never pass the current user, the params, a service or other request state.
+Only pass records in the context, or values the controller read from another service, e.g. the newsletter stats for a list of posts. See [Patterns: Values from Services](../../../patterns/values-from-services/#pass-the-values-to-the-decorators). You MUST NOT pass the current user, the params, a service or other request state.
 
 ## Associations
 
@@ -207,7 +207,7 @@ Only pass records in the context, or values the controller read from another ser
 
 Decorate a required association in the decorator with `decorates_association`. The associated record then comes back with its own decorator, so its presentation logic stays in one place.
 
-Don't let the view reach through the association, e.g. `comment.post.published_on`. Delegate the methods the view needs to the decorated association with a prefix, e.g. `comment.post_published_on`. The view then only talks to the record it was given, which keeps the [Law of Demeter](https://en.wikipedia.org/wiki/Law_of_Demeter). The delegated methods are the associated decorator's methods, so the value is formatted the same way on every page.
+You MUST NOT let the view reach through the association, e.g. `comment.post.published_on`. Delegate the methods the view needs to the decorated association with a prefix, e.g. `comment.post_published_on`. The view then only talks to the record it was given, which keeps the [Law of Demeter](https://en.wikipedia.org/wiki/Law_of_Demeter). The delegated methods are the associated decorator's methods, so the value is formatted the same way on every page.
 
 ```ruby
 class CommentDecorator < ApplicationDecorator
@@ -292,7 +292,7 @@ end
 
 For a `has_many` association, only add `decorates_association` when a view uses the whole association, e.g. `decorates_association :comments`.
 
-When a view needs a scoped part of an association, add a scoped association to the model, e.g. `approved_comments`, and decorate it with `decorates_association`. Don't build the scope in the decorator. The model then owns which comments count as approved, the controller can preload them, and the decorator only presents them. Put both in the association's group.
+When a view needs a scoped part of an association, add a scoped association to the model, e.g. `approved_comments`, and decorate it with `decorates_association`. You MUST NOT build the scope in the decorator. The model then owns which comments count as approved, the controller can preload them, and the decorator only presents them. Put both in the association's group.
 
 ```ruby
 class Post < ApplicationRecord
@@ -441,7 +441,7 @@ class PostDecorator < ApplicationDecorator
 end
 ```
 
-A user can have permission for an action that would still fail right now. Then the view shouldn't offer it. For example, a post `has_many :comments, dependent: :restrict_with_error`, so destroying a post with comments fails with a 422, even for a user who may delete it. Override the `can_` check in the model's decorator to add the view's own condition. Call `super` first, so the policy check always runs.
+A user can have permission for an action that would still fail right now. Then you MUST NOT offer it in the view. For example, a post `has_many :comments, dependent: :restrict_with_error`, so destroying a post with comments fails with a 422, even for a user who has permission to delete it. Override the `can_` check in the model's decorator to add the view's own condition. Call `super` first, so the policy check always runs.
 
 ```ruby
 class PostDecorator < ApplicationDecorator
@@ -453,9 +453,9 @@ class PostDecorator < ApplicationDecorator
 end
 ```
 
-Only add business rules, e.g. a post with comments can't be deleted. Don't add rules about who may do it. Those belong in the policy, where the controller's `authorize` checks them too. For a custom action, define the `can_` method in place of its `delegate`, and call the policy first, e.g. `policy.publish? && ...`.
+Only add business rules, e.g. a post with comments can't be deleted. You MUST NOT add rules about who can do it. Those belong in the policy, where the controller's `authorize` checks them too. For a custom action, define the `can_` method in place of its `delegate`, and call the policy first, e.g. `policy.publish? && ...`.
 
-Never make another decorator method depend on a permission, e.g. `edit_link` that returns `nil` unless `can_update?`. The view decides. When the view shows something else to a user who can't follow a link, e.g. a disabled link, add a method for it next to the link, e.g. `disabled_link`, and let the view choose between them.
+You MUST NOT make another decorator method depend on a permission, e.g. `edit_link` that returns `nil` unless `can_update?`. The view decides. When the view shows something else to a user who can't follow a link, e.g. a disabled link, add a method for it next to the link, e.g. `disabled_link`, and let the view choose between them.
 
 ```ruby
 class PostDecorator < ApplicationDecorator

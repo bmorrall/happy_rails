@@ -14,7 +14,7 @@ Do them once. The rules in `.github/instructions/happy_*.instructions.md` assume
 1. Read the `Gemfile` to find which gems the app uses.
 2. Work through the reference files in the order of the table below. Skip a gem's file when the gem is not in the `Gemfile`. Skip the steps that write `spec/` files when the app does not use RSpec.
 3. Where a step names a file in `assets/`, copy it to the same path in the app, e.g. `assets/app/actions/application_action.rb` to `app/actions/application_action.rb`.
-4. Before you write a file, check whether it exists. If it does, add only the parts it is missing, and never overwrite it. Skip a step that is already done. Each reference names its instruction file on its `Rules:` line. Read that file before you change an existing file, so the changes still follow it.
+4. Before you write a file, check whether it exists. If it does, add only the parts it is missing, and you MUST NOT overwrite it. Skip a step that is already done. Each reference names its instruction file on its `Rules:` line. Read that file before you change an existing file, so the changes still follow it.
 5. When you finish, list the files you created, the files you changed and the steps you skipped.
 
 | Reference | When |

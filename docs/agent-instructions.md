@@ -53,11 +53,11 @@ The area files are:
 | `happy_views.instructions.md` | `app/views/**`, `app/helpers/**`, `app/javascript/**` |
 | `happy_mailers.instructions.md` | `app/mailers/**`, `app/views/*_mailer/**` |
 
-[Code Style](../guide/code-style/) has its own file. It holds my style preferences, not Happy Rails conventions. If your app has its own style, delete it:
+[Code Style](../guide/code-style/) has its own file. It holds my style preferences, not Happy Rails conventions. If your app has its own style, delete it, and `happy_rspec_style.instructions.md` with it:
 
 | File | Applies to |
 | --- | --- |
-| `happy_style.instructions.md` | `app/models/**`, `app/forms/**`, `app/actions/**`, `app/services/**`, `app/controllers/**`, `app/jobs/**`, `app/decorators/**`, `spec/**` |
+| `happy_style.instructions.md` | `app/models/**`, `app/forms/**`, `app/actions/**`, `app/services/**`, `app/controllers/**`, `app/jobs/**`, `app/decorators/**` |
 
 Each [gem](../guide/gems/) has its own file. If your app does not use a gem, delete its file:
 
@@ -87,6 +87,7 @@ The rules for specs are in their own `happy_rspec_*` files, one for each area an
 | `happy_rspec_controllers.instructions.md` | `spec/requests/**`, `spec/features/**` |
 | `happy_rspec_views.instructions.md` | `spec/helpers/**`, `spec/requests/**` |
 | `happy_rspec_mailers.instructions.md` | `spec/mailers/**` |
+| `happy_rspec_style.instructions.md` | `spec/**` |
 | `happy_rspec_devise.instructions.md` | `spec/requests/users/**` |
 | `happy_rspec_draper.instructions.md` | `spec/decorators/**`, `spec/support/**` |
 | `happy_rspec_honeybadger.instructions.md` | `spec/**` |

@@ -10,7 +10,7 @@ How pages are rendered and made interactive.
 
 ## Templates and partials
 
-Keep templates and partials simple. A template should output values and render other parts of the page, with at most a simple `if` to show or hide part of it, or an `each` to repeat part of it for a list. Choosing between values or formatting them is more than that. Move it, and anything more complex, into a component, a decorator or a helper.
+Keep templates and partials simple. A template only outputs values and renders other parts of the page, with at most a simple `if` to show or hide part of it, or an `each` to repeat part of it for a list. Choosing between values or formatting them is more than that. Move it, and anything more complex, into a component, a decorator or a helper.
 
 Logic in a template can only be tested through a request spec, which is slow and checks the whole page. A component, decorator or helper has its own spec, so each case is quick to test on its own. The template then reads like the page it renders.
 
@@ -32,7 +32,7 @@ module PostsHelper
 end
 ```
 
-Don't write the same logic in the template.
+You MUST NOT write the same logic in the template.
 
 ```erb
 <%# app/views/posts/show.html.erb %>
@@ -49,7 +49,7 @@ Don't write the same logic in the template.
 {: .rant }
 > Simple templates also keep your options open. When a template only outputs values and renders other parts, you can move it to a simpler rendering engine later, without first pulling logic out of it.
 
-When you render a partial, pass every value it uses as a named local, e.g. `post: @post`. Never read an instance variable in a partial. The `render` call then shows everything the partial needs, and you can render it from any template, whatever instance variables that template has.
+When you render a partial, pass every value it uses as a named local, e.g. `post: @post`. You MUST NOT read an instance variable in a partial. The `render` call then shows everything the partial needs, and you can render it from any template, whatever instance variables that template has.
 
 ```erb
 <%# app/views/posts/show.html.erb %>
@@ -61,7 +61,7 @@ When you render a partial, pass every value it uses as a named local, e.g. `post
 <p>By <%= post.author.name %></p>
 ```
 
-Don't let the partial reach for `@post`.
+You MUST NOT let the partial reach for `@post`.
 
 ```erb
 <%# app/views/posts/show.html.erb %>
@@ -75,7 +75,7 @@ Don't let the partial reach for `@post`.
 
 ### Data attributes
 
-Set data attributes with the `data:` option of a tag helper, e.g. `tag.div` or `content_tag`, or of another helper such as `link_to`. Never write them as HTML in the template.
+Set data attributes with the `data:` option of a tag helper, e.g. `tag.div` or `content_tag`, or of another helper such as `link_to`. You MUST NOT write them as HTML in the template.
 
 The helper turns each key into the attribute name, e.g. `turbo_frame:` into `data-turbo-frame`, and quotes and escapes each value. It turns a hash or an array into JSON, e.g. for a Stimulus value. Written by hand, you have to get each name, quote and `to_json` right yourself.
 
@@ -86,7 +86,7 @@ The helper turns each key into the attribute name, e.g. `turbo_frame:` into `dat
 <% end %>
 ```
 
-Don't write the data attributes in the HTML.
+You MUST NOT write the data attributes in the HTML.
 
 ```erb
 <%# app/views/posts/show.html.erb %>
@@ -129,7 +129,7 @@ end
 <p>Featured: <%= yes_no_tag(@post.featured?) %></p>
 ```
 
-Don't format the value in place, e.g. with `l` or `strftime`, even when it's only once.
+You MUST NOT format the value in place, e.g. with `l` or `strftime`, even when it's only once.
 
 ```erb
 <%# app/views/posts/show.html.erb %>

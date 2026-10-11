@@ -26,7 +26,7 @@ Every model then reads the same way, so you know where to look for a declaration
 
 If a model uses more than one gem, give each gem its own Modules heading. Order them alphabetically, unless one gem depends on another being set up first.
 
-Put an `include` or `extend` at the top of the model only when a later declaration needs it. For example, a later line might call a macro the module defines, or the module's callbacks might have to run before the model's own. It does not need a heading there. Add a comment saying what needs it instead. Without the comment, the next person may move it back down and break the model.
+Put an `include` or `extend` at the top of the model only when a later declaration needs it. For example, a later line might call a macro the module defines, or the module's callbacks might have to run before the model's own. It does not need a heading there. Add a comment saying what needs it instead. Without the comment, the next person might move it back down and break the model.
 
 ```ruby
 class Post < ApplicationRecord
@@ -145,7 +145,7 @@ class Post < ApplicationRecord
 end
 ```
 
-Don't tidy a value in a `before_validation` callback, or by overriding its writer. A callback leaves the value untidy until the record is validated, and finders never use either of them. `normalizes` needs Rails 7.1 or later. Before that, tidy the value in a `before_validation` callback under `### Callbacks ###`, e.g. `before_validation { self.title = title&.strip }`.
+You MUST NOT tidy a value in a `before_validation` callback, or by overriding its writer. A callback leaves the value untidy until the record is validated, and finders never use either of them. `normalizes` needs Rails 7.1 or later. Before that, tidy the value in a `before_validation` callback under `### Callbacks ###`, e.g. `before_validation { self.title = title&.strip }`.
 
 > **TODO:** Describe how you handle the rest of this.
 
@@ -153,7 +153,7 @@ Don't tidy a value in a `before_validation` callback, or by overriding its write
 
 Always pass `dependent:` to `has_many`. Rails leaves the associated records in place by default, and a missing option looks the same as a forgotten one. With the option on every `has_many`, each one shows a choice, and a reviewer can check what happens to the records when their parent is deleted.
 
-Start with `dependent: :restrict_with_exception`. Deleting a record that still has associated records then raises an error, so nothing is deleted or left behind by accident. Change it once you've decided what should happen, e.g. `:destroy` when a post's comments should go with it. Write `dependent: nil` only when the records should stay, e.g. for a scoped association whose records another association already handles.
+Start with `dependent: :restrict_with_exception`. Deleting a record that still has associated records then raises an error, so nothing is deleted or left behind by accident. Change it once you've decided what happens to them, e.g. `:destroy` when a post's comments go with it. Write `dependent: nil` only when the records stay, e.g. for a scoped association whose records another association already handles.
 
 ```ruby
 class Post < ApplicationRecord
@@ -196,7 +196,7 @@ class Post < ApplicationRecord
 end
 ```
 
-The method can use a scope on the associated model, e.g. `scope :unlocked, -> { where(locked: false) }` on `Comment`, so `Post#unlocked_comments` returns `comments.unlocked`. The caller still calls the method, e.g. `post.unlocked_comments`, never `post.comments.unlocked`. A spec for the caller then stubs one method on the post, not a chain.
+The method can use a scope on the associated model, e.g. `scope :unlocked, -> { where(locked: false) }` on `Comment`, so `Post#unlocked_comments` returns `comments.unlocked`. The caller still calls the method, e.g. `post.unlocked_comments`, not `post.comments.unlocked`. A spec for the caller then stubs one method on the post, not a chain.
 
 ```ruby
 class Comment < ApplicationRecord
@@ -236,7 +236,7 @@ class Comment < ApplicationRecord
 end
 ```
 
-Don't build the chain in the action.
+You MUST NOT build the chain in the action.
 
 ```ruby
 # Don't do this
@@ -248,7 +248,7 @@ Comment.where(post: posts).update_all(locked: true, updated_at: Time.zone.now)
 
 ## Callbacks
 
-A callback only changes the record's own attributes, e.g. setting `published_at` before a published post is saved. Never use a callback to create, change or delete another record, enqueue a job, send an email or call another service. This includes `after_commit` callbacks.
+A callback only changes the record's own attributes, e.g. setting `published_at` before a published post is saved. You MUST NOT use a callback to create, change or delete another record, enqueue a job, send an email or call another service. This includes `after_commit` callbacks.
 
 A callback runs on every save, wherever it comes from: a form, a job, the console, a seed file or a factory in a spec. Work in a callback that reaches outside the record runs in all of those places, even when the caller didn't want it. You also can't see it in the code that saves the record. Put that work in the form, action or job that does the task instead. The caller then shows everything that happens. See [Side Effects of Saving](../../patterns/side-effects-of-saving/) for where each kind of work goes.
 

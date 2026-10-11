@@ -1,5 +1,5 @@
 ---
-applyTo: "app/models/**/*.rb,app/forms/**/*.rb,app/actions/**/*.rb,app/services/**/*.rb,app/controllers/**/*.rb,app/jobs/**/*.rb,app/decorators/**/*.rb,spec/**/*.rb"
+applyTo: "app/models/**/*.rb,app/forms/**/*.rb,app/actions/**/*.rb,app/services/**/*.rb,app/controllers/**/*.rb,app/jobs/**/*.rb,app/decorators/**/*.rb"
 ---
 
 # Code style
@@ -9,5 +9,4 @@ applyTo: "app/models/**/*.rb,app/forms/**/*.rb,app/actions/**/*.rb,app/services/
 - In a class-level declaration in a model, form, action, controller, job or decorator, e.g. `belongs_to`, `has_many`, `validates`, `before_action`, `rescue_from`, `delegate` or `attribute`, keep the positional arguments on the first line and put each keyword argument on its own indented line, e.g. `has_many :comments,` then `  dependent: :destroy`, or `validates :post, :publisher,` then `  presence: true,` then `  unmodified: { allow_blank: true }`. Do this even with one keyword argument. Put a lambda on its own indented line after the first line, before any keyword arguments, e.g. `scope :recent,` then `  -> { order(created_at: :desc) }`, or `has_many :approved_comments,` then `  -> { approved },` then `  class_name: "Comment",`. Keep a declaration with no keyword arguments or lambda on one line, e.g. `attribute :title, :string`. This does not apply to `include` or `extend`.
 - Put a blank line above and below each class-level declaration, even one-line declarations next to each other, e.g. between `attribute :title, :string` and `attribute :status, :string`. Leave out the line above when the declaration is the first line in its block, and the line below when it is the last line before `end`. This does not apply to `include` or `extend`.
 - When a class has private class methods, define its class methods in a `class << self` block, with `private` inside the block, e.g. `for` then `private` and `pool_for` in `NewsletterClient`. Otherwise use `def self.`, e.g. `def self.call` in `ApplicationAction`.
-- In specs, build and assign values on their own lines before `expect`, never inside its argument, e.g. `decorator = described_class.new(post)` then `expect(decorator.published_on)`, not `expect(described_class.new(post).published_on)` or `expect(post = create(:post))`. This does not apply to the block form, e.g. `expect { post posts_path }.to change(Post, :count).by(1)`.
 - TODO: Agent-only style rules.

@@ -60,7 +60,7 @@ See [Testing: Controllers and Routes](../../testing/controllers/#restful-resourc
 
 ## Instance variables
 
-Only set instance variables in an action, or in a callback whose name starts with `set_`, e.g. `set_post`. Don't set them in other private methods, in other callbacks, or in a memoised reader like `@post ||= Post.find(params[:id])`. Then you can find where every instance variable a view uses comes from: in the action itself, or in a `set_` callback listed at the top of the controller.
+Only set instance variables in an action, or in a callback whose name starts with `set_`, e.g. `set_post`. You MUST NOT set them in other private methods, in other callbacks, or in a memoised reader like `@post ||= Post.find(params[:id])`. Then you can find where every instance variable a view uses comes from: in the action itself, or in a `set_` callback listed at the top of the controller.
 
 ```ruby
 class PostsController < ApplicationController
@@ -105,7 +105,7 @@ class PostsController < ApplicationController
 end
 ```
 
-A helper method may give the value to the view, e.g. for a partial. It only returns the value the action read, and never calls the service:
+A helper method MAY give the value to the view, e.g. for a partial. It only returns the value the action read, and MUST NOT call the service:
 
 ```ruby
 class PostsController < ApplicationController
@@ -122,7 +122,7 @@ class PostsController < ApplicationController
 end
 ```
 
-When a list shows a value for each record, read them all in one call, e.g. `NewsletterClient#fetch_all_stats`. Give the view a helper method that looks up one record's value, e.g. `newsletter_stats_for(post)`. Never make one request for each record.
+When a list shows a value for each record, read them all in one call, e.g. `NewsletterClient#fetch_all_stats`. Give the view a helper method that looks up one record's value, e.g. `newsletter_stats_for(post)`. You MUST NOT make one request for each record.
 
 See [Patterns: Values from Services](../../patterns/values-from-services/) for examples and other options.
 
@@ -179,7 +179,7 @@ module Posts
 end
 ```
 
-When the action submits a [form](../forms/) and needs the result, assign the result of `submit` in the `if`, in brackets, e.g. `if (post = @create_post_form.submit)`. Use it only in the happy case. When it doesn't need the result, don't assign it, e.g. `if @archive_post_form.submit`. The brackets show the `=` is meant, not a typo for `==`.
+When the action submits a [form](../forms/) and needs the result, assign the result of `submit` in the `if`, in brackets, e.g. `if (post = @create_post_form.submit)`. Use it only in the happy case. When it doesn't need the result, you MUST NOT assign it, e.g. `if @archive_post_form.submit`. The brackets show the `=` is meant, not a typo for `==`.
 
 `submit` returns `false` when it fails. Assigned in the `if`, the result is only used once you know it worked, so a failed submit can't reach code that expects the resource.
 
@@ -215,7 +215,7 @@ Pick one pattern for flash messages in each app, and use it in every controller.
 
 Use the same flash key for every success message, and the same one for every failure. Rails' `notice` and `alert` are the easy choice, because the scaffold's layout and Devise already use them.
 
-Set a flash when the action redirects, so the user knows what happened. Don't set one when the action renders the form again. The form's errors already say what went wrong.
+Set a flash when the action redirects, so the user knows what happened. You MUST NOT set one when the action renders the form again. The form's errors already say what went wrong.
 
 This guide uses `notice: "Post was created."` for success, and `alert: "Post could not be published."` for a failure that redirects.
 
@@ -233,7 +233,7 @@ end
 
 Each module has a `BaseController` that the nested controllers inherit from. It loads the parent record and checks that the current user can see it, so the nested controllers don't repeat that work. The base controller has no actions of its own, and no routes point to it.
 
-The check on the parent doesn't count as the action's own check. Being able to see a post doesn't mean a user may comment on it, so each nested action still starts with its own authorisation check. For how to do this with Pundit, see [Pundit: Nested resources](../gems/pundit/#nested-resources).
+The check on the parent doesn't count as the action's own check. Being able to see a post doesn't mean a user can comment on it, so each nested action still starts with its own authorisation check. For how to do this with Pundit, see [Pundit: Nested resources](../gems/pundit/#nested-resources).
 
 ```ruby
 module Posts
@@ -341,7 +341,7 @@ See [Testing: Controllers and Routes](../../testing/controllers/#response-format
 
 Treat a Turbo Stream response as an extra on top of HTML, not a replacement. Every action that responds with a Turbo Stream also keeps its HTML response, usually the redirect from the scaffold. Put `format.html` first in the `respond_to` block. Then the action still works without JavaScript, and for any request that doesn't ask for a stream.
 
-Turbo asks for a stream with the `Accept` header, not a format extension, so the URL doesn't change. Don't add a second route comment for it.
+Turbo asks for a stream with the `Accept` header, not a format extension, so the URL doesn't change. You MUST NOT add a second route comment for it.
 
 Turbo Drive and Turbo Frames request plain HTML, so they need nothing extra.
 
@@ -377,7 +377,7 @@ If you use Pundit, put the main app's permitted attributes in the policy instead
 
 Nest a resource's params under its singular name: `post` for `PostsController`, `comment` for `Posts::CommentsController`. This is the key Rails form helpers use for a model, so `form_with model: @post` sends the right params with no extra setup.
 
-Read the params in a private method named after the resource, e.g. `post_params`. Use `params.require` with the singular name, then `permit` each attribute the action may change. Never use `permit!` or pass through a whole hash. A new column then can't be set from a request until you add it to the list.
+Read the params in a private method named after the resource, e.g. `post_params`. Use `params.require` with the singular name, then `permit` each attribute the action accepts. You MUST NOT use `permit!` or pass through a whole hash. A new column then can't be set from a request until you add it to the list.
 
 ```ruby
 class PostsController < ApplicationController
@@ -404,11 +404,11 @@ end
 
 ### Different params per action
 
-Sometimes `create` and `update` accept different attributes, e.g. a slug that can only be set when the post is created. In that case, replace `post_params` with one method per action, named with a `_for_<action>` suffix: `post_params_for_create` and `post_params_for_update`. Don't keep a plain `post_params` next to them, or it isn't clear which one a new action should use.
+Sometimes `create` and `update` accept different attributes, e.g. a slug that can only be set when the post is created. In that case, replace `post_params` with one method per action, named with a `_for_<action>` suffix: `post_params_for_create` and `post_params_for_update`. You MUST NOT keep a plain `post_params` next to them, or it isn't clear which one a new action uses.
 
 The suffix keeps every params method for a resource starting with `post_params`, so they sit together and are easy to find.
 
-Write out each list in full, even if some attributes repeat. Don't build one list from another. Then you can see exactly what each action accepts.
+Write out each list in full, even if some attributes repeat. You MUST NOT build one list from another. Then you can see exactly what each action accepts.
 
 ```ruby
 class PostsController < ApplicationController
@@ -439,9 +439,9 @@ end
 
 ## Authentication
 
-Always use a gem or a built-in Rails authentication method to authenticate requests, e.g. `http_basic_authenticate_with`. Never write a custom solution. Authentication is easy to get subtly wrong, and well-used code has already dealt with the edge cases.
+Always use a gem or a built-in Rails authentication method to authenticate requests, e.g. `http_basic_authenticate_with`. You MUST NOT write a custom solution. Authentication is easy to get subtly wrong, and well-used code has already dealt with the edge cases.
 
-Put the authentication check in `ApplicationController`, so every controller requires it by default. A new controller is then never left open by mistake. If a page must be public, skip the check in that controller with `skip_before_action`, and list only the actions that need it.
+Put the authentication check in `ApplicationController`, so every controller requires it by default. A new controller is then never left open by mistake. If a page needs to be public, skip the check in that controller with `skip_before_action`, and list only the actions that need it.
 
 Use [Devise](../gems/devise/) for users who sign in. It is the default choice for any app with user accounts.
 
@@ -462,7 +462,7 @@ An API that authenticates differently has its own base controller, e.g. `Api::V1
 
 When you use a built-in method, follow the Rails best practices for it:
 
-- Keep usernames, passwords and tokens in Rails credentials or environment variables. Never write them in the code.
+- Keep usernames, passwords and tokens in Rails credentials or environment variables. You MUST NOT write them in the code.
 - Compare secrets with `ActiveSupport::SecurityUtils.secure_compare`, not `==`. A plain comparison can leak the secret through timing attacks.
 - Only accept credentials over HTTPS, e.g. with `config.force_ssl = true` in production.
 
@@ -499,7 +499,7 @@ See [Testing: Controllers and Routes](../../testing/controllers/#authentication)
 
 ## Rescuing errors
 
-When you rescue an error with `rescue_from`, pass `with:` and the name of a private method. Start the name with `handle_`, then add the error class's name in snake case, e.g. `handle_record_not_found` for `ActiveRecord::RecordNotFound` and `handle_not_authorized_error` for `Pundit::NotAuthorizedError`. Keep the `Error` suffix, so the name says it handles a failure. Don't pass a block.
+When you rescue an error with `rescue_from`, pass `with:` and the name of a private method. Start the name with `handle_`, then add the error class's name in snake case, e.g. `handle_record_not_found` for `ActiveRecord::RecordNotFound` and `handle_not_authorized_error` for `Pundit::NotAuthorizedError`. Keep the `Error` suffix, so the name says it handles a failure. You MUST NOT pass a block.
 
 A named method is easy to find, and every handler starts the same way. A subclass can also override it to handle the error its own way, and call `super` for the default. You can't do that with a block. See [Pundit: Unauthorised requests](../gems/pundit/#unauthorised-requests) for an example.
 
@@ -536,7 +536,7 @@ When a controller calls an [action](../actions/) that calls another service, the
 
 Always rescue `ServiceError` itself, even when you also rescue its subclasses. It is the catch-all: it covers every way the service can fail, including a cause added later. A subclass can have its own handler, e.g. when an API returns another status for a timeout, as below.
 
-In the handler, redirect with an alert. Write the alert as fixed text, and never show the error's message. It may hold the other service's reply, or details about your systems.
+In the handler, redirect with an alert. Write the alert as fixed text, and you MUST NOT show the error's message. It might hold the other service's reply, or details about your systems.
 
 ```ruby
 module Posts
@@ -566,9 +566,9 @@ end
 
 An API controller renders the error instead, with a 5xx status, so the client knows its request wasn't the problem. Render `ServiceError` with `:bad_gateway` (502), which says the other service failed.
 
-When the client should get another status for one cause, give the action a subclass of `ServiceError` for it, e.g. `Posts::SendNewsletter::TimeoutError`, and rescue it with its own handler. Use `:gateway_timeout` (504) when the service took too long to reply. Use `:service_unavailable` (503) when the service can't be reached for now, e.g. it is down for maintenance. A 503 tells the client to try again later.
+When the client needs another status for one cause, give the action a subclass of `ServiceError` for it, e.g. `Posts::SendNewsletter::TimeoutError`, and rescue it with its own handler. Use `:gateway_timeout` (504) when the service took too long to reply. Use `:service_unavailable` (503) when the service can't be reached for now, e.g. it is down for maintenance. A 503 tells the client to try again later.
 
-Declare the subclass's `rescue_from` after the one for `ServiceError`. Rails checks the handlers from the last one declared to the first, so the subclass's handler must come last to be found first.
+Declare the subclass's `rescue_from` after the one for `ServiceError`. Rails checks the handlers from the last one declared to the first, so the subclass's handler has to come last to be found first.
 
 ```ruby
 rescue_from Posts::SendNewsletter::ServiceError,
@@ -632,7 +632,7 @@ resources :posts, only: %i[index show]
 
 ### Use the routing helpers
 
-Declare routes with `resources`, `resource`, `namespace` and `root`. Don't write paths by hand, e.g. `get "posts/:id/preview", to: "posts#preview"`. The helpers keep the URL, the controller and the path helper names in step.
+Declare routes with `resources`, `resource`, `namespace` and `root`. You MUST NOT write paths by hand, e.g. `get "posts/:id/preview", to: "posts#preview"`. The helpers keep the URL, the controller and the path helper names in step.
 
 When a controller does need a custom action, add it in a `member` or `collection` block.
 
@@ -687,7 +687,7 @@ end
 
 ### Shallow routes
 
-Nest resources one level deep at most. Don't use `shallow: true`. A shallow member route has no `:post_id`, so `Posts::BaseController` can't load the post.
+Nest resources one level deep at most. You MUST NOT use `shallow: true`. A shallow member route has no `:post_id`, so `Posts::BaseController` can't load the post.
 
 Instead, declare the actions that don't need the parent as a top-level resource of their own. Keep the actions that need the post, such as `index` and `create`, in `Posts::CommentsController`. Put the actions on a single comment in `CommentsController`.
 
@@ -717,7 +717,7 @@ Each controller then loads its records the same way every time.
 
 ### Link with path helpers
 
-Build links and redirects with path helpers or records, e.g. `post_path(@post)` or `redirect_to @post`. Never write a URL as a string. If a route changes, the helper changes with it, and a helper that no longer exists raises an error instead of sending users to a dead page.
+Build links and redirects with path helpers or records, e.g. `post_path(@post)` or `redirect_to @post`. You MUST NOT write a URL as a string. If a route changes, the helper changes with it, and a helper that no longer exists raises an error instead of sending users to a dead page.
 
 ```ruby
 redirect_to post_comments_path(@post)

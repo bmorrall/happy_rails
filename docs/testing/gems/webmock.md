@@ -19,7 +19,7 @@ To test the other service failing, stub the request to fail. Use `.to_return(sta
 stub_request(:post, "https://newsletter.example.com/posts").to_timeout
 ```
 
-Don't call `stub_request` in the specs themselves. Wrap it in a helper for the service, as below. When a spec needs a stub or a check that has no helper yet, add the helper first.
+You MUST NOT call `stub_request` in the specs themselves. Wrap it in a helper for the service, as below. When a spec needs a stub or a check that has no helper yet, add the helper first.
 
 ### Helpers and matchers
 
@@ -91,7 +91,7 @@ end
 
 ### SDK stubs
 
-Some services come with an SDK that has its own stubs, e.g. `stub_responses` in the AWS SDK. Use them instead of WebMock. They replace only the SDK's HTTP layer, so your service's code still runs, and you don't write signed requests or response bodies by hand. Never stub the service class itself.
+Some services come with an SDK that has its own stubs, e.g. `stub_responses` in the AWS SDK. Use them instead of WebMock. They replace only the SDK's HTTP layer, so your service's code still runs, and you don't write signed requests or response bodies by hand. You MUST NOT stub the service class itself.
 
 Turn the stubs on for every spec, and set the responses for a spec in `Aws.config`. Remove them after each spec, so they don't leak into the next one.
 

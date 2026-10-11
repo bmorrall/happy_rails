@@ -41,6 +41,7 @@ Each convention is written twice: once in the guide or testing pages for people,
 | `docs/testing/controllers.md` | `instructions/.github/instructions/happy_rspec_controllers.instructions.md` |
 | `docs/testing/views.md` | `instructions/.github/instructions/happy_rspec_views.instructions.md` |
 | `docs/testing/mailers.md` | `instructions/.github/instructions/happy_rspec_mailers.instructions.md` |
+| `docs/testing/code-style.md` | `instructions/.github/instructions/happy_rspec_style.instructions.md` |
 | `docs/testing/gems/devise.md` | `instructions/.github/instructions/happy_rspec_devise.instructions.md` |
 | `docs/testing/gems/draper.md` | `instructions/.github/instructions/happy_rspec_draper.instructions.md` |
 | `docs/testing/gems/honeybadger.md` | `instructions/.github/instructions/happy_rspec_honeybadger.instructions.md` |
@@ -53,7 +54,7 @@ Each convention is written twice: once in the guide or testing pages for people,
 
 Every rule in an instruction file must match its page. Do not add a rule to one side only. The one exception is a rant: a guide-only opinion in a `{: .rant }` callout. Leave rants out of the instruction files.
 
-`docs/guide/code-style.md` holds my own style preferences. They are optional, so readers can delete `happy_style.instructions.md`. Rules for agents only go in its "For agents" section, as a short line each, so the guide still lists every rule in the file.
+`docs/guide/code-style.md` holds my own style preferences. They are optional, so readers can delete `happy_style.instructions.md`. Its testing page, `docs/testing/code-style.md`, holds the style preferences for specs, in `happy_rspec_style.instructions.md`. Rules for agents only go in its "For agents" section, as a short line each, so the guide still lists every rule in the file.
 
 If you change an `applyTo` glob, also update the "Applies to" tables in `docs/agent-instructions.md`. Prefix every instruction file name with `happy_`, so it does not overwrite a reader's own instruction files. If you add or rename an instruction file, also update the tables in `docs/agent-instructions.md` and `instructions/README.md`.
 
@@ -123,6 +124,7 @@ Agents read these files without the guide, so each rule must make sense alone.
 
 - Use Australian English in prose, e.g. "organise" and "authorise". Keep Rails and Ruby names as they are, e.g. `authorize` and `Authorization`.
 - Use short sentences and plain words.
+- On guide and testing pages and in instruction files, write a rule with no exceptions as a plain imperative, and a prohibition with "MUST NOT" in capitals, e.g. "You MUST NOT use `permit!`", not "Never" or "Don't". Do not write "MUST" or "must". Write "SHOULD" and "SHOULD NOT" in capitals for a default, and "MAY" in capitals for something allowed but not required, as defined in `docs/guide/principles.md`. Never write "should" or "may" in lowercase. Use other words, e.g. "can", "might", "needs to" or "has to". Give a rule the same word on its page and in its instruction file.
 
 ## Check your work
 

@@ -9,6 +9,14 @@ https://bmorrall.github.io/happy_rails/
 
 Follow these rules for all changes. Area-specific rules are in `.github/instructions/`. To set up the app for these rules, e.g. when `ApplicationAction` does not exist yet, use the `happy-rails-setup` skill in `.github/skills/happy-rails-setup/`.
 
+## Key words
+
+- Read a rule in the `happy_*.instructions.md` files and the `happy-rails-setup` skill that is a plain imperative, e.g. "Use `resources`", as a rule with no exceptions.
+- Read "MUST NOT" as a prohibition with no exceptions, as described in BCP 14 (RFC 2119, RFC 8174), e.g. "You MUST NOT use `permit!`".
+- Read "SHOULD" and "SHOULD NOT" as the default, as described in BCP 14. Break it only when you can state the reason.
+- Read "MAY" as allowed, not required, as described in BCP 14.
+- Read these words as key words only when they are in capitals.
+
 ## General
 
 - TODO: State the guiding principles in short imperative sentences, e.g. "Prefer Rails defaults over extra gems."
@@ -16,19 +24,19 @@ Follow these rules for all changes. Area-specific rules are in `.github/instruct
 
 ## The signed-in user
 
-- Only use the signed-in user, e.g. `current_user`, in controllers, forms, views and helpers, and in request and feature specs. Never use it in models, actions, jobs, mailers or view components.
+- Only use the signed-in user, e.g. `current_user`, in controllers, forms, views and helpers, and in request and feature specs. You MUST NOT use it in models, actions, jobs, mailers or view components.
 - When code outside a request needs a user, pass the user in as an argument named after the role it plays in the task, e.g. `Posts::PublishPost.call(post, publisher: current_user)`, not `current_user:` or `user:`.
-- Never reach the signed-in user through a global, e.g. `Current.user` from `ActiveSupport::CurrentAttributes`.
+- You MUST NOT reach the signed-in user through a global, e.g. `Current.user` from `ActiveSupport::CurrentAttributes`.
 
 ## Personas
 
 - Think of users as personas. A persona is a role that lets a user take certain actions on certain records. A role can apply to the whole app, e.g. a role or a flag on the user, or to one record the user is given, e.g. as the record's owner or through a membership.
-- Use only the roles, groups and personas the app already has. Never add one that the task does not ask for.
+- Use only the roles, groups and personas the app already has. You MUST NOT add one that the task does not ask for.
 - Treat a signed-in user with no role as the User persona, and a visitor who has not signed in as the Guest persona.
 - Rank the app's persona groups from most access to least, with the Users group and then the Guest last. Personas inside each group also have a fixed rank. Take the ranks from the app, e.g. the order of persona contexts in its existing specs.
 - Only add a persona with more than one role when it changes the outcome, compared with the persona with only its highest role.
 - Put a persona with more than one role in the group of its highest role, straight after the persona with only that role.
-- When you add or change an action, cover what each persona may do, and on which records. Include a persona who may act on some records but not this one, e.g. a user who did not create the record.
+- When you add or change an action, cover what each persona can do, and on which records. Include a persona who can act on some records but not this one, e.g. a user who did not create the record.
 - List personas in rank order everywhere, e.g. in permission checks.
 
 ## Project layout
@@ -40,7 +48,7 @@ Follow these rules for all changes. Area-specific rules are in `.github/instruct
 
 ## Before you finish
 
-- TODO: List the commands an agent must run before it says a change is done, e.g. the linter.
+- TODO: List the commands an agent has to run before it says a change is done, e.g. the linter.
 
 ## Testing
 

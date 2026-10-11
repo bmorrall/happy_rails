@@ -20,7 +20,7 @@ class NotifySubscribersJob < ApplicationJob
 end
 ```
 
-Pass the record to the job, never its ID, e.g. `NotifySubscribersJob.perform_later(post)`, not `NotifySubscribersJob.perform_later(post.id)`. Active Job saves the record as a GlobalID and loads it again when the job runs, so the job always sees the current values. The job doesn't need its own `find`, and its arguments say which kind of record it takes.
+Pass the record to the job, not its ID, e.g. `NotifySubscribersJob.perform_later(post)`, not `NotifySubscribersJob.perform_later(post.id)`. Active Job saves the record as a GlobalID and loads it again when the job runs, so the job always sees the current values. The job doesn't need its own `find`, and its arguments say which kind of record it takes.
 
 ```ruby
 NotifySubscribersJob.perform_later(post)
@@ -38,7 +38,7 @@ class NotifySubscribersJob < ApplicationJob
 end
 ```
 
-Add it only to the jobs that need it, not to `ApplicationJob`. In any other job, a missing record is a bug, and the error should be reported.
+Add it only to the jobs that need it, not to `ApplicationJob`. In any other job, a missing record is a bug, and the error needs to be reported.
 
 ### Enqueueing after a transaction
 
@@ -82,11 +82,11 @@ class PublishScheduledPostJob < ApplicationJob
 end
 ```
 
-A job may run more than once, e.g. when it retries. Write the action so a second run is safe, e.g. it does nothing if the post is already published. See [Actions: Locks](../actions/#locks).
+A job might run more than once, e.g. when it retries. Write the action so a second run is safe, e.g. it does nothing if the post is already published. See [Actions: Locks](../actions/#locks).
 
 A job that calls another service does only that, so a retry repeats only the call. Run the steps before it in another job, or in the caller. See [Actions: Other services](../actions/#other-services).
 
-An action that writes more than once has its own transaction. Open a transaction in `perform` only to combine several actions into one unit. Call any `Record` action before or after that transaction, never inside it. To record that the transaction failed, call the `Record` action in a `rescue` or `ensure` on `perform`. See [Actions: Transactions](../actions/#transactions).
+An action that writes more than once has its own transaction. Open a transaction in `perform` only to combine several actions into one unit. Call any `Record` action before or after that transaction, not inside it. To record that the transaction failed, call the `Record` action in a `rescue` or `ensure` on `perform`. See [Actions: Transactions](../actions/#transactions).
 
 ### Jobs that run at a set time
 
@@ -128,7 +128,7 @@ end
 
 A rake task is hard to test, but a job is easy to test. With all the work in the job, the [job spec](../../testing/jobs/) covers the whole task. The job can also run from the console, and moves to another scheduler without a rewrite. See [Testing: Jobs](../../testing/jobs/#scheduling).
 
-Call `perform_later` in the rake task by default. The task ends as soon as the job is enqueued, and the queue retries the job and reports its errors, like any other job. Call `perform_now` when the scheduler must run the work itself, e.g. when no queue worker is running at that time, or the scheduler needs to know whether the task failed.
+Call `perform_later` in the rake task by default. The task ends as soon as the job is enqueued, and the queue retries the job and reports its errors, like any other job. Call `perform_now` when the scheduler needs to run the work itself, e.g. when no queue worker is running at that time, or the scheduler needs to know whether the task failed.
 
 ```ruby
 task purge_abandoned_drafts: :environment do

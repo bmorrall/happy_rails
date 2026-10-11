@@ -61,7 +61,7 @@ Lay out every policy the same way, so you know where to find a rule:
 3. Other permission checks, under a comment heading named after what they cover. Use the association for checks on an association, e.g. `### Comments ###`, and the feature for checks on a feature, e.g. `update_published?` under `### Publishing ###`. Name a feature's heading after the model's `concerning` block for it, e.g. `concerning :Publishing` in `Post`, so the policy and the model group a feature the same way. See [Models: Layout](../../models/#layout). Put the headings in alphabetical order.
 4. The permitted attributes methods, under `### Permitted Attributes ###`. Always put this heading last. See [Strong parameters](#strong-parameters).
 
-Keeping an association's checks together shows everything a user may do with it, e.g. who may comment on a post and who may approve the comments.
+Keeping an association's checks together shows everything a user can do with it, e.g. who can comment on a post and who can approve the comments.
 
 Leave out any permission or heading the policy doesn't need. Private methods go last, after `private`.
 
@@ -152,7 +152,7 @@ class PostsController < ApplicationController
 end
 ```
 
-If an action really needs no check, call `skip_authorization` on its first line. Don't use `skip_after_action :verify_authorized` at the top of the controller, because it also covers any action added later.
+If an action really needs no check, call `skip_authorization` on its first line. You MUST NOT use `skip_after_action :verify_authorized` at the top of the controller, because it also covers any action added later.
 
 ```ruby
 class PagesController < ApplicationController
@@ -168,9 +168,9 @@ end
 
 ### Nested resources
 
-A nested resource's `BaseController` checks that the user can see the parent record. See [Controllers: Nested resources](../../controllers/#nested-resources). Don't use `authorize` for this check. It marks the request as authorised, so `verify_authorized` would pass for every nested action, and an action with no check of its own would be left open.
+A nested resource's `BaseController` checks that the user can see the parent record. See [Controllers: Nested resources](../../controllers/#nested-resources). You MUST NOT use `authorize` for this check. It marks the request as authorised, so `verify_authorized` would pass for every nested action, and an action with no check of its own would be left open.
 
-Use `pundit.authorize` instead, with the `query:` and `policy_class:` keywords. It raises an error like `authorize` does when the user can't see the post, but it doesn't mark the request as authorised. Each nested action must still call `authorize` itself, or `verify_authorized` fails. `pundit.authorize` needs Pundit 2.4 or later.
+Use `pundit.authorize` instead, with the `query:` and `policy_class:` keywords. It raises an error like `authorize` does when the user can't see the post, but it doesn't mark the request as authorised. Each nested action still has to call `authorize` itself, or `verify_authorized` fails. `pundit.authorize` needs Pundit 2.4 or later.
 
 ```ruby
 module Posts
@@ -229,7 +229,7 @@ module PunditAuthorization
 end
 ```
 
-In a nested resource's `BaseController`, override `handle_not_authorized_error`. When the parent record is set and the user can see it, redirect to the parent instead. A user who may read a post but not comment on it goes back to the post, not to the root page. Otherwise call `super`, e.g. when the user can't see the post at all.
+In a nested resource's `BaseController`, override `handle_not_authorized_error`. When the parent record is set and the user can see it, redirect to the parent instead. A user who can read a post but not comment on it goes back to the post, not to the root page. Otherwise call `super`, e.g. when the user can't see the post at all.
 
 The `elsif` is optional. It redirects to the parent's index when the user can't see the parent but can see the list, e.g. a post that was unpublished. Keep `super` as the last case.
 
@@ -257,9 +257,9 @@ end
 
 ## Strong parameters
 
-Put the list of attributes a user may set in the policy, not the controller. Who can change what is an authorisation rule, so it belongs next to the other rules for the resource.
+Put the list of attributes a user can set in the policy, not the controller. Who can change what is an authorisation rule, so it belongs next to the other rules for the resource.
 
-Define `permitted_attributes` in the policy and return each attribute in full. Never return every column, e.g. `Post.column_names`. A new column then can't be set from a request until you add it to the list.
+Define `permitted_attributes` in the policy and return each attribute in full. You MUST NOT return every column, e.g. `Post.column_names`. A new column then can't be set from a request until you add it to the list.
 
 ```ruby
 class PostPolicy < ApplicationPolicy
@@ -298,9 +298,9 @@ end
 
 ### Different params per action
 
-When `create` and `update` accept different attributes, replace `permitted_attributes` with one method per action: `permitted_attributes_for_create` and `permitted_attributes_for_update`. Pundit picks the method for the current action, so the controller keeps a single `post_params`. Don't keep a plain `permitted_attributes` next to them, or it isn't clear which one a new action should use.
+When `create` and `update` accept different attributes, replace `permitted_attributes` with one method per action: `permitted_attributes_for_create` and `permitted_attributes_for_update`. Pundit picks the method for the current action, so the controller keeps a single `post_params`. You MUST NOT keep a plain `permitted_attributes` next to them, or it isn't clear which one a new action uses.
 
-Write out each list in full, even if some attributes repeat. Don't build one list from another. Then you can see exactly what each action accepts.
+Write out each list in full, even if some attributes repeat. You MUST NOT build one list from another. Then you can see exactly what each action accepts.
 
 ```ruby
 class PostPolicy < ApplicationPolicy
@@ -316,9 +316,9 @@ end
 
 ### Access dependent params
 
-Some attributes only some users may change, e.g. only an App Admin or a Publishing Manager may set `published`. Give each one its own permission method in the policy, named `update_<attribute>?`: `update_published?`. Then the rule has a name, and you can test it and reuse it on its own.
+Some attributes only some users can change, e.g. only an App Admin or a Publishing Manager can set `published`. Give each one its own permission method in the policy, named `update_<attribute>?`: `update_published?`. Then the rule has a name, and you can test it and reuse it on its own.
 
-In `permitted_attributes`, start with the attributes every user may set. Then append each restricted attribute when its check is true. This doesn't break the rule about building lists, because the extra attributes come from checks in the same method, not from another list.
+In `permitted_attributes`, start with the attributes every user can set. Then append each restricted attribute when its check is true. This doesn't break the rule about building lists, because the extra attributes come from checks in the same method, not from another list.
 
 ```ruby
 class PostPolicy < ApplicationPolicy
@@ -334,7 +334,7 @@ class PostPolicy < ApplicationPolicy
 end
 ```
 
-The same pattern works in `permitted_attributes_for_create` and `permitted_attributes_for_update`. Append the attribute in each method that should accept it.
+The same pattern works in `permitted_attributes_for_create` and `permitted_attributes_for_update`. Append the attribute in each method that accepts it.
 
 ### Other APIs
 
@@ -365,7 +365,7 @@ end
 
 ## Views
 
-Never build a policy for a record in a view, e.g. `policy(@post).update?` or `policy(post).update?`. A view that loops over records builds a new policy for each check, and the checks end up spread across templates where nothing lists them.
+You MUST NOT build a policy for a record in a view, e.g. `policy(@post).update?` or `policy(post).update?`. A view that loops over records builds a new policy for each check, and the checks end up spread across templates where nothing lists them.
 
 Only call `policy` in a view with a class or a symbol. These checks don't depend on a record, e.g. `policy(Post).index?` for a link to the list, or `policy(:admin).index?` for a headless policy.
 
@@ -383,7 +383,7 @@ When the app uses Draper, check a record's permissions through its decorator, e.
 
 ## Forms
 
-Forms check permissions too, e.g. to limit a collection to the choices the user may pick. Give them Pundit's `policy` and `policy_scope` through a `PunditPolicies` concern, in `app/forms/concerns/pundit_policies.rb`, and include it in `ApplicationForm`. See [Forms: Base class](../../forms/#base-class). The methods use the form's `current_user`, the same way the controller helpers do.
+Forms check permissions too, e.g. to limit a collection to the choices the user can pick. Give them Pundit's `policy` and `policy_scope` through a `PunditPolicies` concern, in `app/forms/concerns/pundit_policies.rb`, and include it in `ApplicationForm`. See [Forms: Base class](../../forms/#base-class). The methods use the form's `current_user`, the same way the controller helpers do.
 
 ```ruby
 module PunditPolicies

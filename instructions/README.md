@@ -25,7 +25,7 @@ mkdir -p .claude/skills
 ln -s ../../.github/skills/happy-rails-setup .claude/skills/happy-rails-setup
 ```
 
-`happy_style` holds my style preferences, not Happy Rails conventions. If your app has its own style, delete it.
+`happy_style` and `happy_rspec_style` hold my style preferences, not Happy Rails conventions. If your app has its own style, delete them.
 
 The gem files (`happy_devise`, `happy_draper`, `happy_honeybadger`, `happy_pundit`, `happy_simple_form`, `happy_view_component` and `happy_wisper`) only matter if your app uses that gem. Delete the ones you do not need, with their `happy_rspec_` files, e.g. `happy_rspec_pundit`.
 

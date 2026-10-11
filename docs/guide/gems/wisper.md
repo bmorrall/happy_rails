@@ -15,7 +15,7 @@ Events with [Wisper](https://github.com/krisleech/wisper).
 
 ### Broadcasting after the commit
 
-Broadcast an event only after the records it describes are committed. A listener may load them, or enqueue a job that does, and it should never react to changes that roll back. An action can't broadcast after its own transaction block, because its caller may still have a transaction open around it. See [Actions: Work after the commit](../../actions/#work-after-the-commit).
+Broadcast an event only after the records it describes are committed. A listener might load them, or enqueue a job that does, so it never acts on changes that roll back. An action can't broadcast after its own transaction block, because its caller might still have a transaction open around it. See [Actions: Work after the commit](../../actions/#work-after-the-commit).
 
 Wrap the `broadcast` in `ActiveRecord.after_all_transactions_commit`. It runs once the outermost transaction commits, never if it rolls back, and at once if no transaction is open.
 

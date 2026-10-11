@@ -28,11 +28,11 @@ end
 
 ## Spec layout
 
-Name the `subject` after the model, e.g. `subject(:post)`, and use `is_expected` where you can. When an example needs a record with different attributes, build it in the example, e.g. `post = described_class.new(title: "A title")`. Don't add a `let`, or another `subject`, for it. The example then shows the record it checks.
+Name the `subject` after the model, e.g. `subject(:post)`, and use `is_expected` where you can. When an example needs a record with different attributes, build it in the example, e.g. `post = described_class.new(title: "A title")`. You MUST NOT add a `let`, or another `subject`, for it. The example then shows the record it checks.
 
 Group a model's examples in a `describe` block for each method, named after the method, e.g. `describe "#published?"`. For an association, name the block after the association, e.g. `describe "#author"`, and put the examples for its id attribute, e.g. `author_id`, in the same block. Everything about one method or association is then in one place.
 
-Group the examples for each gem's Modules heading in one `describe` block named after the gem, e.g. `describe "FriendlyId"`. Put everything under that heading in it: what the gem's setup does, e.g. the slug it sets, and the methods of its `concerning` block, e.g. `#should_generate_new_friendly_id?`. The spec then matches the model, where both sit under `### Modules (FriendlyId) ###`. Don't add a `describe` block for the `concerning` block itself.
+Group the examples for each gem's Modules heading in one `describe` block named after the gem, e.g. `describe "FriendlyId"`. Put everything under that heading in it: what the gem's setup does, e.g. the slug it sets, and the methods of its `concerning` block, e.g. `#should_generate_new_friendly_id?`. The spec then matches the model, where both sit under `### Modules (FriendlyId) ###`. You MUST NOT add a `describe` block for the `concerning` block itself.
 
 Group the examples for a `concerning` block under Public Methods in one `describe` block named after it, e.g. `describe "Publishing"` for `concerning :Publishing`. Put every method the block defines inside it, including scopes and class methods. Keep the examples in the model's spec. A `concerning` block lives in the model file, so its spec lives in the model's spec. If the examples outgrow the model's spec, move the code into its own file, e.g. a concern in `app/models/concerns`, and give that file its own spec.
 
@@ -93,7 +93,7 @@ end
 
 Test validations and associations with Shoulda Matchers. See [Shoulda Matchers: Validations](../gems/shoulda_matchers/#validations) and [Shoulda Matchers: Associations](../gems/shoulda_matchers/#associations).
 
-Test an attribute that uses a custom validator with the validator's matcher, e.g. `it { is_expected.to validate_isbn_of(:isbn) }`. Don't repeat the cases from the validator's own spec. See [Validators: Models and forms that use a validator](../validators/#models-and-forms-that-use-a-validator).
+Test an attribute that uses a custom validator with the validator's matcher, e.g. `it { is_expected.to validate_isbn_of(:isbn) }`. You MUST NOT repeat the cases from the validator's own spec. See [Validators: Models and forms that use a validator](../validators/#models-and-forms-that-use-a-validator).
 
 ## Scopes
 
@@ -114,7 +114,7 @@ end
 
 ## Callbacks
 
-Test a callback by what it does, through the call that triggers it in the app. Don't call the callback method itself, and don't test that the callback is registered. Put the examples in the `describe` block of the attribute the callback changes, and say in each description what triggers it, e.g. "when saved" or "when validated". When the callback has a condition, test both sides of it.
+Test a callback by what it does, through the call that triggers it in the app. You MUST NOT call the callback method itself, and you MUST NOT test that the callback is registered. Put the examples in the `describe` block of the attribute the callback changes, and say in each description what triggers it, e.g. "when saved" or "when validated". When the callback has a condition, test both sides of it.
 
 A save callback runs on `save`, which needs a valid record, so build the record with a factory, as for scopes.
 

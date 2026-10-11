@@ -10,7 +10,7 @@ How I test views and helpers.
 
 For the code itself, see [Views and Frontend](../../guide/views/).
 
-Never write a view spec. A view spec renders a template on its own, with data you set up by hand, so it can pass while the real page is broken. It also repeats what other specs already check.
+You MUST NOT write a view spec. A view spec renders a template on its own, with data you set up by hand, so it can pass while the real page is broken. It also repeats what other specs already check.
 
 Test each part of a page where its logic lives:
 

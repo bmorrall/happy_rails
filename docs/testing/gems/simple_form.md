@@ -13,7 +13,7 @@ For the code itself, see [Simple Form](../../../guide/gems/simple_form/).
 
 ## Input specs
 
-Don't write specs for inputs. An input spec has to build a form builder and a view by hand, like a view spec, so it can pass while the real form is broken. See [Testing: Views and Frontend](../../views/).
+You MUST NOT write specs for inputs. An input spec has to build a form builder and a view by hand, like a view spec, so it can pass while the real form is broken. See [Testing: Views and Frontend](../../views/).
 
 ## Matchers
 

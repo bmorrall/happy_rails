@@ -18,7 +18,7 @@ What lives where under `app/`, `config/` and `lib/`.
 
 ## Namespaced classes
 
-Define a class in a namespace inside a `module` block, e.g. `module Posts` and then `class CommentsController`. Don't use the short form, `class Posts::CommentsController`. Inside the block, Ruby looks up constants in `Posts` first, so the class can refer to its neighbours by their short names, e.g. `BaseController`. The short form skips `Posts`, so the same reference fails or finds a different class. Enable RuboCop's `Style/ClassAndModuleChildren` to check it. See [Tooling and CI: Nested modules](../tooling/#nested-modules).
+Define a class in a namespace inside a `module` block, e.g. `module Posts` and then `class CommentsController`. You MUST NOT use the short form, `class Posts::CommentsController`. Inside the block, Ruby looks up constants in `Posts` first, so the class can refer to its neighbours by their short names, e.g. `BaseController`. The short form skips `Posts`, so the same reference fails or finds a different class. Enable RuboCop's `Style/ClassAndModuleChildren` to check it. See [Tooling and CI: Nested modules](../tooling/#nested-modules).
 
 ```ruby
 module Posts
@@ -32,7 +32,7 @@ Use the full name everywhere outside the namespace, e.g. `Posts::CommentsControl
 
 ## Concerns
 
-Use a concern to group the code for one feature, when it could be shared with other classes or you may want to remove it all at once later. Name the concern after what it does.
+Use a concern to group the code for one feature, when it could be shared with other classes or you might want to remove it all at once later. Name the concern after what it does.
 
 Put a shared concern in the `concerns/` directory of the classes that include it, e.g. `app/models/concerns/`, `app/controllers/concerns/`, `app/forms/concerns/` or `app/actions/concerns/`. Rails loads every `app/*/concerns/` directory as a root, so a concern there has no `Concerns::` namespace, e.g. `ValidatedCallable` in `app/actions/concerns/validated_callable.rb`. If only one class uses the code, write it in a `concerning` block in that class instead. It stays grouped and easy to remove, without a separate file.
 

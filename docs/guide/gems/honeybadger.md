@@ -56,9 +56,9 @@ When the same error keeps happening, e.g. while another service is down, see [Pa
 
 Give each model that shows up in error reports a `to_honeybadger_context` method. It returns a hash of what would help you debug the record.
 
-The method is there for Honeybadger, so put it in a `concerning :HoneybadgerContext` block under a `### Modules (Honeybadger) ###` heading, as for any other gem. See [Models: Layout](../../models/#layout). The heading then says why the method is there, so no one removes it as unused. Don't name the block `:Honeybadger`. It would define `Comment::Honeybadger`, and `Honeybadger.notify` in the model would then call that module, not the gem.
+The method is there for Honeybadger, so put it in a `concerning :HoneybadgerContext` block under a `### Modules (Honeybadger) ###` heading, as for any other gem. See [Models: Layout](../../models/#layout). The heading then says why the method is there, so no one removes it as unused. You MUST NOT name the block `:Honeybadger`. It would define `Comment::Honeybadger`, and `Honeybadger.notify` in the model would then call that module, not the gem.
 
-Keep the hash flat, with no nested hashes or arrays, and never loop over an association, e.g. `comments.map`. A flat hash is easy to read and search in a report. A loop can load hundreds of records while the app is already handling an error.
+Keep the hash flat, with no nested hashes or arrays, and you MUST NOT loop over an association, e.g. `comments.map`. A flat hash is easy to read and search in a report. A loop can load hundreds of records while the app is already handling an error.
 
 Only add what would help you debug, e.g. the record's ID, its status and the dates that drive its behaviour. Leave out everything else. A smaller hash is quicker to read, and holds less data you'd need to keep safe.
 
@@ -84,7 +84,7 @@ class Comment < ApplicationRecord
 end
 ```
 
-When you report an error, pass the context of each record the error affects, under the record's name. Each record's keys then stay apart, and the report shows which records were involved. Use `&.`, because the error may happen before a record is loaded, e.g. in a `before_action`.
+When you report an error, pass the context of each record the error affects, under the record's name. Each record's keys then stay apart, and the report shows which records were involved. Use `&.`, because the error might happen before a record is loaded, e.g. in a `before_action`.
 
 ```ruby
 def handle_create_comment_service_error(error)
@@ -130,7 +130,7 @@ class NewsletterClient
 end
 ```
 
-Keep the hash flat, and start the keys with `request_` and `response_`, so they don't clash with the records in the report's context. Never add the request or response headers. They hold API keys and tokens. Cut the body short, e.g. to 1,000 characters, so a large error page doesn't fill the report. Leave out the query string when the service takes a key in the URL.
+Keep the hash flat, and start the keys with `request_` and `response_`, so they don't clash with the records in the report's context. You MUST NOT add the request or response headers. They hold API keys and tokens. Cut the body short, e.g. to 1,000 characters, so a large error page doesn't fill the report. Leave out the query string when the service takes a key in the URL.
 
 Honeybadger only reads `to_honeybadger_context` from the error it reports, not from the error's `cause`. An action raises its own error with the client's error as the `cause`, e.g. `Posts::SendNewsletter::ServiceError`, so the details would be lost. Pass them on with a `HoneybadgerCauseContext` concern in `app/models/concerns/honeybadger_cause_context.rb`.
 
@@ -144,7 +144,7 @@ module HoneybadgerCauseContext
 end
 ```
 
-Include it in the highest error class that an action raises in place of another error. That is usually the action's own `Error`, and the error classes for each cause inherit it from there. Don't include it in them again. See [Actions: Error handling](../../actions/#error-handling).
+Include it in the highest error class that an action raises in place of another error. That is usually the action's own `Error`, and the error classes for each cause inherit it from there. You MUST NOT include it in them again. See [Actions: Error handling](../../actions/#error-handling).
 
 ```ruby
 module Posts

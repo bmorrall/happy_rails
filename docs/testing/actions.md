@@ -148,11 +148,11 @@ The unit spec checks the action alone. The request and job specs for its callers
 
 `ValidatedCallable` runs the action's argument validations inside `call`, so they run in the action's own spec too. A validator that calls a method on a record calls it on the record double, and an `instance_double` raises for a method you didn't stub. In the action's spec, stub each method that the argument validations call on a record double, e.g. `instance_double(Post, has_changes_to_save?: false)` for `unmodified:`. `UnmodifiedValidator` calls `has_changes_to_save?` on the record.
 
-Don't test the argument checks in request or job specs, e.g. that `Posts::PublishPost` raises `ActiveModel::ValidationError` for a post with unsaved changes. Every spec that calls the action already runs them, and fails if the controller or job passes the wrong arguments. Test each validator once, in its own spec.
+You MUST NOT test the argument checks in request or job specs, e.g. that `Posts::PublishPost` raises `ActiveModel::ValidationError` for a post with unsaved changes. Every spec that calls the action already runs them, and fails if the controller or job passes the wrong arguments. Test each validator once, in its own spec.
 
 ## Specs for callers
 
-Never stub or mock an action in a request spec or a job spec, e.g. with `allow(Posts::ArchivePost).to receive(:call)` or `expect(Posts::ArchivePost).to receive(:call).with(post)`. To these specs, the action is invisible. The same goes for the form that calls it. Let them run, and check what the controller or job does: the records it changes, the response, the flash and the jobs it enqueues.
+You MUST NOT stub or mock an action in a request spec or a job spec, e.g. with `allow(Posts::ArchivePost).to receive(:call)` or `expect(Posts::ArchivePost).to receive(:call).with(post)`. To these specs, the action is invisible. The same goes for the form that calls it. Let them run, and check what the controller or job does: the records it changes, the response, the flash and the jobs it enqueues.
 
 An action is a detail of how the controller or job does its work. If the spec checks the result, you can move code into an action, or out of it, without changing the spec. A spec that stubs the action only checks that the action was called. It still passes when the action is broken, or when the action is called with the wrong arguments.
 
@@ -198,4 +198,4 @@ RSpec.describe "Posts::Archives" do
 end
 ```
 
-To test how a caller handles the action's `Error`, set up records that make the action fail for real. Don't stub the action to raise it, e.g. with `allow(Posts::ArchivePost).to receive(:call).and_raise(Posts::ArchivePost::Error)`.
+To test how a caller handles the action's `Error`, set up records that make the action fail for real. You MUST NOT stub the action to raise it, e.g. with `allow(Posts::ArchivePost).to receive(:call).and_raise(Posts::ArchivePost::Error)`.

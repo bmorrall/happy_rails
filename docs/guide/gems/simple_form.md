@@ -15,7 +15,7 @@ Build forms with `simple_form_for`, and pass it a model or a form object, as you
 
 Add each field with `form.input`, not a Rails field helper, e.g. `form.text_field`. `form.input` wraps the field with its label, hint and errors, so every field on every form is built the same way.
 
-Pass a field's choices from the form object's `collection_for_<attribute>` method, and read the form object through `form.object`, e.g. `collection: form.object.collection_for_status`. Don't use the instance variable, e.g. `@create_post_form`. The fields then only depend on the form they're in, so you can move them to a partial or share them between forms without changing them.
+Pass a field's choices from the form object's `collection_for_<attribute>` method, and read the form object through `form.object`, e.g. `collection: form.object.collection_for_status`. You MUST NOT use the instance variable, e.g. `@create_post_form`. The fields then only depend on the form they're in, so you can move them to a partial or share them between forms without changing them.
 
 ```erb
 <%# app/views/posts/new.html.erb %>
@@ -28,7 +28,7 @@ Pass a field's choices from the form object's `collection_for_<attribute>` metho
 
 ## Styling inputs
 
-Style inputs in one place: the wrappers in `config/initializers/simple_form.rb`. Don't style a single input in a view with `input_html`, `label_html` or `wrapper_html`, e.g. `input_html: { class: "form-control-lg" }`. Every form then looks the same, and you can change how inputs look across the app in one file.
+Style inputs in one place: the wrappers in `config/initializers/simple_form.rb`. You MUST NOT style a single input in a view with `input_html`, `label_html` or `wrapper_html`, e.g. `input_html: { class: "form-control-lg" }`. Every form then looks the same, and you can change how inputs look across the app in one file.
 
 When some forms need a different layout, e.g. a search form with its fields in one row, add a named wrapper to the initializer and pick it with `wrapper:`.
 
@@ -49,7 +49,7 @@ end
 <% end %>
 ```
 
-Don't style the input in the view.
+You MUST NOT style the input in the view.
 
 ```erb
 <%= form.input :title, input_html: { class: "form-control-lg" }, wrapper_html: { class: "mb-4" } %>
@@ -76,7 +76,7 @@ end
 
 The select input uses `to_label` for each option's label and `to_param` for its value, so you don't build `[label, id]` pairs by hand. `to_param` is how Rails turns a record into a param when it builds a URL, so the select sends the same value as the record's URL, and one lookup works for both. For most models it's the id.
 
-When a model changes `to_param`, e.g. to a slug with FriendlyId, the select sends the slug, not the id. Keep the form object's attribute named after the model's column, e.g. `featured_comment_id`, so its field, param and translations match the model's. It holds the slug, though, so make it a `:string`, and validate it against the same param, e.g. `pluck(:slug)` instead of `pluck(:id)`. See [Forms: Association ids](../../forms/#association-ids). In `submit`, find the record by its slug, e.g. `collection_for_featured_comment_id.find_by!(slug: featured_comment_id)`. Never pass the attribute to `where(id:)` or `find`.
+When a model changes `to_param`, e.g. to a slug with FriendlyId, the select sends the slug, not the id. Keep the form object's attribute named after the model's column, e.g. `featured_comment_id`, so its field, param and translations match the model's. It holds the slug, though, so make it a `:string`, and validate it against the same param, e.g. `pluck(:slug)` instead of `pluck(:id)`. See [Forms: Association ids](../../forms/#association-ids). In `submit`, find the record by its slug, e.g. `collection_for_featured_comment_id.find_by!(slug: featured_comment_id)`. You MUST NOT pass the attribute to `where(id:)` or `find`.
 
 ```ruby
 class UpdatePostForm < ApplicationForm

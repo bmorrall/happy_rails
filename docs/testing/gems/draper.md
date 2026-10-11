@@ -67,7 +67,7 @@ end
 
 ## Permissions
 
-Spec each `can_` method that you override, e.g. `can_destroy?`, with an example for each path: the policy forbids it, the business rule forbids it, and both allow it. Don't spec the plain delegates. The policy spec covers who may do what.
+Spec each `can_` method that you override, e.g. `can_destroy?`, with an example for each path: the policy forbids it, the business rule forbids it, and both allow it. You MUST NOT spec the plain delegates. The policy spec covers who can do what.
 
 Stub the policy, so the spec doesn't need a signed-in user. Build it with an `instance_double` of the policy class, and stub `helpers.policy` to return it. `helpers` is the same view context the decorator reads through `h`. Stub it in each example, not at the top of the spec, so each example shows the permission it runs with, and specs for other methods don't build a policy.
 

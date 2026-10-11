@@ -68,7 +68,7 @@ RSpec.configure do |config|
 end
 ```
 
-Don't check the inside in the matcher.
+You MUST NOT check the inside in the matcher.
 
 ```ruby
 matcher :have_posts_publishing_section_component do

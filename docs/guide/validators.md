@@ -24,7 +24,7 @@ validates :title,
   length: { maximum: 100, allow_blank: true }
 ```
 
-Don't split an attribute's validators across several calls.
+You MUST NOT split an attribute's validators across several calls.
 
 ```ruby
 # Don't do this
@@ -44,9 +44,9 @@ Name the arguments to `validate_each` as Rails does: `record`, `attribute` and `
 
 Rails' own validators, other than `presence`, check a blank value like any other, e.g. `length: { minimum: 3 }` fails for `nil`. Pass `allow_blank: true` or `allow_nil: true` to skip blank values. A custom validator that inherits from `ActiveModel::EachValidator` gets both options for free. Rails checks them before it calls `validate_each`.
 
-Write custom validators the same way. Never skip a blank value inside `validate_each`. Treat it like any other value that fails the check, and let the caller decide with `allow_blank` or `allow_nil`. Then every validator in the app handles blank values the same way.
+Write custom validators the same way. You MUST NOT skip a blank value inside `validate_each`. Treat it like any other value that fails the check, and let the caller decide with `allow_blank` or `allow_nil`. Then every validator in the app handles blank values the same way.
 
-Never raise on a blank value, or on a value of another kind, either. Rails' validators don't: `format` checks `value.to_s`, so `nil` fails as `:invalid`, and `numericality` fails `nil` as `:not_a_number`. Fail the value with the validator's own error instead, e.g. with `value.to_s` or `&.`.
+You MUST NOT raise on a blank value, or on a value of another kind, either. Rails' validators don't: `format` checks `value.to_s`, so `nil` fails as `:invalid`, and `numericality` fails `nil` as `:not_a_number`. Fail the value with the validator's own error instead, e.g. with `value.to_s` or `&.`.
 
 When an attribute also has `presence: true`, add `allow_blank: true` to its other validators. A blank value then gets one error, "can't be blank", not a stack of errors that all say it's missing.
 
@@ -62,7 +62,7 @@ validates :post,
 
 ### Format validators
 
-When a value must match a pattern, e.g. a UUID, inherit from Rails' `ActiveModel::Validations::FormatValidator`, and give it the pattern in `initialize`. The validator then works like `format:`. It adds `:invalid`, it handles `allow_blank:`, `message:` and `strict:`, and every caller checks the same pattern.
+When a value has to match a pattern, e.g. a UUID, inherit from Rails' `ActiveModel::Validations::FormatValidator`, and give it the pattern in `initialize`. The validator then works like `format:`. It adds `:invalid`, it handles `allow_blank:`, `message:` and `strict:`, and every caller checks the same pattern.
 
 ```ruby
 class UuidValidator < ActiveModel::Validations::FormatValidator
@@ -95,7 +95,7 @@ Use a format validator only when matching the pattern is the whole rule. If a va
 
 ### Example: IsbnValidator
 
-An ISBN must match a pattern, and its last digit must be the right check digit. `IsbnValidator` checks both, and follows every rule above:
+An ISBN has to match a pattern, and its last digit has to be the right check digit. `IsbnValidator` checks both, and follows every rule above:
 
 - It doesn't skip blank values, and checks `value.to_s`, so `nil` fails as `:invalid_isbn` rather than raising. The caller passes `allow_blank: true`, as in [Blank values](#blank-values).
 - An ISBN with the wrong format or check digit fails with its own symbol, `:invalid_isbn`, with its message in the locale file.
@@ -161,7 +161,7 @@ For `errors.add(:post, :modified)` with no `message:`, Rails tries these keys in
 
 The first part of the first three keys is the class's I18n scope. It is `activemodel` for actions and forms, and `activerecord` for models. Each step is more general than the one before, so you set the default once in `errors.messages`, and override it only where one class or attribute needs different words.
 
-If none of the keys exist, the message is a "Translation missing" note that lists every key Rails tried. A user should never see it.
+If none of the keys exist, the message is a "Translation missing" note that lists every key Rails tried. You MUST NOT let a user see it.
 
 ### Missing messages
 
@@ -176,7 +176,7 @@ A validator that adds an error with no message in the locale files then raises `
 
 ### Default messages
 
-Never pass a default message as a string. When `message:` is a string, Rails checks only the first key, for this attribute of this class. If that's missing, it uses the string and skips the rest, so the locale file can't change the message.
+You MUST NOT pass a default message as a string. When `message:` is a string, Rails checks only the first key, for this attribute of this class. If that's missing, it uses the string and skips the rest, so the locale file can't change the message.
 
 Put the default message in `config/locales/en.yml`, which every Rails app has, under `en.errors.messages`. Pass the validator's `options` to every `errors.add` with `**options`, as Rails' own validators do. A caller's `message:` then still wins, and other options, e.g. `strict: true`, still work. `errors.add` ignores the options that only decide when the validation runs, e.g. `allow_blank:` and `if:`.
 
@@ -238,7 +238,7 @@ module Posts
 end
 ```
 
-A failed check is a bug in the caller, so never rescue it. See [Actions: Checking arguments](../actions/#checking-arguments).
+A failed check is a bug in the caller, so you MUST NOT rescue it. See [Actions: Checking arguments](../actions/#checking-arguments).
 
 ### PersistedValidator
 

@@ -113,7 +113,7 @@ end
 
 Write a form's validations as you would a model's, e.g. add `allow_blank: true` next to `presence: true`. See [Models: Validations](../models/#validations).
 
-Tidy a form attribute with `normalizes` under `### Attributes ###`, as in a model, e.g. `normalizes :title, with: ->(title) { title.strip }`. Don't use a `before_validation` callback for it. See [Models: Normalising values](../models/#normalising-values). Form objects can use `normalizes` from Rails 8.1. Before that, leave `ActiveModel::Attributes::Normalization` out of `ApplicationForm`, and tidy the value in a `before_validation` callback under `### Callbacks ###`, e.g. `before_validation { self.title = title&.strip }`.
+Tidy a form attribute with `normalizes` under `### Attributes ###`, as in a model, e.g. `normalizes :title, with: ->(title) { title.strip }`. You MUST NOT use a `before_validation` callback for it. See [Models: Normalising values](../models/#normalising-values). Form objects can use `normalizes` from Rails 8.1. Before that, leave `ActiveModel::Attributes::Normalization` out of `ApplicationForm`, and tidy the value in a `before_validation` callback under `### Callbacks ###`, e.g. `before_validation { self.title = title&.strip }`.
 
 ```ruby
 class CreatePostForm < ApplicationForm
@@ -130,7 +130,7 @@ end
 
 ### Association ids
 
-For an association id, e.g. `featured_comment_id`, return a scope of the records the user may pick. Validate the id with an inclusion validator that uses the same method. In the validator, limit the collection to the submitted id with `where`, then `pluck` the ids. The validation then loads one id, not every record in the collection.
+For an association id, e.g. `featured_comment_id`, return a scope of the records the user can pick. Validate the id with an inclusion validator that uses the same method. In the validator, limit the collection to the submitted id with `where`, then `pluck` the ids. The validation then loads one id, not every record in the collection.
 
 ```ruby
 class UpdatePostForm < ApplicationForm
@@ -293,7 +293,7 @@ def create
 end
 ```
 
-Don't build it with `post.comments.new`. That adds the unsaved comment to `post.comments` in memory, so a page that shows the form and lists `@post.comments` would end the list with an empty comment. `Comment.new(post: post)` sets the same post, without changing the post's comments.
+You MUST NOT build it with `post.comments.new`. That adds the unsaved comment to `post.comments` in memory, so a page that shows the form and lists `@post.comments` would end the list with an empty comment. `Comment.new(post: post)` sets the same post, without changing the post's comments.
 
 A nested form that updates a resource, e.g. `Posts::UpdateCommentForm`, takes the existing comment as its first argument instead, like any resource form. The comment already belongs to its post.
 
@@ -372,7 +372,7 @@ class CreatePostForm
 end
 ```
 
-If the resource's errors could show the user something they shouldn't see, add a generic error to `:base` instead.
+If the resource's errors could show the user something they aren't allowed to see, add a generic error to `:base` instead.
 
 ```ruby
 errors.add(:base, "Post could not be saved.")
@@ -411,7 +411,7 @@ end
 
 A form handles what the user submits: it checks the input, then does the work. When the work could be run from somewhere else too, e.g. a job or the console, put it in an [action](../actions/) and call the action from `submit`. The form deals with the user and their input, and the action does the task. See [Actions: When to write an action](../actions/#when-to-write-an-action).
 
-Call the action after `valid?`, and pass it the records and values it needs. Never pass it the form or the params. The action then doesn't depend on how the user submitted the data. Never pass it a record with unsaved changes, e.g. after `post.title = title`. Pass the new values as keywords instead, e.g. `title:`. See [Actions: Arguments](../actions/#arguments). Pass the current user as an argument named after the role the user plays, e.g. `publisher: current_user`. See [Principles: The signed-in user](../principles/#the-signed-in-user).
+Call the action after `valid?`, and pass it the records and values it needs. You MUST NOT pass it the form or the params. The action then doesn't depend on how the user submitted the data. You SHOULD NOT pass it a record with unsaved changes, e.g. after `post.title = title`. Pass the new values as keywords instead, e.g. `title:`. See [Actions: Arguments](../actions/#arguments). Pass the current user as an argument named after the role the user plays, e.g. `publisher: current_user`. See [Principles: The signed-in user](../principles/#the-signed-in-user).
 
 The action returns nothing, so `submit` returns the resource itself, as for any resource form. Rescue the action's `Error` in `submit`, add an error to `:base`, and return `false`, so the form shows the failure.
 
@@ -434,7 +434,7 @@ class PublishPostForm < ApplicationForm
 end
 ```
 
-An action that writes more than once has its own transaction. Open a transaction in `submit` only to combine several actions, or an action and the form's own save, into one unit. Call any `Record` action before or after that transaction, never inside it. To record that the transaction failed, call the `Record` action in a `rescue` or `ensure` on `submit`. See [Actions: Transactions](../actions/#transactions).
+An action that writes more than once has its own transaction. Open a transaction in `submit` only to combine several actions, or an action and the form's own save, into one unit. Call any `Record` action before or after that transaction, not inside it. To record that the transaction failed, call the `Record` action in a `rescue` or `ensure` on `submit`. See [Actions: Transactions](../actions/#transactions).
 
 ```ruby
 def submit
@@ -488,7 +488,7 @@ def create
 end
 ```
 
-Never keep a value made during `submit` on the form for the caller to read, e.g. in an `attr_reader`. The value is `nil` until `submit` runs, and when it fails. The caller has to know to call `submit` first, and to check its result before reading the value. A value returned from `submit` only exists when it succeeds.
+You MUST NOT keep a value made during `submit` on the form for the caller to read, e.g. in an `attr_reader`. The value is `nil` until `submit` runs, and when it fails. The caller has to know to call `submit` first, and to check its result before reading the value. A value returned from `submit` only exists when it succeeds.
 
 ```ruby
 # Don't do this

@@ -8,6 +8,17 @@ nav_order: 1
 
 The ideas that shape every other decision in this guide.
 
+## Key words
+
+The guide and testing pages show how strict a rule is by how it's written:
+
+- A plain instruction, e.g. "Use `resources`": a rule with no exceptions.
+- **MUST NOT**: a prohibition with no exceptions, e.g. "You MUST NOT use `permit!`".
+- **SHOULD** and **SHOULD NOT**: the default. Break it only when you can say why.
+- **MAY**: allowed, not required.
+
+MUST NOT, SHOULD, SHOULD NOT and MAY are read as described in [BCP 14](https://www.rfc-editor.org/info/bcp14) when, and only when, they are in capitals. The pages write a required rule as a plain instruction, not with MUST. In other places, they use other words, e.g. "can", "might" or "has to", rather than a lowercase "must", "should" or "may". Rants and pattern pages aren't rules, so these meanings don't apply there.
+
 ## Defaults first
 
 > **TODO:** Describe how you handle this.
@@ -24,7 +35,7 @@ The ideas that shape every other decision in this guide.
 
 Only the code that handles a request knows who is signed in. That is controllers, forms, views and helpers, and the request and feature specs that test them. Everything else has no signed-in user, e.g. models, actions, jobs, mailers and view components.
 
-That code often runs outside a request. A job runs after the request has finished. A mailer or a component may render in a job or a Turbo Stream broadcast. A console or a rake task has no session at all. Code that reaches for the signed-in user breaks there, or picks up the wrong user.
+That code often runs outside a request. A job runs after the request has finished. A mailer or a component might render in a job or a Turbo Stream broadcast. A console or a rake task has no session at all. Code that reaches for the signed-in user breaks there, or picks up the wrong user.
 
 When that code needs a user, pass the user in as an argument. Name the argument after the role the user plays in the task, e.g. `publisher:`, not `current_user:` or `user:`. The name says why the user is there, and the code works the same whoever calls it.
 
@@ -63,7 +74,7 @@ module Posts
 end
 ```
 
-Don't reach the signed-in user through a global, e.g. `Current.user` from `ActiveSupport::CurrentAttributes`. The code then depends on a user it doesn't ask for, and it only works when a request has set one.
+You MUST NOT reach the signed-in user through a global, e.g. `Current.user` from `ActiveSupport::CurrentAttributes`. The code then depends on a user it doesn't ask for, and it only works when a request has set one.
 
 ## Personas
 
@@ -93,11 +104,11 @@ The User and the Guest always come last, because they have the least access.
 
 When a group has more than one persona, rank them inside the group too, e.g. a Publishing Manager before a Copy Editor in the Editors group. Decide the order once, and use the same order every time. Then the existing specs show the order, because their persona contexts follow it.
 
-A persona can have more than one role, e.g. a Copy Editor who is also the Author of the post. Only add one when it changes the outcome, compared with the persona with only its highest role. If only the Author may delete a post, a Copy Editor who wrote the post gets a different answer to one who didn't, so it needs its own scenario. For publishing, it doesn't: neither Copy Editor may publish. Put a persona with more than one role in the group of its highest role, straight after the persona with only that role.
+A persona can have more than one role, e.g. a Copy Editor who is also the Author of the post. Only add one when it changes the outcome, compared with the persona with only its highest role. If only the Author can delete a post, a Copy Editor who wrote the post gets a different answer to one who didn't, so it needs its own scenario. For publishing, it doesn't: neither Copy Editor can publish. Put a persona with more than one role in the group of its highest role, straight after the persona with only that role.
 
-Only add a persona when the app gets a new role. Don't add one to fill out a spec.
+Only add a persona when the app gets a new role. You MUST NOT add one to fill out a spec.
 
-Personas make it easier to see which scenarios need covering. For each action, ask what each persona should be able to do, and on which records. The Guest and the User often show the gaps: an action left open by mistake, or one that anyone who signs in can use. A persona who may act, but not on this record, finds the rest, e.g. a User editing a post someone else wrote.
+Personas make it easier to see which scenarios need covering. For each action, ask what each persona can do, and on which records. The Guest and the User often show the gaps: an action left open by mistake, or one that anyone who signs in can use. A persona who can act, but not on this record, finds the rest, e.g. a User editing a post someone else wrote.
 
 ### Keep the ranks
 

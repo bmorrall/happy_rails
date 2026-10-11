@@ -66,7 +66,7 @@ Use `travel_to Time.zone.now` when the spec only needs the clock to stop, as abo
 
 Avoid passing a block to `travel_to`. Call it on its own line, so the whole example runs at the same time, and the setup shows what time it is.
 
-`travel_to` stops the clock on a whole second. Databases store times at different precisions, but every one stores a whole second exactly, so the time you read back matches. Never pass `with_usec: true`. The database may then round the microseconds, and the match fails on one database but not another.
+`travel_to` stops the clock on a whole second. Databases store times at different precisions, but every one stores a whole second exactly, so the time you read back matches. You MUST NOT pass `with_usec: true`. The database might then round the microseconds, and the match fails on one database but not another.
 
 ### Capybara matchers
 
@@ -96,7 +96,7 @@ RSpec.describe "Posts" do
 end
 ```
 
-Don't check for the text alone.
+You MUST NOT check for the text alone.
 
 ```ruby
 expect(response.body).to include("Hello World")
@@ -109,7 +109,7 @@ expect(response.body).to have_select("Status", with_options: ["Draft"])
 expect(response.body).to have_select("Status", with_options: ["Published"])
 ```
 
-Don't check them all in one line.
+You MUST NOT check them all in one line.
 
 ```ruby
 expect(response.body).to have_select("Status", with_options: ["Draft", "Published"])
@@ -162,7 +162,7 @@ RSpec.describe PostDecorator do
 end
 ```
 
-Only write a `context` when several examples share setup that the other examples in the `describe` don't. Never write a `context` for one example, and don't set up a default with `let` for a `context` to override.
+Only write a `context` when several examples share setup that the other examples in the `describe` don't. You MUST NOT write a `context` for one example, and you MUST NOT set up a default with `let` for a `context` to override.
 
 The contexts that request specs require are the exception: a context for each persona, for each way the request can be authenticated, and for a Turbo Stream. Write them even when they hold one example. Define the user and the records each persona needs in its own context, as described in [Personas](#personas).
 
@@ -222,7 +222,7 @@ FactoryBot.define do
 end
 ```
 
-Don't add a trait for a role on a record, e.g. the Author of a post. Build a plain user, then give it the role on the record, e.g. `create(:post, author: user)`. Then the spec shows how the user gets access to that record. For a persona with more than one role, build the user with the trait for the whole-app role, then give it the role on the record.
+You MUST NOT add a trait for a role on a record, e.g. the Author of a post. Build a plain user, then give it the role on the record, e.g. `create(:post, author: user)`. Then the spec shows how the user gets access to that record. For a persona with more than one role, build the user with the trait for the whole-app role, then give it the role on the record.
 
 ## Request specs
 
@@ -273,9 +273,9 @@ For a persona with more than one role, name each role, highest first, e.g. `"as 
 
 Each persona context implies the record it acts on. For a role on a record, it's the record the persona holds the role on, e.g. an Author acts on a post they wrote. When a context uses a different record, describe that record in a second argument to `context`, e.g. `context "as an author", "with a post written by another user"`. RSpec joins the two into one description.
 
-Set up the persona inside its context, as a signed-in `user`. Build the user with a [persona trait](#persona-traits) for a role on the whole app, or give it the role on the record. Define the `user` and the records the context needs inside the context, not in the `describe` block above it. Don't define a `let` for each persona, e.g. `let(:author)`. Then every context reads on its own, in the same way, and shows how the user gets their access.
+Set up the persona inside its context, as a signed-in `user`. Build the user with a [persona trait](#persona-traits) for a role on the whole app, or give it the role on the record. Define the `user` and the records the context needs inside the context, not in the `describe` block above it. You MUST NOT define a `let` for each persona, e.g. `let(:author)`. Then every context reads on its own, in the same way, and shows how the user gets their access.
 
-You can give the user a person's name, e.g. Jane Tester, if it makes the spec easier to read. The context name must still give the role.
+You MAY give the user a person's name, e.g. Jane Tester, if it makes the spec easier to read. Still give the role in the context name.
 
 ```ruby
 RSpec.describe "Posts::Publications" do
@@ -328,7 +328,7 @@ RSpec.describe "Posts::Publications" do
 end
 ```
 
-An Author may update a post they wrote, but not someone else's. The second context is still an Author, with a post of their own, so it's `"as an author"`, not `"as the author"`. It acts on another user's post. The User and Guest contexts are left out to keep the example short.
+An Author can update a post they wrote, but not someone else's. The second context is still an Author, with a post of their own, so it's `"as an author"`, not `"as the author"`. It acts on another user's post. The User and Guest contexts are left out to keep the example short.
 
 ```ruby
 RSpec.describe "Posts" do
@@ -418,11 +418,11 @@ end
 
 ### Several checks per request
 
-Request specs are slow, because each one goes through routing, the controller and the views. Make one request in each example, and check as much as you can about it there: the records it changed, the status or redirect, the flash and the body. Don't repeat the same request in several examples, each with one check.
+Request specs are slow, because each one goes through routing, the controller and the views. Make one request in each example, and check as much as you can about it there: the records it changed, the status or redirect, the flash and the body. You MUST NOT repeat the same request in several examples, each with one check.
 
 Tag each action's `describe` block with `:aggregate_failures`, e.g. `describe "POST /posts", :aggregate_failures do`. RSpec then runs all the checks in an example and reports every one that fails, not only the first.
 
-Wrap the request in `expect { }.to change` when it changes a record, e.g. `change(Post, :count).by(1)` or `change { draft.reload.title }`. The spec then shows what the request changed, in the same step as the request. When the request must not change anything, use `not_to change`.
+Wrap the request in `expect { }.to change` when it changes a record, e.g. `change(Post, :count).by(1)` or `change { draft.reload.title }`. The spec then shows what the request changed, in the same step as the request. When the request changes nothing, use `not_to change`.
 
 ```ruby
 RSpec.describe "Posts" do
@@ -463,11 +463,11 @@ Use `RSpec.feature` and name it after the feature under test, e.g. `RSpec.featur
 
 Start each scenario's name with the persona carrying out the task, then say what they want to achieve, e.g. `scenario "Publishing Manager publishes a post"`. Order the scenarios by persona rank, as in [Principles: Personas](../../../guide/principles/#personas).
 
-Write scenarios for what a persona can do, not for what they can't. Request specs and policy specs already cover the actions a persona isn't allowed to take. Only add a scenario for something a persona can't do when it guards against a regression, e.g. a bug that let them do it before, or when the action is critical, e.g. a Guest must never see a draft post.
+Write scenarios for what a persona can do, not for what they can't. Request specs and policy specs already cover the actions a persona isn't allowed to take. Only add a scenario for something a persona can't do when it guards against a regression, e.g. a bug that let them do it before, or when the action is critical, e.g. keeping draft posts hidden from Guests.
 
 Carry out several actions in one scenario. Request specs already test each request on its own, and feature specs are slow to run. A scenario that takes a persona through a whole task shows how the parts of the app work together.
 
-Put a `GIVEN`, `WHEN` or `THEN` comment above each step, so the scenario reads as a user story. Write the comments in the first person, as the persona describing the situation and what they do, e.g. `# GIVEN I am signed in as a Publishing Manager`. `GIVEN` sets the scene, `WHEN` is what the persona does, and `THEN` is what they see. When two steps of the same type follow each other, start the second with `AND`. Leave a blank line before each comment, so each step stands apart. A scenario can go through `WHEN` and `THEN` more than once. Keep the `GIVEN` steps together at the start. The exception is a mocked response, which can have its own `GIVEN` just before the step that needs it, e.g. `# GIVEN the newsletter service accepts the post` before `# WHEN I publish it`.
+Put a `GIVEN`, `WHEN` or `THEN` comment above each step, so the scenario reads as a user story. Write the comments in the first person, as the persona describing the situation and what they do, e.g. `# GIVEN I am signed in as a Publishing Manager`. `GIVEN` sets the scene, `WHEN` is what the persona does, and `THEN` is what they see. When two steps of the same type follow each other, start the second with `AND`. Leave a blank line before each comment, so each step stands apart. A scenario MAY go through `WHEN` and `THEN` more than once. Keep the `GIVEN` steps together at the start. The exception is a mocked response, which MAY have its own `GIVEN` just before the step that needs it, e.g. `# GIVEN the newsletter service accepts the post` before `# WHEN I publish it`.
 
 ```ruby
 RSpec.feature "Post Publishing" do
@@ -504,11 +504,11 @@ Feature specs can cover an API too. Each scenario shows a client using the API f
 
 Make the requests through an `ActionDispatch::Integration::Session` named `client`, e.g. `client.post` and `client.response`. The client has its own cookies and headers, apart from the browser session, so it sees the API the way a real client does. Write the scenarios and the `GIVEN`, `WHEN` and `THEN` comments the same way as for pages. When the access token belongs to a user, start the scenario's name with the persona. When it doesn't, start with the client, e.g. `scenario "API client writes a post"`.
 
-Authenticate the way the client does. When the API takes an access token, send the token in the request headers. Don't sign the user in with `sign_in`. The API doesn't use the session, so a spec that signs in could pass even when the token check is broken.
+Authenticate the way the client does. When the API takes an access token, send the token in the request headers. You MUST NOT sign the user in with `sign_in`. The API doesn't use the session, so a spec that signs in could pass even when the token check is broken.
 
-Check that every response matches the pattern you expect: the status, and the shape of the body. Use `match` with RSpec's composable matchers for values the spec can't know in advance, e.g. `an_instance_of(Integer)` for a new ID. A client depends on the shape of each response, so the spec should catch a field that goes missing or changes type.
+Check that every response matches the pattern you expect: the status, and the shape of the body. Use `match` with RSpec's composable matchers for values the spec can't know in advance, e.g. `an_instance_of(Integer)` for a new ID. A client depends on the shape of each response, so the spec needs to catch a field that goes missing or changes type.
 
-Take the data for each request from the response before it, e.g. the ID of the post you just created. Don't look the record up in the database, or reuse the record you built with a factory. Then the scenario shows that a client can follow the API from one step to the next, with only what the API gives back.
+Take the data for each request from the response before it, e.g. the ID of the post you just created. You MUST NOT look the record up in the database, or reuse the record you built with a factory. Then the scenario shows that a client can follow the API from one step to the next, with only what the API gives back.
 
 ```ruby
 RSpec.feature "Post API" do
@@ -552,7 +552,7 @@ expect(response.body).to have_publish_button_for_post(draft)
 expect(response.body).not_to have_publish_button_for_post(published_post)
 ```
 
-Don't write the two checks separately.
+You MUST NOT write the two checks separately.
 
 ```ruby
 expect(response.body).to have_button("Publish")
@@ -561,7 +561,7 @@ expect(response.body).not_to have_css("form[action='#{post_publication_path(publ
 
 A generic matcher takes no arguments, e.g. `have_welcome_new_author_banner`. A matcher for one record takes the record and ends in `_for_<resource>`, e.g. `have_publish_button_for_post(post)`. The name then says which record the element belongs to.
 
-Define a matcher with `matcher`. Every matcher must work with both `to` and `not_to`, with as little code as it needs. Check the element with a Capybara matcher in its `match` block. When the matcher checks one thing, `match` is all it needs. RSpec runs the same block for `not_to`, and flips the result.
+Define a matcher with `matcher`. Make every matcher work with both `to` and `not_to`, with as little code as it needs. Check the element with a Capybara matcher in its `match` block. When the matcher checks one thing, `match` is all it needs. RSpec runs the same block for `not_to`, and flips the result.
 
 ```ruby
 matcher :have_publish_button_for_post do |post|
@@ -585,7 +585,7 @@ expect(page).to have_comment_select("Featured comment", selected: "Great post!")
 
 ### Composing matchers
 
-Build a complex matcher from simpler ones. Combine them with `and` when the element has more than one part to check, e.g. the banner's heading and its link. Define each part as a private method inside the matcher, with a `have_` prefix and named after what the part is, e.g. `have_welcome_heading` and `have_first_post_link`. The `match` block then reads as a list of parts, and the negated check uses the same parts. Never name a part after one of Capybara's matchers, e.g. `have_link` or `have_title`. The part would then call itself instead of Capybara's matcher, and loop until the stack overflows.
+Build a complex matcher from simpler ones. Combine them with `and` when the element has more than one part to check, e.g. the banner's heading and its link. Define each part as a private method inside the matcher, with a `have_` prefix and named after what the part is, e.g. `have_welcome_heading` and `have_first_post_link`. The `match` block then reads as a list of parts, and the negated check uses the same parts. You MUST NOT name a part after one of Capybara's matchers, e.g. `have_link` or `have_title`. The part would then call itself instead of Capybara's matcher, and loop until the stack overflows.
 
 RSpec can't negate a matcher combined with `and`, so `not_to` would raise an error. Add a `match_when_negated` block, with one `expect(actual).not_to` for each part, so `not_to` checks that every part is gone.
 
