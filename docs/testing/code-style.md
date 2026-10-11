@@ -29,3 +29,21 @@ end
 ```
 
 You MUST NOT write `expect(described_class.new(post).published_on)` or `expect(post = create(:post))`. This doesn't apply to the block form, e.g. `expect { post posts_path }.to change(Post, :count).by(1)`, where the block is the action being checked.
+
+### described_class
+
+Refer to the class under test through `described_class`, including its constants, e.g. its errors. Then the spec reads the same whatever the class is called, and a rename only changes the `RSpec.describe` line. Write the full name for any other class, e.g. a service's error in an action spec.
+
+```ruby
+RSpec.describe NewsletterClient do
+  describe "#create_newsletter" do
+    it "raises an UnprocessableError when the newsletter service rejects the post" do
+      post = build_stubbed(:post)
+      stub_newsletter_create_failure(status: 422)
+
+      expect { described_class.new(api_key: "test-key").create_newsletter(post) }
+        .to raise_error(described_class::UnprocessableError)
+    end
+  end
+end
+```
