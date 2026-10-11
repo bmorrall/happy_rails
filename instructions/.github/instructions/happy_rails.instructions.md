@@ -24,7 +24,7 @@ Follow these rules for all changes. Area-specific rules are in `.github/instruct
 
 ## The signed-in user
 
-- Only use the signed-in user, e.g. `current_user`, in controllers, forms, views and helpers, and in request and feature specs. You MUST NOT use it in models, actions, jobs, mailers or view components.
+- Only use the signed-in user, e.g. `current_user`, in controllers, forms, views and helpers. You MUST NOT use it in models, actions, jobs, mailers or view components.
 - When code outside a request needs a user, pass the user in as an argument named after the role it plays in the task, e.g. `Posts::PublishPost.call(post, publisher: current_user)`, not `current_user:` or `user:`.
 - You MUST NOT reach the signed-in user through a global, e.g. `Current.user` from `ActiveSupport::CurrentAttributes`.
 
@@ -36,7 +36,6 @@ Follow these rules for all changes. Area-specific rules are in `.github/instruct
 - Rank the app's persona groups from most access to least, with the Users group and then the Guest last. Personas inside each group also have a fixed rank. Take the ranks from the app, e.g. the order of persona contexts in its existing specs.
 - Only add a persona with more than one role when it changes the outcome, compared with the persona with only its highest role.
 - Put a persona with more than one role in the group of its highest role, straight after the persona with only that role.
-- When you add or change an action, cover what each persona can do, and on which records. Include a persona who can act on some records but not this one, e.g. a user who did not create the record.
 - List personas in rank order everywhere, e.g. in permission checks.
 
 ## Project layout
@@ -49,7 +48,3 @@ Follow these rules for all changes. Area-specific rules are in `.github/instruct
 ## Before you finish
 
 - TODO: List the commands an agent has to run before it says a change is done, e.g. the linter.
-
-## Testing
-
-- TODO: How to test changes to the app.

@@ -4,6 +4,8 @@ applyTo: "spec/**/*.rb"
 
 # RSpec and FactoryBot
 
+- Only sign in a user, e.g. with `sign_in`, in request and feature specs. In other specs, pass the user in as an argument, e.g. `Posts::PublishPost.call(post, publisher: user)`.
+- When you add or change an action, cover in request and feature specs what each persona can do, and on which records. Include a persona who can act on some records but not this one, e.g. a user who did not create the record.
 - In request and feature specs, you MUST NOT cover a persona whose role plays no part in the action. The User persona covers it, and so does the policy spec.
 - List personas in rank order in request and feature specs, as in permission checks, e.g. `context "as an app admin"` before `context "as a publishing manager"`, then `context "as a user"` and `context "when not signed in"`.
 - Put spec setup in `spec/support`, not in `spec/rails_helper.rb`, with one file for each gem or concern, named after it, each with its own `RSpec.configure` block, e.g. `config.include FactoryBot::Syntax::Methods` in `spec/support/factory_bot.rb`.

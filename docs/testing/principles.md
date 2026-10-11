@@ -10,7 +10,26 @@ How the ideas behind the guide shape my specs.
 
 For the code itself, see [Principles](../../guide/principles/).
 
+## The signed-in user
+
+Only sign in a user, e.g. with `sign_in`, in request and feature specs. They test the code that handles a request, which is the only code that knows who is signed in. In other specs, pass the user in as an argument, as the app code does.
+
+```ruby
+RSpec.describe Posts::PublishPost do
+  it "records the publisher" do
+    post = create(:post)
+    user = create(:user, :publishing_manager)
+
+    described_class.call(post, publisher: user)
+
+    expect(post.publications.last.publisher).to eq(user)
+  end
+end
+```
+
 ## Personas
+
+Personas make it easier to see which scenarios need covering. When you add or change an action, cover in request and feature specs what each persona can do, and on which records. The Guest and the User often show the gaps: an action left open by mistake, or one that anyone who signs in can use. Include a persona who can act on some records but not this one, e.g. a User editing a post someone else wrote.
 
 A persona whose role plays no part in the action doesn't need a scenario of its own in request and feature specs. It gets the same answer as the User, so the User's scenario covers it, and so does the policy spec, e.g. a Copy Editor or an Author publishing a post.
 

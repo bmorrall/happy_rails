@@ -33,7 +33,7 @@ MUST NOT, SHOULD, SHOULD NOT and MAY are read as described in [BCP 14](https://w
 
 ## The signed-in user
 
-Only the code that handles a request knows who is signed in. That is controllers, forms, views and helpers, and the request and feature specs that test them. Everything else has no signed-in user, e.g. models, actions, jobs, mailers and view components.
+Only the code that handles a request knows who is signed in. That is controllers, forms, views and helpers. Everything else has no signed-in user, e.g. models, actions, jobs, mailers and view components.
 
 That code often runs outside a request. A job runs after the request has finished. A mailer or a component might render in a job or a Turbo Stream broadcast. A console or a rake task has no session at all. Code that reaches for the signed-in user breaks there, or picks up the wrong user.
 
@@ -108,7 +108,7 @@ A persona can have more than one role, e.g. a Copy Editor who is also the Author
 
 Only add a persona when the app gets a new role. You MUST NOT add one to fill out a spec.
 
-Personas make it easier to see which scenarios need covering. For each action, ask what each persona can do, and on which records. The Guest and the User often show the gaps: an action left open by mistake, or one that anyone who signs in can use. A persona who can act, but not on this record, finds the rest, e.g. a User editing a post someone else wrote.
+Personas also show which scenarios your specs need to cover. See [Testing: Principles](../../testing/principles/#personas).
 
 ### Keep the ranks
 
