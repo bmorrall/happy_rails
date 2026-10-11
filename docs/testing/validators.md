@@ -10,8 +10,6 @@ How I test custom validators.
 
 For the code itself, see [Validators](../../guide/validators/).
 
-## Validator specs
-
 Write a unit spec for each validator, in `spec/validators/`, e.g. `spec/validators/isbn_validator_spec.rb`. Test the validator on its own, as if any app could use it. Never test it with one of the app's models or forms, e.g. `Post`. The validator doesn't know about them, and its spec shouldn't either.
 
 Build the validator under test with `described_class`, and run it against a stand-in record. Never rely on the option name to find it, e.g. `validates :value, isbn: true`. Then the spec runs the class it describes, even if the option name and the class name stop matching.

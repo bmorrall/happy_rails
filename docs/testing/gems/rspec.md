@@ -184,7 +184,7 @@ When an `instance_double` can't stand in for the record, use `build_stubbed`, e.
 post = build_stubbed(:post, title: "Hello")
 ```
 
-Use `create` only when the code needs the record in the database, e.g. when it runs a query, or a request or feature spec loads the record by its ID. Specs that run the whole stack, e.g. request, feature and job specs, use real records. See [Jobs: Job specs](../../jobs/#job-specs).
+Use `create` only when the code needs the record in the database, e.g. when it runs a query, or a request or feature spec loads the record by its ID. Specs that run the whole stack, e.g. request, feature and job specs, use real records. See [Jobs: Job specs](../../jobs/).
 
 ```ruby
 post = create(:post, title: "Hello")
@@ -265,7 +265,7 @@ RSpec.describe "Api::V1::Posts" do
 end
 ```
 
-Write one `context` for each persona whose role plays a part in the action, and for the User and the Guest. Put them in rank order, with the Guest last. Leave out a persona whose role plays no part in the action, e.g. the Copy Editor and the Author in a spec for publishing a post. Neither role has anything to do with publishing, so they get the same answer as the User. The policy spec tests each property the rule reads, so it covers them too. See [Pundit: Policy specs](../pundit/#policy-specs).
+Write one `context` for each persona whose role plays a part in the action, and for the User and the Guest. Put them in rank order, with the Guest last. Leave out a persona whose role plays no part in the action, e.g. the Copy Editor and the Author in a spec for publishing a post. Neither role has anything to do with publishing, so they get the same answer as the User. The policy spec tests each property the rule reads, so it covers them too. See [Pundit: Policy specs](../pundit/).
 
 Name the context after the persona's role, e.g. `"as a publishing manager"`, so the reader can tell what it's for. Use `"when not signed in"` for the Guest. Keep `"as a"` for personas, and name other contexts another way, e.g. `"with a Turbo Stream"`. For a role on the record under test, use "the", e.g. `"as the author"` of the post the request acts on.
 

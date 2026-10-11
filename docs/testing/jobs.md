@@ -10,42 +10,6 @@ How I test jobs.
 
 For the code itself, see [Jobs](../../guide/jobs/).
 
-## Scheduling
-
-With all the work for a scheduled task in its job, the [job spec](#job-specs) covers the whole task. Cover every path through the job, e.g. the drafts it deletes and the posts it keeps. Don't write a spec for the rake task. It has nothing left to test. See [Jobs: Scheduling](../../guide/jobs/#scheduling).
-
-```ruby
-RSpec.describe PurgeAbandonedDraftsJob do
-  describe ".perform_now" do
-    it "deletes drafts no one has changed for a year" do
-      post = create(:post, updated_at: 13.months.ago)
-
-      described_class.perform_now
-
-      expect(Post.exists?(post.id)).to be(false)
-    end
-
-    it "keeps drafts changed in the last year" do
-      post = create(:post, updated_at: 11.months.ago)
-
-      described_class.perform_now
-
-      expect(Post.exists?(post.id)).to be(true)
-    end
-
-    it "keeps published posts" do
-      post = create(:post, status: :published, updated_at: 13.months.ago)
-
-      described_class.perform_now
-
-      expect(Post.exists?(post.id)).to be(true)
-    end
-  end
-end
-```
-
-## Job specs
-
 Test a job the way you test a controller with a request spec. Run it with `perform_now`, and check what it does: the records it changes, the emails it sends, the jobs it enqueues and the requests it makes. Don't stub the models, actions, services or other classes the job calls, e.g. with `allow(NewsletterClient).to receive(:new)` or `allow(Posts::ArchivePost).to receive(:call)`. Then the spec fails when any part of the work breaks, not only the job's own lines. To test how the job handles an action's `Error`, set up records that make the action fail for real. Don't test the action's argument checks, e.g. `unmodified:`, because every job spec that calls the action already runs them. See [Actions: Specs for callers](../actions/#specs-for-callers).
 
 Name the `describe` block `".perform_now"`, after the method the spec calls, not `"#perform"`.
@@ -72,6 +36,40 @@ RSpec.describe NotifySubscribersJob do
       described_class.perform_now(post)
 
       expect(newsletter_request).to have_been_requested
+    end
+  end
+end
+```
+
+## Scheduling
+
+With all the work for a scheduled task in its job, the job spec covers the whole task. Cover every path through the job, e.g. the drafts it deletes and the posts it keeps. Don't write a spec for the rake task. It has nothing left to test. See [Jobs: Scheduling](../../guide/jobs/#scheduling).
+
+```ruby
+RSpec.describe PurgeAbandonedDraftsJob do
+  describe ".perform_now" do
+    it "deletes drafts no one has changed for a year" do
+      post = create(:post, updated_at: 13.months.ago)
+
+      described_class.perform_now
+
+      expect(Post.exists?(post.id)).to be(false)
+    end
+
+    it "keeps drafts changed in the last year" do
+      post = create(:post, updated_at: 11.months.ago)
+
+      described_class.perform_now
+
+      expect(Post.exists?(post.id)).to be(true)
+    end
+
+    it "keeps published posts" do
+      post = create(:post, status: :published, updated_at: 13.months.ago)
+
+      described_class.perform_now
+
+      expect(Post.exists?(post.id)).to be(true)
     end
   end
 end

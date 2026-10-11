@@ -11,8 +11,6 @@ How I test decorators.
 
 For the code itself, see [Draper](../../../guide/gems/draper/).
 
-## Decorator specs
-
 Write a decorator spec in `spec/decorators` for each decorator. Give each method its own `describe` block, and write an example for each path through it. A method with an `if` needs one example for each side. Build the record inside each example. See [RSpec: Contexts](../rspec/#contexts).
 
 Build the record being decorated on its own line, then decorate it on the next line. Use an `instance_double` that stubs only the values the method reads. When it can't stand in for the record, e.g. for a method that passes the record to a route helper, like `h.link_to(object.title, object)`, use `build_stubbed`. See [RSpec: Doubles, build_stubbed or create](../rspec/#doubles-build_stubbed-or-create).

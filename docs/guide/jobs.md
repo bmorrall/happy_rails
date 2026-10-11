@@ -126,7 +126,7 @@ namespace :posts do
 end
 ```
 
-A rake task is hard to test, but a job is easy to test. With all the work in the job, the [job spec](../../testing/jobs/#job-specs) covers the whole task. The job can also run from the console, and moves to another scheduler without a rewrite. See [Testing: Jobs](../../testing/jobs/#scheduling).
+A rake task is hard to test, but a job is easy to test. With all the work in the job, the [job spec](../../testing/jobs/) covers the whole task. The job can also run from the console, and moves to another scheduler without a rewrite. See [Testing: Jobs](../../testing/jobs/#scheduling).
 
 Call `perform_later` in the rake task by default. The task ends as soon as the job is enqueued, and the queue retries the job and reports its errors, like any other job. Call `perform_now` when the scheduler must run the work itself, e.g. when no queue worker is running at that time, or the scheduler needs to know whether the task failed.
 

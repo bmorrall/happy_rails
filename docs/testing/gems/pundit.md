@@ -11,17 +11,6 @@ How I test policies.
 
 For the code itself, see [Pundit](../../../guide/gems/pundit/).
 
-## Setup
-
-Load Pundit's matchers in `spec/support/pundit.rb`, as in [RSpec: Support files](../rspec/#support-files). They add `permissions` blocks and the `permit` matcher to specs in `spec/policies`.
-
-```ruby
-# spec/support/pundit.rb
-require "pundit/rspec"
-```
-
-## Policy specs
-
 A policy reads properties of the user and the record, e.g. `user.copy_editor?` or `post.author == user`. Test those properties, not personas. A persona is a mix of properties, so a spec written for personas hides which property gives the access. Request specs cover the personas. See [RSpec: Personas](../rspec/#personas).
 
 Write a `permissions` block for each permission, in the same order as the policy, as in [Pundit: Layout](../../../guide/gems/pundit/#layout): the actions in controller order, then the checks under each heading, e.g. `create_comment?` under `### Comments ###`, then `update_published?` under `### Publishing ###`. All of a permission's rules are then in one place, so you can see what it allows and spot a missing case.
@@ -72,3 +61,12 @@ end
 ```
 
 Check that each permission forbids as well as permits. Then a policy that starts to permit too much fails its spec. When a permission joins conditions, e.g. `post.published? && user.app_admin?`, write an example where each condition is false on its own. You don't need every combination.
+
+## Setup
+
+Load Pundit's matchers in `spec/support/pundit.rb`, as in [RSpec: Support files](../rspec/#support-files). They add `permissions` blocks and the `permit` matcher to specs in `spec/policies`.
+
+```ruby
+# spec/support/pundit.rb
+require "pundit/rspec"
+```

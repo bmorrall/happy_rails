@@ -10,14 +10,6 @@ How I test actions.
 
 For the code itself, see [Actions](../../guide/actions/).
 
-## Checking arguments
-
-In the action's own spec, stub `has_changes_to_save?` to return `false` on each record double that `unmodified:` checks, e.g. `instance_double(Post, has_changes_to_save?: false)`. `UnmodifiedValidator` calls it on the record.
-
-Don't test the argument checks in request or job specs, e.g. that `Posts::PublishPost` raises `ActiveModel::ValidationError` for a post with unsaved changes. Every spec that calls the action already runs them, and fails if the controller or job passes the wrong arguments. Test each validator once, in its own spec.
-
-## Action specs
-
 Write an action spec as a unit spec, and name the `describe` block `".call"`, after the method the spec calls. Stub everything the action calls, and check that it calls each one with the right arguments. Avoid creating records, even when the action runs a query. The request and job specs for its callers run the action for real, so its unit spec only checks what the action asks for.
 
 Use `instance_double`, e.g. `instance_double(Post)`, not a plain `double`. See [RSpec: Doubles, build_stubbed or create](../gems/rspec/#doubles-build_stubbed-or-create).
@@ -151,6 +143,12 @@ end
 ```
 
 The unit spec checks the action alone. The request and job specs for its callers let it run for real, so between them they check that it works with the rest of the app.
+
+## Checking arguments
+
+`ValidatedCallable` runs the action's argument validations inside `call`, so they run in the action's own spec too. A validator that calls a method on a record calls it on the record double, and an `instance_double` raises for a method you didn't stub. In the action's spec, stub each method that the argument validations call on a record double, e.g. `instance_double(Post, has_changes_to_save?: false)` for `unmodified:`. `UnmodifiedValidator` calls `has_changes_to_save?` on the record.
+
+Don't test the argument checks in request or job specs, e.g. that `Posts::PublishPost` raises `ActiveModel::ValidationError` for a post with unsaved changes. Every spec that calls the action already runs them, and fails if the controller or job passes the wrong arguments. Test each validator once, in its own spec.
 
 ## Specs for callers
 
