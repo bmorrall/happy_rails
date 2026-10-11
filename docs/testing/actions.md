@@ -142,6 +142,56 @@ RSpec.describe Posts::EnqueuePublish do
 end
 ```
 
+When the action calls another service, stub the service like any other collaborator, with an `instance_double` returned from the method the action builds it with, e.g. `NewsletterClient.new`. You MUST NOT stub the HTTP request in an action spec. The service's own spec checks the requests it sends, so the action spec only checks what the action asks the service for.
+
+When the action builds the service with its default constructor, e.g. `NewsletterClient.new`, set up the stubbed client in a `let`. Every example gets the same client, so the `let` hides nothing about the example. Each example then stubs the methods it needs on `newsletter_client`, which also sets up the `let`.
+
+To check the action's errors, stub the service to raise each error the action handles. Raise an error built with the details a real failure carries, e.g. `NewsletterClient::Error.new("Server error", status: 500)`, not the bare class, so a check on the error's details has something to compare.
+
+```ruby
+RSpec.describe Posts::SendNewsletter do
+  let(:newsletter_client) do
+    instance_double(NewsletterClient).tap do |newsletter_client|
+      allow(NewsletterClient).to receive(:new).and_return(newsletter_client)
+    end
+  end
+
+  describe ".call" do
+    it "raises a ServiceError when the newsletter service fails" do
+      post = instance_double(Post)
+      allow(newsletter_client).to receive(:create_newsletter).with(post)
+        .and_raise(NewsletterClient::Error.new("Server error", status: 500))
+
+      expect { described_class.call(post) }.to raise_error(described_class::ServiceError)
+    end
+  end
+end
+```
+
+When the action builds the service for a record, e.g. `NewsletterClient.for(integration)`, write a helper method that takes the record and returns the stubbed client, instead of a `let`. Name it `stub_`, then the service, then `_for`, e.g. `stub_newsletter_client_for(integration)`. The client depends on the record, so each example builds the record and passes it in, and shows which record the client is for. Define the helper at the bottom of the spec file, inside the top-level `describe` block, after the examples.
+
+```ruby
+RSpec.describe Posts::SendNewsletter do
+  describe ".call" do
+    it "raises a ServiceError when the newsletter service fails" do
+      integration = instance_double(NewsletterServiceIntegration)
+      post = instance_double(Post)
+      newsletter_client = stub_newsletter_client_for(integration)
+      allow(newsletter_client).to receive(:create_newsletter).with(post)
+        .and_raise(NewsletterClient::Error.new("Server error", status: 500))
+
+      expect { described_class.call(post, integration:) }.to raise_error(described_class::ServiceError)
+    end
+  end
+
+  def stub_newsletter_client_for(integration)
+    instance_double(NewsletterClient).tap do |newsletter_client|
+      allow(NewsletterClient).to receive(:for).with(integration).and_return(newsletter_client)
+    end
+  end
+end
+```
+
 The unit spec checks the action alone. The request and job specs for its callers let it run for real, so between them they check that it works with the rest of the app.
 
 ## Checking arguments

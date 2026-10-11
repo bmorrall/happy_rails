@@ -11,7 +11,7 @@ Stubbed HTTP requests in specs with [WebMock](https://github.com/bblimke/webmock
 
 ## Stubbing requests
 
-WebMock blocks every real HTTP request in specs. Stub each request the code makes to another service with `stub_request`, and check that the code made it. Stub the request, not the service class that makes it, so the spec runs the service's code too.
+WebMock blocks every real HTTP request in specs. In request, feature, job and service specs, stub each request the code makes to another service with `stub_request`, and check that the code made it. Stub the request, not the service class that makes it, so the spec runs the service's code too. Action specs are unit specs, so they stub the service instead. See [Testing: Actions](../../actions/).
 
 To test the other service failing, stub the request to fail. Use `.to_return(status: 500)` when the service returns an error, and `.to_timeout` when it takes too long to reply.
 
@@ -64,19 +64,20 @@ it "sends the post to the newsletter service" do
 end
 ```
 
-When a spec also checks what the request sent, e.g. the post's title, add a matcher to the same module. Write it as a method that returns WebMock's own `have_requested` matcher, and use it on `WebMock`. Start its name with `have_requested_`, then the same service and request as the stub, e.g. `have_requested_newsletter_create`. Take only the parts of the request that specs check. When it fails, WebMock lists the requests that were made.
+When a spec also checks what the request sent, e.g. the post's title, add a matcher to the same module. Write it as a method that returns WebMock's own `have_requested` matcher, and use it on `WebMock`. Start its name with `have_requested_`, then the same service and request as the stub, e.g. `have_requested_newsletter_create`. Pass its keywords to WebMock's `with`, e.g. `body:` and `headers:`. When it fails, WebMock lists the requests that were made.
 
 ```ruby
 # spec/support/newsletter_service.rb
 module NewsletterServiceHelpers
   # ...
 
-  def have_requested_newsletter_create(title:)
-    have_requested(:post, "https://newsletter.example.com/posts")
-      .with(body: hash_including(title:))
+  def have_requested_newsletter_create(**options)
+    have_requested(:post, "https://newsletter.example.com/posts").with(**options)
   end
 end
 ```
+
+Check only the parts of the request the spec is about, with `hash_including`. The service's own spec checks the whole request. See [Testing: Services](../../services/#full-messages).
 
 ```ruby
 it "sends the post's title to the newsletter service" do
@@ -85,13 +86,13 @@ it "sends the post's title to the newsletter service" do
 
   described_class.perform_now(post)
 
-  expect(WebMock).to have_requested_newsletter_create(title: "Hello World")
+  expect(WebMock).to have_requested_newsletter_create(body: hash_including(title: "Hello World"))
 end
 ```
 
 ### SDK stubs
 
-Some services come with an SDK that has its own stubs, e.g. `stub_responses` in the AWS SDK. Use them instead of WebMock. They replace only the SDK's HTTP layer, so your service's code still runs, and you don't write signed requests or response bodies by hand. You MUST NOT stub the service class itself.
+Some services come with an SDK that has its own stubs, e.g. `stub_responses` in the AWS SDK. Use them instead of WebMock. They replace only the SDK's HTTP layer, so your service's code still runs, and you don't write signed requests or response bodies by hand. Outside action specs, you MUST NOT stub the service class itself.
 
 Turn the stubs on for every spec, and set the responses for a spec in `Aws.config`. Remove them after each spec, so they don't leak into the next one.
 

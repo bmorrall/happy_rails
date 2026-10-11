@@ -62,7 +62,7 @@ Set the values in one place, e.g. `config/application.rb`, from credentials or `
 ```ruby
 # config/application.rb
 config.x.newsletter_client.api_key = Rails.application.credentials.dig(:newsletter_client, :api_key)
-config.x.newsletter_client.base_url = "https://api.newsletter.example"
+config.x.newsletter_client.base_url = "https://newsletter.example.com"
 ```
 
 Take each setting as a keyword argument to `initialize`, with the setting as its default. Callers then write `NewsletterClient.new`, and never pass the settings. The default is read each time the service is built, so a change to the config is always picked up. A spec can pass its own values instead of stubbing the config.
