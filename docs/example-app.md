@@ -14,6 +14,7 @@ This page describes the app, so you know what each example is talking about. The
 
 - **User**: someone who has signed in. A user can hold one role on the whole app, e.g. Publishing Manager.
 - **Post**: an article a user writes. Each post has an author, a title, a body and a status. A post starts as a draft, and is published when it's ready.
+- **Coauthorship**: a user the Author adds to a post as a Co-author, so they can edit it too.
 - **Comment**: a reply to a published post. Comments belong to a post, and are approved before other readers see them.
 - **Tag**: a label on a post, so readers can find related posts.
 - **Publication**: a record of each time a post is published, and who published it.
@@ -28,6 +29,22 @@ class Post < ApplicationRecord
 
   has_many :comments,
     dependent: :destroy
+
+  has_many :coauthorships,
+    dependent: :destroy
+  has_many :coauthors,
+    through: :coauthorships,
+    source: :user
+end
+```
+
+```ruby
+class User < ApplicationRecord
+  has_many :coauthorships,
+    dependent: :destroy
+  has_many :coauthored_posts,
+    through: :coauthorships,
+    source: :post
 end
 ```
 
@@ -41,16 +58,17 @@ The app has these personas, from the most access to the least. See [Principles: 
 | Editors | Publishing Manager | Publish any post |
 | Editors | Copy Editor | Edit any post |
 | Authors | Author | Edit the posts they wrote |
+| Authors | Co-author | Edit the posts they were added to |
 | Users | User | Read published posts, comment on them, and write posts |
 | | Guest | Read published posts |
 
-App Admin, Publishing Manager and Copy Editor are roles on the whole app. Author is a role on one record: a user is the Author of the posts they wrote, and of no others.
+App Admin, Publishing Manager and Copy Editor are roles on the whole app. Author and Co-author are roles on one record: a user is the Author of the posts they wrote, and a Co-author of the posts they were added to, and of no others.
 
 ## Tasks
 
 These are the tasks the examples use. Each one shows up on more than one page.
 
-- **Write and edit a post.** Any user can write a post. The Author, a Copy Editor or an App Admin can edit it. The routes are `GET /posts/new`, `POST /posts`, `GET /posts/:id/edit` and `PATCH /posts/:id`.
+- **Write and edit a post.** Any user can write a post. The Author, a Co-author, a Copy Editor or an App Admin can edit it. The routes are `GET /posts/new`, `POST /posts`, `GET /posts/:id/edit` and `PATCH /posts/:id`.
 - **Comment on a post.** A signed-in user can comment on a published post, with `POST /posts/:post_id/comments`.
 - **Publish a post.** A Publishing Manager or an App Admin publishes a post with `POST /posts/:post_id/publication`, and can unpublish it with `DELETE /posts/:post_id/publication`. The `Posts::PublishPost` action does the work.
 - **Share a draft.** The Author can make a preview link for a draft post, with `POST /posts/:post_id/preview_link`, so others can read it before it's published. `SharePostForm` makes the link's token, and the post saves only a digest of it. The app shows the link once, right after it's made.

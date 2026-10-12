@@ -116,7 +116,7 @@ Ask your agent to set up Happy Rails to run it, e.g. "Set up this app for Happy 
 | `references/devise.md` | Devise |
 | `references/draper.md` | `NilDecorator`, `ApplicationDecorator` |
 | `references/honeybadger.md` | `HoneybadgerCauseContext` |
-| `references/pundit.md` | `PunditAuthorization`, `PunditPolicies`, `spec/support/pundit.rb` |
+| `references/pundit.md` | `ApplicationPolicy`, `PunditAuthorization`, `PunditPolicies`, `spec/support/pundit.rb` |
 | `references/shoulda_matchers.md` | `spec/support/shoulda_matchers.rb` |
 | `references/view_component.md` | `spec/support/view_component.rb` |
 

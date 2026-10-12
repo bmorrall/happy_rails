@@ -86,7 +86,7 @@ Group the personas, and rank the groups from the most access to the least. Each 
 
 1. **App Admins**: run the whole app.
 2. **Editors**: manage other people's content, e.g. a Publishing Manager or a Copy Editor.
-3. **Authors**: manage the posts they wrote.
+3. **Authors**: manage the posts they wrote or were added to.
 4. **Users**: have signed in but have no role.
 
 The **Guest**, a visitor who hasn't signed in, comes last.
@@ -97,6 +97,7 @@ The **Guest**, a visitor who hasn't signed in, comes last.
 | Editors | Publishing Manager | Publish any post |
 | Editors | Copy Editor | Edit any post |
 | Authors | Author | Edit the posts they wrote |
+| Authors | Co-author | Edit the posts they were added to |
 | Users | User | Read published posts, comment on them, and write posts |
 | | Guest | Read published posts |
 
@@ -115,11 +116,9 @@ Personas also show which scenarios your specs need to cover. See [Testing: Princ
 List personas in rank order everywhere they appear, e.g. in the table above and in permission checks. Then every list of personas reads the same way, and a missing persona stands out.
 
 ```ruby
-module Posts
-  class PublicationPolicy < ApplicationPolicy
-    def create?
-      user.app_admin? || user.publishing_manager?
-    end
+class PostPolicy < ApplicationPolicy
+  def publish?
+    user.app_admin? || user.publishing_manager?
   end
 end
 ```

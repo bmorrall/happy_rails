@@ -50,7 +50,102 @@ end
 
 ## Policies
 
-> **TODO:** Describe how you handle this.
+Write one policy for each model, named after it, e.g. `PostPolicy` in `app/policies/post_policy.rb`. Inherit it from `ApplicationPolicy`.
+
+Generate `ApplicationPolicy` with `bin/rails generate pundit:install`, and keep its defaults. Every permission returns `false`, so a policy only allows what it defines. `new?` calls `create?`, and `edit?` calls `update?`. Leave `new?` and `edit?` out of a policy unless they differ from `create?` and `update?`.
+
+A permission reads the user's roles and the record. List the roles in rank order, as in [Principles: Keep the ranks](../../principles/#keep-the-ranks), with a role on the record last.
+
+```ruby
+class PostPolicy < ApplicationPolicy
+  def update?
+    user.app_admin? ||
+      user.copy_editor? ||
+      record.author_id == user.id ||
+      user.coauthored_posts.include?(record)
+  end
+end
+```
+
+### Roles on the record
+
+A view checks a permission for every post in a list. Write each check on a role on the record so it doesn't run a query for every post.
+
+When the role comes from a `belongs_to` on the record, e.g. the Author, compare the foreign key: `record.author_id == user.id`. Both values are already loaded, so the check runs no query. You SHOULD NOT compare the records, e.g. `record.author == user`. It loads the author of each post.
+
+When the role comes from a join, e.g. a Co-author, check through the user's association: `user.coauthored_posts.include?(record)`. You SHOULD NOT check through the record's association, e.g. `record.coauthors.include?(user)`. The user is the same in every check in a request, so its association can be loaded once and reused for every post. The record changes with each check, so its association loads again for each post.
+
+```ruby
+# Don't do this
+class PostPolicy < ApplicationPolicy
+  def update?
+    user.app_admin? ||
+      user.copy_editor? ||
+      record.author == user ||
+      record.coauthors.include?(user)
+  end
+end
+```
+
+### Guests
+
+`ApplicationController` signs in every user before the action runs, so most permissions can assume there is a user. Only check for a missing user in a permission for an action a Guest can reach, e.g. one that skips `authenticate_user!`.
+
+Check with a guard clause, before the role checks. Without it, the role checks raise `NoMethodError` on `nil`, instead of forbidding the Guest.
+
+```ruby
+class PostPolicy < ApplicationPolicy
+  def show?
+    return true if record.published?
+    return false unless user
+
+    user.app_admin? ||
+      user.publishing_manager? ||
+      user.copy_editor? ||
+      record.author_id == user.id ||
+      user.coauthored_posts.include?(record)
+  end
+end
+```
+
+### Parent records
+
+Put the permission for a nested resource's action in the parent's policy, when the check needs the parent. Name it after the task, and put it under the heading for its feature or association, as in [Layout](#layout). For example, publishing a post is `PostPolicy#publish?` under `### Publishing ###`, and commenting on a post is `PostPolicy#create_comment?` under `### Comments ###`. You MUST NOT write a policy for the nested resource for these checks, e.g. `Posts::PublicationPolicy`.
+
+Then the post's policy lists everything a user can do with a post, and each check reads the post it needs.
+
+```ruby
+class PostPolicy < ApplicationPolicy
+  ### Comments ###
+
+  def create_comment?
+    record.published?
+  end
+
+  ### Publishing ###
+
+  def publish?
+    user.app_admin? || user.publishing_manager?
+  end
+end
+```
+
+In the controller, pass the parent and the permission to `authorize`.
+
+```ruby
+module Posts
+  class PublicationsController < BaseController
+    # POST /posts/:post_id/publication
+    def create
+      authorize @post, :publish?
+
+      # ...
+    end
+  end
+end
+```
+
+A check on the nested record itself stays in its own policy, e.g. `CommentPolicy#destroy?` for `authorize @comment` in `Posts::CommentsController#destroy`.
 
 ### Layout
 
@@ -170,7 +265,7 @@ end
 
 A nested resource's `BaseController` checks that the user can see the parent record. See [Controllers: Nested resources](../../controllers/#nested-resources). You MUST NOT use `authorize` for this check. It marks the request as authorised, so `verify_authorized` would pass for every nested action, and an action with no check of its own would be left open.
 
-Use `pundit.authorize` instead, with the `query:` and `policy_class:` keywords. It raises an error like `authorize` does when the user can't see the post, but it doesn't mark the request as authorised. Each nested action still has to call `authorize` itself, or `verify_authorized` fails. `pundit.authorize` needs Pundit 2.4 or later.
+Use `pundit.authorize` instead, with the `query:` and `policy_class:` keywords. It raises an error like `authorize` does when the user can't see the post, but it doesn't mark the request as authorised. Each nested action still has to call `authorize` itself, or `verify_authorized` fails. When its check needs the post, pass the post and the permission, e.g. `authorize @post, :create_comment?`. See [Parent records](#parent-records). `pundit.authorize` needs Pundit 2.4 or later.
 
 ```ruby
 module Posts
@@ -199,7 +294,7 @@ module Posts
 
     # POST /posts/:post_id/comments
     def create
-      authorize Comment
+      authorize @post, :create_comment?
     end
   end
 end
