@@ -114,43 +114,111 @@ end
 
 ## User access
 
-Test the `UserAccess` block in a `describe "UserAccess"` block, as for any `concerning` block. See [Spec layout](#spec-layout). For each role, test `user_is_<role>?` with a user who holds the role and one who doesn't, and test `for_user_as_<role>` as a scope, with a record it returns and one it leaves out.
+Test each role in the `UserAccess` block with the `grant_user_access` matcher. It checks `user_is_<role>?` and `for_user_as_<role>` together, and fails if either one disagrees. Then the method and its scope can't drift apart without a failing spec. Check that a role is withheld with `not_to`, which needs both to say no.
 
-Test the method and the scope with the same cases, so the spec shows they agree. A record the scope returns is one the method is true for, and a record the scope leaves out is one the method is false for.
+Pass the matcher a record, an array or a relation, e.g. `expect(drafts).to grant_user_access(user, as: :copy_editor)`. It checks every record, and `not_to` checks that none of them is granted.
 
-When a role has a condition, test a record on each side of it, e.g. a draft and a published post for `user_is_copy_editor?` and `for_user_as_copy_editor`.
+Put the `grant_user_access` examples straight in the `describe "UserAccess"` block, in role rank order. You MUST NOT group them in a `describe` block for a role or a method, e.g. `describe "copy editor"`. Each example covers two methods, so no one method names it. Any other method in the block gets its own `describe` block as usual, as in [Spec layout](#spec-layout). Name each one after what it grants or denies, and to whom, e.g. `"grants drafts to a copy editor"`.
 
-A role from a join reads the database, e.g. `user.coauthored_post_ids`, so create its records with factories, as for a scope.
+For each role, write an example that grants it, and one that denies it to a user without the role. When a role has a condition, test a record on each side of it, e.g. a draft and a published post for a copy editor.
+
+The matcher queries the scope, so create the records with factories, as for a scope.
 
 ```ruby
 RSpec.describe Post do
   describe "UserAccess" do
-    describe ".for_user_as_coauthor" do
-      it "returns a post the user co-authors, and leaves out another user's post" do
-        user = create(:user)
-        coauthored_post = create(:post, coauthors: [user])
-        create(:post)
+    it "grants drafts to a copy editor" do
+      user = create(:user, :copy_editor)
+      drafts = create_list(:post, 2)
 
-        expect(described_class.for_user_as_coauthor(user)).to contain_exactly(coauthored_post)
-      end
+      expect(drafts).to grant_user_access(user, as: :copy_editor)
     end
 
-    describe "#user_is_coauthor?" do
-      it "is true for a post the user co-authors" do
-        user = create(:user)
-        post = create(:post, coauthors: [user])
+    it "denies a published post to a copy editor" do
+      user = create(:user, :copy_editor)
+      post = create(:post, status: :published)
 
-        expect(post.user_is_coauthor?(user)).to be(true)
-      end
+      expect(post).not_to grant_user_access(user, as: :copy_editor)
+    end
 
-      it "is false for another user's post" do
-        user = create(:user)
-        post = create(:post)
+    it "denies a draft to a user with no role as copy editor" do
+      user = create(:user)
+      post = create(:post)
 
-        expect(post.user_is_coauthor?(user)).to be(false)
-      end
+      expect(post).not_to grant_user_access(user, as: :copy_editor)
+    end
+
+    # ...
+
+    it "grants a post the user co-authors" do
+      user = create(:user)
+      post = create(:post, coauthors: [user])
+
+      expect(post).to grant_user_access(user, as: :coauthor)
+    end
+
+    it "denies another user's post as co-author" do
+      user = create(:user)
+      post = create(:post)
+
+      expect(post).not_to grant_user_access(user, as: :coauthor)
     end
   end
+end
+```
+
+Define the matcher in a `UserAccessSpecHelpers` module, as in [RSpec: Where to put matchers](../gems/rspec/#where-to-put-matchers), and include it in model specs. The `match_when_negated` block makes `not_to` need both sides to say no for every record. Without it, RSpec would flip `match`, and a record that only one side denied would pass.
+
+```ruby
+# spec/support/user_access_spec_helpers.rb
+module UserAccessSpecHelpers
+  extend RSpec::Matchers::DSL
+
+  matcher :grant_user_access do |user, as:|
+    match do |actual|
+      read_access(actual, user, as)
+      @results.all? { |result| result[:method] && result[:scope] }
+    end
+
+    match_when_negated do |actual|
+      read_access(actual, user, as)
+      @results.none? { |result| result[:method] || result[:scope] }
+    end
+
+    failure_message do
+      "expected #{as} access to every record, but:\n#{describe_results(as)}"
+    end
+
+    failure_message_when_negated do
+      "expected no #{as} access to any record, but:\n#{describe_results(as)}"
+    end
+
+    private
+
+    def read_access(actual, user, role)
+      records = Array(actual)
+      scope_ids = records.first.class.public_send(:"for_user_as_#{role}", user).where(id: records).pluck(:id)
+
+      @results = records.map do |record|
+        {
+          record: record,
+          method: record.public_send(:"user_is_#{role}?", user),
+          scope: scope_ids.include?(record.id)
+        }
+      end
+    end
+
+    def describe_results(role)
+      @results.map do |result|
+        "  #{result[:record].inspect}: user_is_#{role}? returned #{result[:method]}, " \
+          "for_user_as_#{role} #{result[:scope] ? "included" : "left out"} it"
+      end.join("\n")
+    end
+  end
+end
+
+RSpec.configure do |config|
+  config.include UserAccessSpecHelpers, type: :model
 end
 ```
 

@@ -106,7 +106,7 @@ Ask your agent to set up Happy Rails to run it, e.g. "Set up this app for Happy 
 
 | Reference | Sets up |
 | --- | --- |
-| `references/rspec.md` | `spec/rails_helper.rb`, `spec/support/time_helpers.rb`, `spec/support/capybara.rb`, `spec/support/forms.rb` |
+| `references/rspec.md` | `spec/rails_helper.rb`, `spec/support/time_helpers.rb`, `spec/support/capybara.rb`, `spec/support/forms.rb`, `spec/support/user_access_spec_helpers.rb` |
 | `references/actions.md` | `ApplicationAction`, `ValidatedCallable`, `NonTransactionalCallable` |
 | `references/forms.md` | `ApplicationForm` |
 | `references/validators.md` | `UnmodifiedValidator`, `PersistedValidator`, `raise_on_missing_translations` |
