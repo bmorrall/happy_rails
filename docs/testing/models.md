@@ -112,6 +112,48 @@ RSpec.describe Post do
 end
 ```
 
+## User access
+
+Test the `UserAccess` block in a `describe "UserAccess"` block, as for any `concerning` block. See [Spec layout](#spec-layout). For each role, test `user_is_<role>?` with a user who holds the role and one who doesn't, and test `for_user_as_<role>` as a scope, with a record it returns and one it leaves out.
+
+Test the method and the scope with the same cases, so the spec shows they agree. A record the scope returns is one the method is true for, and a record the scope leaves out is one the method is false for.
+
+When a role has a condition, test a record on each side of it, e.g. a draft and a published post for `user_is_copy_editor?` and `for_user_as_copy_editor`.
+
+A role from a join reads the database, e.g. `user.coauthored_post_ids`, so create its records with factories, as for a scope.
+
+```ruby
+RSpec.describe Post do
+  describe "UserAccess" do
+    describe ".for_user_as_coauthor" do
+      it "returns a post the user co-authors, and leaves out another user's post" do
+        user = create(:user)
+        coauthored_post = create(:post, coauthors: [user])
+        create(:post)
+
+        expect(described_class.for_user_as_coauthor(user)).to contain_exactly(coauthored_post)
+      end
+    end
+
+    describe "#user_is_coauthor?" do
+      it "is true for a post the user co-authors" do
+        user = create(:user)
+        post = create(:post, coauthors: [user])
+
+        expect(post.user_is_coauthor?(user)).to be(true)
+      end
+
+      it "is false for another user's post" do
+        user = create(:user)
+        post = create(:post)
+
+        expect(post.user_is_coauthor?(user)).to be(false)
+      end
+    end
+  end
+end
+```
+
 ## Callbacks
 
 Test a callback by what it does, through the call that triggers it in the app. You MUST NOT call the callback method itself, and you MUST NOT test that the callback is registered. Put the examples in the `describe` block of the attribute the callback changes, and say in each description what triggers it, e.g. "when saved" or "when validated". When the callback has a condition, test both sides of it.

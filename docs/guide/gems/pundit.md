@@ -13,7 +13,7 @@ Authorisation with [Pundit](https://github.com/varvet/pundit).
 
 Put Pundit's setup in a `PunditAuthorization` concern, in `app/controllers/concerns/pundit_authorization.rb`, and include it in `ApplicationController`. All of the setup is then in one file. See [Directory Layout: Concerns](../../directory-layout/#gem-setup).
 
-The concern includes Pundit and adds its `verify_authorized` check, so every controller requires it by default. It raises an error when an action finishes without calling `authorize`, so a missing check fails in your specs rather than leaving the action open. See [Controllers](#controllers) below for how each action calls `authorize` or opts out, and [Unauthorised requests](#unauthorised-requests) for what happens when a check fails.
+The concern includes Pundit and adds its `verify_authorized` check, so every controller requires it by default. It also adds `verify_policy_scoped` to every `index` action, so an index that lists records without its policy's scope fails too. See [Scopes](#scopes). It raises an error when an action finishes without calling `authorize`, so a missing check fails in your specs rather than leaving the action open. See [Controllers](#controllers) below for how each action calls `authorize` or opts out, and [Unauthorised requests](#unauthorised-requests) for what happens when a check fails.
 
 Leave out Devise's own controllers, because you can't add checks to their actions.
 
@@ -26,6 +26,8 @@ module PunditAuthorization
 
     after_action :verify_authorized,
       unless: :devise_controller?
+    after_action :verify_policy_scoped,
+      only: :index
 
     rescue_from Pundit::NotAuthorizedError,
       with: :handle_not_authorized_error
@@ -60,32 +62,18 @@ A permission reads the user's roles and the record. List the roles in rank order
 class PostPolicy < ApplicationPolicy
   def update?
     user.app_admin? ||
-      user.copy_editor? ||
-      record.author_id == user.id ||
-      user.coauthored_posts.include?(record)
+      record.user_is_copy_editor?(user) ||
+      record.user_is_author?(user) ||
+      record.user_is_coauthor?(user)
   end
 end
 ```
 
 ### Roles on the record
 
-A view checks a permission for every post in a list. Write each check on a role on the record so it doesn't run a query for every post.
+Check a role on the record with the model's `user_is_<role>?` method, e.g. `record.user_is_author?(user)`. Write the role's condition in the model, not in the policy. See [Models: User access](../../models/#user-access). Check a role on the whole app on the user when it covers every record, e.g. `user.app_admin?`. When it only covers some records, check it through the model too, e.g. `record.user_is_copy_editor?(user)`, which also checks that the post is a draft.
 
-When the role comes from a `belongs_to` on the record, e.g. the Author, compare the foreign key: `record.author_id == user.id`. Both values are already loaded, so the check runs no query. You SHOULD NOT compare the records, e.g. `record.author == user`. It loads the author of each post.
-
-When the role comes from a join, e.g. a Co-author, check through the user's association: `user.coauthored_posts.include?(record)`. You SHOULD NOT check through the record's association, e.g. `record.coauthors.include?(user)`. The user is the same in every check in a request, so its association can be loaded once and reused for every post. The record changes with each check, so its association loads again for each post.
-
-```ruby
-# Don't do this
-class PostPolicy < ApplicationPolicy
-  def update?
-    user.app_admin? ||
-      user.copy_editor? ||
-      record.author == user ||
-      record.coauthors.include?(user)
-  end
-end
-```
+Then each role is written once, and the policy reads as a list of who can do it.
 
 ### Guests
 
@@ -101,9 +89,9 @@ class PostPolicy < ApplicationPolicy
 
     user.app_admin? ||
       user.publishing_manager? ||
-      user.copy_editor? ||
-      record.author_id == user.id ||
-      user.coauthored_posts.include?(record)
+      record.user_is_copy_editor?(user) ||
+      record.user_is_author?(user) ||
+      record.user_is_coauthor?(user)
   end
 end
 ```
@@ -212,7 +200,63 @@ end
 
 ## Scopes
 
-> **TODO:** Describe how you handle this.
+A policy's scope SHOULD list exactly the records `show?` allows. Then a list never shows a post the user can't open, and never hides one they can. Use the same scope for every list of the model.
+
+How a list differs from `show?` is up to the app. An app MAY leave records out of its lists that `show?` still allows, e.g. archived posts, which a reader can still open from a link.
+
+When the scope matches `show?`, write `resolve` with the same checks, in the same order. Filter by a role on the record with the model's `for_user_as_<role>` scope, e.g. `scope.for_user_as_author(user)`, as in [Roles on the record](#roles-on-the-record).
+
+Return a relation, so the list is one query and the controller can still order and paginate it. You MUST NOT filter the records in Ruby, e.g. `scope.select { |post| post.published? }`.
+
+```ruby
+class PostPolicy < ApplicationPolicy
+  class Scope < ApplicationPolicy::Scope
+    def resolve
+      return scope.published unless user
+      return scope.all if user.app_admin? || user.publishing_manager?
+
+      scope.published
+        .or(scope.for_user_as_copy_editor(user))
+        .or(scope.for_user_as_author(user))
+        .or(scope.for_user_as_coauthor(user))
+    end
+  end
+
+  def show?
+    return true if record.published?
+    return false unless user
+
+    user.app_admin? ||
+      user.publishing_manager? ||
+      record.user_is_copy_editor?(user) ||
+      record.user_is_author?(user) ||
+      record.user_is_coauthor?(user)
+  end
+end
+```
+
+### Lists
+
+Load every list in a controller through `policy_scope`, after `authorize`. Pass the model for an index, e.g. `policy_scope(Post)`. Pass the association for a nested list, e.g. `policy_scope(@post.comments)`, and Pundit uses `CommentPolicy::Scope`.
+
+The `PunditAuthorization` concern checks that every `index` action calls `policy_scope`. If an index lists no records, call `skip_policy_scope` after `authorize`. You MUST NOT use `skip_after_action :verify_policy_scoped`, for the same reason as `verify_authorized` in [Controllers](#controllers).
+
+```ruby
+class PostsController < ApplicationController
+  # GET /posts
+  def index
+    authorize Post
+
+    @posts = policy_scope(Post)
+  end
+end
+```
+
+### Single records
+
+Load a single record with `find`, then `authorize` it, as in [Controllers](#controllers). A user who can't see it gets the redirect in [Unauthorised requests](#unauthorised-requests).
+
+An app MAY load single records through the scope instead, e.g. `@post = policy_scope(Post).find(params[:id])`. A record the user can't see then returns 404 Not Found, as if it didn't exist. Pick one way for the whole app.
 
 ## Controllers
 
@@ -223,6 +267,8 @@ class PostsController < ApplicationController
   # GET /posts
   def index
     authorize Post
+
+    @posts = policy_scope(Post)
   end
 
   # GET /posts/:id
@@ -289,7 +335,7 @@ module Posts
     def index
       authorize Comment
 
-      @comments = @post.comments
+      @comments = policy_scope(@post.comments)
     end
 
     # POST /posts/:post_id/comments

@@ -41,7 +41,7 @@ class Post < ApplicationRecord
 end
 ```
 
-Put shared logic in `concerning` blocks. If the block supports a gem's module, put it under that module's heading. Put any other `concerning` block under Public Methods. Private methods go last, after `private`. Order them by the group they support, in the same order as the headings. For example, a validation method comes before a callback method.
+Put shared logic in `concerning` blocks. If the block supports a gem's module, put it under that module's heading. Put any other `concerning` block under Public Methods. The `UserAccess` block MAY go at the top of the model instead. See [User access](#user-access). Private methods go last, after `private`. Order them by the group they support, in the same order as the headings. For example, a validation method comes before a callback method.
 
 ```ruby
 class Post < ApplicationRecord
@@ -245,6 +245,73 @@ Comment.where(post: posts).update_all(locked: true, updated_at: Time.zone.now)
 ```
 
 > **TODO:** Describe how you handle the rest of this.
+
+## User access
+
+Give each role a user can hold on one record two methods, in a `concerning :UserAccess` block:
+
+- `user_is_<role>?(user)` checks the role on one record, e.g. `post.user_is_author?(user)`.
+- `for_user_as_<role>(user)`, a scope, lists the records the user holds the role on, e.g. `Post.for_user_as_author(user)`. Define it with `scope` in the block's `included` block.
+
+Then each role is written once. A policy's permissions and scope call these methods, and so does a form that only offers the records a user holds a role on, e.g. the posts they wrote. See [Pundit: Roles on the record](../gems/pundit/#roles-on-the-record).
+
+Keep a role on the whole app on `User` when it covers every record, e.g. `user.app_admin?`. When it only covers some records, give it `UserAccess` methods too, and put the condition in them. For example, a Copy Editor can only edit draft posts, so `user_is_copy_editor?` checks that the post is a draft, and `for_user_as_copy_editor` lists drafts for a Copy Editor and none for anyone else.
+
+Put the `UserAccess` block under Public Methods, like any other `concerning` block. It MAY go at the top of the model instead, above every heading. Who can do what with a record is often the most important thing to know about it, so it's the first thing you read.
+
+```ruby
+class Post < ApplicationRecord
+  concerning :UserAccess do
+    included do
+      scope :for_user_as_copy_editor,
+        ->(user) { user.copy_editor? ? draft : none }
+      scope :for_user_as_author,
+        ->(user) { where(author_id: user.id) }
+      scope :for_user_as_coauthor,
+        ->(user) { where(id: user.coauthored_posts) }
+    end
+
+    def user_is_copy_editor?(user)
+      draft? && user.copy_editor?
+    end
+
+    def user_is_author?(user)
+      author_id == user.id
+    end
+
+    def user_is_coauthor?(user)
+      user.coauthored_post_ids.include?(id)
+    end
+  end
+
+  ### Scopes ###
+
+  # ...
+end
+```
+
+A view checks a permission for every post in a list, so `user_is_<role>?` runs once for each post. Write it so it doesn't run a query for each post.
+
+When the role comes from a `belongs_to`, e.g. the Author, compare the foreign key: `author_id == user.id`. Both values are already loaded, so the check runs no query. You SHOULD NOT compare the records, e.g. `author == user`. It loads the author of each post.
+
+When the role comes from a join, e.g. a Co-author, check the user's association's ids: `user.coauthored_post_ids.include?(id)`. Rails reads the ids once and keeps them on the user, and the user is the same in every check in a request. So only the first post runs a query.
+
+You SHOULD NOT check through the record's association, e.g. `coauthors.include?(user)`, or call `include?` on the user's association, e.g. `user.coauthored_posts.include?(self)`. Both run a query for each post.
+
+```ruby
+# Don't do this
+class Post < ApplicationRecord
+  concerning :UserAccess do
+    def user_is_author?(user)
+      author == user
+    end
+
+    def user_is_coauthor?(user)
+      user.coauthored_posts.include?(self)
+    end
+  end
+end
+```
 
 ## Callbacks
 

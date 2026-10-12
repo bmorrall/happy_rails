@@ -95,7 +95,7 @@ The **Guest**, a visitor who hasn't signed in, comes last.
 | --- | --- | --- |
 | App Admins | App Admin | Do anything |
 | Editors | Publishing Manager | Publish any post |
-| Editors | Copy Editor | Edit any post |
+| Editors | Copy Editor | Edit draft posts |
 | Authors | Author | Edit the posts they wrote |
 | Authors | Co-author | Edit the posts they were added to |
 | Users | User | Read published posts, comment on them, and write posts |
