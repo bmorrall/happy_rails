@@ -280,7 +280,7 @@ class Post < ApplicationRecord
     end
 
     def user_is_coauthor?(user)
-      user.coauthored_post_ids.include?(id)
+      coauthorships.any? { |coauthorship| coauthorship.user_id == user.id }
     end
   end
 
@@ -294,9 +294,9 @@ A view checks a permission for every post in a list, so `user_is_<role>?` runs o
 
 When the role comes from a `belongs_to`, e.g. the Author, compare the foreign key: `author_id == user.id`. Both values are already loaded, so the check runs no query. You SHOULD NOT compare the records, e.g. `author == user`. It loads the author of each post.
 
-When the role comes from a join, e.g. a Co-author, check the user's association's ids: `user.coauthored_post_ids.include?(id)`. Rails reads the ids once and keeps them on the user, and the user is the same in every check in a request. So only the first post runs a query.
+When the role comes from a join, e.g. a Co-author, read the record's join rows with `any?` and a block: `coauthorships.any? { |coauthorship| coauthorship.user_id == user.id }`. A list preloads them, e.g. `policy_scope(Post).includes(:coauthorships)`. The policy scope has already limited the list to the posts the user can see, so the preload only loads the rows for those posts. A tool like Bullet flags a list that forgot the `includes`.
 
-You SHOULD NOT check through the record's association, e.g. `coauthors.include?(user)`, or call `include?` on the user's association, e.g. `user.coauthored_posts.include?(self)`. Both run a query for each post.
+You SHOULD NOT call `include?` or `exists?` on an association, e.g. `coauthors.include?(user)` or `user.coauthored_posts.include?(self)`. When the association isn't loaded, each call runs its own query, so a list runs one for each post, and preloading can't prevent it.
 
 ```ruby
 # Don't do this
@@ -307,7 +307,7 @@ class Post < ApplicationRecord
     end
 
     def user_is_coauthor?(user)
-      user.coauthored_posts.include?(self)
+      coauthors.include?(user)
     end
   end
 end

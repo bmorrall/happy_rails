@@ -75,6 +75,12 @@ Check a role on the record with the model's `user_is_<role>?` method, e.g. `reco
 
 Then each role is written once, and the policy reads as a list of who can do it.
 
+A view checks some permissions for every record in a list, e.g. `show?` for each post's link. You SHOULD NOT run a `where` query in those permissions, e.g. `user.coauthorships.where(post_id: record.id).exists?`. A `where` always runs a new query, even on a preloaded association, so the list runs one for every post. Read loaded values instead, as in [Models: User access](../../models/#user-access).
+
+When one of those permissions checks whether a record has any associated records, e.g. `record.comments.any?`, you SHOULD add a counter cache to the association, e.g. `belongs_to :post, counter_cache: true` on `Comment`, with a `comments_count` column on `posts`. Then `any?` reads the count from the post, with no query. Call it without a block. With a block, `any?` loads the records.
+
+A view checks some permissions for every record in a list, e.g. `show?` for each post's link. You SHOULD NOT add conditions to those permissions beyond what they need. Each condition runs once for every record on the page, and one that reads an association needs a preload to stay cheap. A list loaded through the policy scope only holds records the user can see, so it rarely needs to check `show?` for each one.
+
 ### Guests
 
 `ApplicationController` signs in every user before the action runs, so most permissions can assume there is a user. Only check for a missing user in a permission for an action a Guest can reach, e.g. one that skips `authenticate_user!`.
@@ -237,7 +243,7 @@ end
 
 ### Lists
 
-Load every list in a controller through `policy_scope`, after `authorize`. Pass the model for an index, e.g. `policy_scope(Post)`. Pass the association for a nested list, e.g. `policy_scope(@post.comments)`, and Pundit uses `CommentPolicy::Scope`.
+Load every list in a controller through `policy_scope`, after `authorize`. Pass the model for an index, e.g. `policy_scope(Post)`. Preload the associations its permission checks read, e.g. `policy_scope(Post).includes(:coauthorships)`, as in [Models: User access](../../models/#user-access). Pass the association for a nested list, e.g. `policy_scope(@post.comments)`, and Pundit uses `CommentPolicy::Scope`.
 
 The `PunditAuthorization` concern checks that every `index` action calls `policy_scope`. If an index lists no records, call `skip_policy_scope` after `authorize`. You MUST NOT use `skip_after_action :verify_policy_scoped`, for the same reason as `verify_authorized` in [Controllers](#controllers).
 
@@ -247,7 +253,7 @@ class PostsController < ApplicationController
   def index
     authorize Post
 
-    @posts = policy_scope(Post)
+    @posts = policy_scope(Post).includes(:coauthorships)
   end
 end
 ```
