@@ -45,6 +45,21 @@ RSpec.configure do |config|
 end
 ```
 
+When a method returns a link or the unknown value tag, check the unknown case with `have_unknown_value_tag.and(have_no_link)`. `have_unknown_value_tag` alone still passes when the method renders the link next to the tag. Use Capybara's `have_no_link`, because `and` can't take a `not_to`.
+
+```ruby
+RSpec.describe PostDecorator do
+  describe "#scheduled_by_link" do
+    it "returns the unknown value tag when no one scheduled the post" do
+      post = instance_double(Post, scheduled_by: nil)
+      decorator = described_class.new(post)
+
+      expect(decorator.scheduled_by_link).to have_unknown_value_tag.and(have_no_link)
+    end
+  end
+end
+```
+
 A decorator spec covers the presentation logic for a record, so you don't need a helper spec for it. See [Draper: When to use a decorator](../../../guide/gems/draper/#when-to-use-a-decorator).
 
 ## Context
