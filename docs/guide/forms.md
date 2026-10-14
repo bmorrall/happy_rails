@@ -48,11 +48,12 @@ end
 
 Group the declarations in a form object under comment headings, in the same style as [models](../models/), in this order:
 
-1. Attributes
-2. Collections
-3. Validations
-4. Callbacks
-5. Public Methods, e.g. `submit`
+1. Constants
+2. Attributes
+3. Collections
+4. Validations
+5. Callbacks
+6. Public Methods, e.g. `submit`
 
 Put the setup at the top, without a heading: `self.model_name`, any `delegate` lines, then `initialize`. A reader then sees first what the form needs to be built. Put `submit` under Public Methods, after the declarations it uses, as in a model. Private methods go last, after `private`.
 
@@ -83,6 +84,43 @@ class CreatePostForm < ApplicationForm
   private
 
   attr_reader :post
+end
+```
+
+Under Constants, put values only the form uses, e.g. the number of random bytes in `SharePostForm`'s token.
+
+```ruby
+class SharePostForm < ApplicationForm
+  # ...
+
+  ### Constants ###
+
+  TOKEN_BYTES = 32
+
+  # ...
+
+  ### Public Methods ###
+
+  def submit
+    return false unless valid?
+
+    token = SecureRandom.urlsafe_base64(TOKEN_BYTES)
+    # ...
+  end
+end
+```
+
+When the form validates the same value as a model, reuse the model's constant, e.g. `Post::TITLE_MAX_LENGTH`. You SHOULD NOT copy it into the form. Then the form and the model can't disagree on the limit.
+
+```ruby
+class CreatePostForm < ApplicationForm
+  # ...
+
+  ### Validations ###
+
+  validates :title,
+    presence: true,
+    length: { maximum: Post::TITLE_MAX_LENGTH, allow_blank: true }
 end
 ```
 
