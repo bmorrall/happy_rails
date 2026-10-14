@@ -64,7 +64,7 @@ it "sends the post to the newsletter service" do
 end
 ```
 
-When a spec also checks what the request sent, e.g. the post's title, add a matcher to the same module. Write it as a method that returns WebMock's own `have_requested` matcher, and use it on `WebMock`. Start its name with `have_requested_`, then the same service and request as the stub, e.g. `have_requested_newsletter_create`. Pass its keywords to WebMock's `with`, e.g. `body:` and `headers:`. When it fails, WebMock lists the requests that were made.
+When a spec also checks what the request sent, e.g. the post's title, add a matcher to the same module. Write it as a method that returns WebMock's own `have_requested` matcher, and use it on `WebMock`. Start its name with `have_requested_`, then the same service and request as the stub, e.g. `have_requested_newsletter_create`. Pass its keywords to WebMock's `with`, e.g. `body:` and `headers:`. Call `with` only when there are keywords. It raises an error when called with no options, so `expect(WebMock).to have_requested_newsletter_create` would break. When the matcher fails, WebMock lists the requests that were made.
 
 ```ruby
 # spec/support/newsletter_service.rb
@@ -72,7 +72,8 @@ module NewsletterServiceHelpers
   # ...
 
   def have_requested_newsletter_create(**options)
-    have_requested(:post, "https://newsletter.example.com/posts").with(**options)
+    matcher = have_requested(:post, "https://newsletter.example.com/posts")
+    options.any? ? matcher.with(**options) : matcher
   end
 end
 ```
