@@ -47,3 +47,38 @@ RSpec.describe NewsletterClient do
   end
 end
 ```
+
+### Helper names
+
+Name a helper method that builds a value for an example to pass in or match against with `a_`, the thing, then the kind of value it returns, e.g. `a_newsletter_post_hash`. The `a_` prefix makes it read like RSpec's own argument matchers, e.g. `a_string_matching` and `an_instance_of`. The suffix says what kind of value comes back, so the helper isn't mistaken for a record, a matcher or a method on the code under test.
+
+Name a helper that builds a hash `a_<thing>_hash`, e.g. `a_newsletter_post_hash` for the body `NewsletterClient` sends, or `a_post_payload_hash` for the JSON body a spec posts to `POST /api/v1/posts`. You MUST NOT name it after the thing alone, e.g. `newsletter_post` or `post_payload`, or start it with `build_`. Name every helper in the spec that returns a hash this way, including one that only builds input and is never matched on, so the names in a file stay consistent.
+
+Name a helper that builds an object `a_` then the object's type, e.g. `a_newsletter_client_error` for a `NewsletterClient::Error`. You MUST NOT start it with `build_`, which reads like FactoryBot's `build`.
+
+A helper that sets up state keeps a verb name, e.g. `publish_post(post)`, or `stub_newsletter_client_for(integration)`, which also returns the double it stubs. You MUST NOT give it the `a_` prefix.
+
+Define `a_` helpers at the bottom of the spec file, inside the top-level `describe` or `feature` block, after the examples.
+
+```ruby
+RSpec.describe NewsletterClient do
+  describe "#create_newsletter" do
+    it "creates a newsletter for the post" do
+      post = build_stubbed(:post, title: "Hello World", body: "My first post.")
+      stub_newsletter_create
+
+      described_class.new(api_key: "test-key").create_newsletter(post)
+
+      expect(WebMock).to have_requested_newsletter_create(body: a_newsletter_post_hash(post))
+    end
+  end
+
+  def a_newsletter_post_hash(post)
+    {
+      title: post.title,
+      body: post.body,
+      idempotency_key: a_string_matching(/\Apost-#{post.id}-\h{32}\z/)
+    }
+  end
+end
+```
