@@ -510,6 +510,72 @@ RSpec.feature "Post Publishing" do
 end
 ```
 
+### Scoping to a record
+
+In feature specs, when a page shows several records, e.g. the comments on a post, scope each step about one of them to that record's element. Write a helper for each resource that wraps Capybara's `within`, named `within_<resource>` and taking the record, e.g. `within_comment(comment)`. The scenario then says which record it acts on, and the step can't click a button on the wrong comment. When the markup changes, change the helper, not every scenario.
+
+`within` only works in feature specs, so keep the helper apart from the matchers that request specs share. Put it in a module named after the resource with a `FeatureSpecHelpers` suffix, e.g. `CommentFeatureSpecHelpers`, and include it only in feature specs. Keep the module in the resource's support file, next to its spec helpers module, e.g. in `spec/support/comment_spec_helpers.rb` with `CommentSpecHelpers`. The name then says the helper is for feature specs, and you still find everything the specs share about comments in one file. See [Where to put matchers](#where-to-put-matchers).
+
+```ruby
+# spec/support/comment_spec_helpers.rb
+module CommentSpecHelpers
+  # ...
+end
+
+module CommentFeatureSpecHelpers
+  def within_comment(comment, &)
+    within("##{dom_id(comment)}", &)
+  end
+end
+
+RSpec.configure do |config|
+  config.include CommentSpecHelpers, type: :request
+  config.include CommentSpecHelpers, type: :feature
+  config.include CommentFeatureSpecHelpers, type: :feature
+end
+```
+
+```ruby
+RSpec.feature "Comment Approval" do
+  scenario "Author approves a comment" do
+    # GIVEN I am signed in as an Author
+    user = create(:user)
+    sign_in user
+
+    # AND my post has two comments to approve
+    published_post = create(:post, status: :published, author: user)
+    create(:comment, post: published_post, body: "First!")
+    comment = create(:comment, post: published_post, body: "Great post!")
+
+    # WHEN I open the post
+    visit post_path(published_post)
+
+    # AND I approve the second comment
+    within_comment(comment) do
+      click_button "Approve"
+    end
+
+    # THEN I see that it was approved
+    within_comment(comment) do
+      expect(page).not_to have_button("Approve")
+    end
+  end
+end
+```
+
+When a step targets a specific element for the record, e.g. a component, add the element to the name, e.g. `within_post_card(post)` for `Posts::CardComponent`. Use the plain `within_<resource>` name for the record's own element.
+
+```ruby
+# spec/support/post_spec_helpers.rb
+module PostFeatureSpecHelpers
+  def within_post_card(post, &)
+    within("##{dom_id(post, :card)}", &)
+  end
+end
+```
+
+You MUST NOT scope a step with the record's selector written out, e.g. `within("#comment_#{comment.id}")`.
+
 ### API endpoints
 
 Feature specs can cover an API too. Each scenario shows a client using the API for a task from start to finish, the same as a persona using the pages.
