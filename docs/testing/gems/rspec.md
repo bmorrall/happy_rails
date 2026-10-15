@@ -68,6 +68,17 @@ Avoid passing a block to `travel_to`. Call it on its own line, so the whole exam
 
 `travel_to` stops the clock on a whole second. Databases store times at different precisions, but every one stores a whole second exactly, so the time you read back matches. You MUST NOT pass `with_usec: true`. The database might then round the microseconds, and the match fails on one database but not another.
 
+### Record identifiers
+
+Include `ActionView::RecordIdentifier` for every spec, in `spec/support/record_identifier.rb`. Every spec can then call `dom_id` on its own, e.g. `dom_id(comment)`, to find the element a view gives that id.
+
+```ruby
+# spec/support/record_identifier.rb
+RSpec.configure do |config|
+  config.include ActionView::RecordIdentifier
+end
+```
+
 ### Capybara matchers
 
 Include `Capybara::RSpecMatchers` in request specs and feature specs, in `spec/support/capybara.rb`. When a gem's specs check HTML too, add its spec type here, e.g. `type: :component` for [ViewComponent](../view_component/#setup). Request specs can then check the HTML in a response with the same matchers as feature specs, e.g. `have_link` or `have_field`. A matcher checks an element and its text, which `include` can't do.
