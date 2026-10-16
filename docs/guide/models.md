@@ -147,6 +147,42 @@ end
 
 You MUST NOT tidy a value in a `before_validation` callback, or by overriding its writer. A callback leaves the value untidy until the record is validated, and finders never use either of them. `normalizes` needs Rails 7.1 or later. Before that, tidy the value in a `before_validation` callback under `### Callbacks ###`, e.g. `before_validation { self.title = title&.strip }`.
 
+### State validations
+
+When a value is required in one state, validate it on the state, e.g. `validates :rejection_reason, presence: true, if: :rejected?`. Every save checks it, however the record reached the state, and a later edit can't clear it.
+
+You SHOULD NOT validate it in a custom validation context, e.g. `on: :reject`. A custom context only runs when the code passes it, e.g. `save!(context: :reject)`, so any other way into the state skips the rule. Rails' own `on: :create` and `on: :update` are fine, because Rails passes them on every save.
+
+```ruby
+class Post < ApplicationRecord
+  # ...
+
+  ### Validations ###
+
+  validates :rejection_reason,
+    presence: true,
+    if: :rejected?
+end
+```
+
+### Database constraints
+
+You MAY back a business rule that must never break with a database constraint, as well as the validation, e.g. a check constraint. A validation misses writes that skip it, e.g. `update_column`, `update_all` or SQL. The validation still gives the user a clear error, and the constraint catches everything else.
+
+```ruby
+class AddRejectionReasonToPosts < ActiveRecord::Migration[8.0]
+  def change
+    add_column :posts, :rejection_reason, :text
+
+    add_check_constraint :posts,
+      "status <> 'rejected' OR (rejection_reason IS NOT NULL AND rejection_reason <> '')",
+      name: "posts_rejection_reason_required"
+  end
+end
+```
+
+String enum values keep the constraint readable, e.g. `status <> 'rejected'`. See [Enums](#enums).
+
 > **TODO:** Describe how you handle the rest of this.
 
 ## Associations

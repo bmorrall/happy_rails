@@ -52,6 +52,40 @@ class Post < ApplicationRecord
 end
 ```
 
+## Guards
+
+Use a guard for a condition on the record's saved values, e.g. a scheduled post can't be published before its `publish_at`. The record already holds the answer, so `may_publish?` knows it before anyone presses a button.
+
+```ruby
+class Post < ApplicationRecord
+  ### Modules (AASM) ###
+
+  # ...
+
+  aasm column: :status, whiny_persistence: true do
+    # ...
+
+    event :publish do
+      transitions from: :approved, to: :published, guard: :publish_time_reached?
+    end
+  end
+
+  # ...
+
+  ### Public Methods ###
+
+  def publish_time_reached?
+    publish_at.nil? || publish_at <= Time.zone.now
+  end
+end
+```
+
+Allow a record the condition doesn't apply to, e.g. a post with no `publish_at`. Otherwise it can never take the event.
+
+A guard applies to every caller of the event. Here, a Publishing Manager can't publish a scheduled post early either. When one way in needs to skip the guard, give it its own event, e.g. `publish_on_schedule` with the guard and `publish` without it.
+
+You MUST NOT check the request's input in a guard, e.g. the reason for a rejection. `may_reject?` would then be `false` until the input arrives, so the view can't offer the form that collects it. See [Events that need input](#events-that-need-input). To require a value in a state, validate it on the state, as in [Models: State validations](../../models/#state-validations).
+
 ## Events
 
 Call an event only from an action in the resource's module, e.g. `post.publish!` in `Posts::PublishPost`. You MUST NOT call an event anywhere else, e.g. in a controller, a form, a job, a model method or another resource's action. Checking an event or a state is fine anywhere, e.g. `post.may_publish?` or `post.published?`.
@@ -156,7 +190,7 @@ end
     <% end %>
 
     <% if post.can_reject? %>
-      <%= button_to "Reject", post_rejection_path(post) %>
+      <%= link_to "Reject", new_post_rejection_path(post) %>
     <% end %>
 
     <% if post.can_request_changes? %>
@@ -230,6 +264,56 @@ module Posts
   end
 end
 ```
+
+### Events that need input
+
+Some events need input from the user, e.g. a rejection needs a reason. Validate the input in a form, and pass it to the action. The action saves it and calls the event. The permission and `may_reject?` stay the same, so the view shows the form whenever the user can reject the post.
+
+```ruby
+class RejectPostForm < ApplicationForm
+  # ...
+
+  ### Attributes ###
+
+  attribute :reason, :string
+
+  ### Validations ###
+
+  validates :reason,
+    presence: true
+
+  ### Public Methods ###
+
+  def submit
+    return false unless valid?
+
+    Posts::RejectPost.call(post, reason:)
+    post
+  rescue Posts::RejectPost::Error
+    errors.add(:base, "Post could not be rejected.")
+    false
+  end
+end
+```
+
+```ruby
+module Posts
+  class RejectPost < ApplicationAction
+    class Error < StandardError; end
+
+    # ...
+
+    def call
+      post.rejection_reason = reason
+      post.reject!
+    rescue AASM::InvalidTransition, ActiveRecord::RecordInvalid => e
+      raise Error, e.message
+    end
+  end
+end
+```
+
+When every rejected post has to have a reason, validate it on the state in the model too. You MAY back it with a database constraint. See [Models: State validations](../../models/#state-validations) and [Models: Database constraints](../../models/#database-constraints).
 
 ## Testing
 
