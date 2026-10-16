@@ -22,7 +22,7 @@ class Post < ApplicationRecord
   # AASM must come first: the model can override its scopes and constants
   include AASM
 
-  aasm column: :status do
+  aasm column: :status, whiny_persistence: true do
     state :draft, initial: true
     state :published
 
@@ -58,14 +58,24 @@ Call an event only from an action in the resource's module, e.g. `post.publish!`
 
 An event is a task: it changes the record, and the app usually does more when it happens, e.g. notifies subscribers. The action is the one place that does the task, so every caller gets the same checks and the same side effects. See [Actions](../../actions/).
 
+### Failed events
+
+Set `whiny_persistence: true` on the `aasm` block, as in [Layout](#layout). A bang event, e.g. `publish!`, then raises `ActiveRecord::RecordInvalid` when the record fails to save. Without it, the event returns `false`, and the failure is easy to miss.
+
+In the action, rescue `AASM::InvalidTransition` and `ActiveRecord::RecordInvalid`, and raise them again as the action's `Error`, as in [Actions: Error handling](../../actions/#error-handling). AASM raises `AASM::InvalidTransition` when the record can't take the event from its current state, e.g. publishing a post that's already published. The caller then rescues one error class, and doesn't need to know the action uses AASM.
+
 ```ruby
 module Posts
   class PublishPost < ApplicationAction
+    class Error < StandardError; end
+
     # ...
 
     def call
       post.publish!
       # ...
+    rescue AASM::InvalidTransition, ActiveRecord::RecordInvalid => e
+      raise Error, e.message
     end
   end
 end
