@@ -63,7 +63,7 @@ Each [gem](../guide/gems/) has its own file. If your app does not use a gem, del
 
 | File | Gem | Applies to |
 | --- | --- | --- |
-| `happy_aasm.instructions.md` | AASM | `app/models/**`, `app/actions/**`, `app/forms/**`, `app/controllers/**`, `app/jobs/**` |
+| `happy_aasm.instructions.md` | AASM | `app/models/**`, `app/actions/**`, `app/forms/**`, `app/controllers/**`, `app/jobs/**`, `app/policies/**`, `app/decorators/**` |
 | `happy_devise.instructions.md` | Devise | `config/routes.rb`, `app/models/user.rb`, `app/controllers/users/**`, `app/views/devise/**` |
 | `happy_draper.instructions.md` | Draper | `app/decorators/**`, `app/controllers/**`, `app/views/**`, `app/helpers/**` |
 | `happy_honeybadger.instructions.md` | Honeybadger | `app/models/**`, `app/actions/**`, `app/controllers/**`, `app/jobs/**`, `app/services/**` |

@@ -58,6 +58,44 @@ Call an event only from an action in the resource's module, e.g. `post.publish!`
 
 An event is a task: it changes the record, and the app usually does more when it happens, e.g. notifies subscribers. The action is the one place that does the task, so every caller gets the same checks and the same side effects. See [Actions](../../actions/).
 
+### Permissions
+
+Name the permission for an event after the event, e.g. `publish?` for the `publish` event. The event, the action and the permission then share one name, e.g. `publish`, `Posts::PublishPost` and `publish?`, so you can find each one from the others. This works with any authorisation library. With Pundit, it's `PostPolicy#publish?` under `### Publishing ###`, as in [Pundit: Parent records](../pundit/#parent-records).
+
+Leave the event's state check out of the permission, e.g. `may_publish?` or `draft?` in `publish?`. AASM already enforces it when the event runs, and the action turns its failure into the action's `Error`, as in [Failed events](#failed-events). A permission still reads the record when that decides access, e.g. `create_comment?` checks that the post is published.
+
+```ruby
+class PostPolicy < ApplicationPolicy
+  ### Publishing ###
+
+  def publish?
+    user.app_admin? || user.publishing_manager?
+  end
+end
+```
+
+### Views
+
+Show an event in a view only when the user has permission and the record's state allows it. The permission leaves out the event's state, so the view checks both, e.g. `publish?` and `may_publish?`.
+
+With [Draper](../draper/#permissions), define the decorator's `can_` check for the event yourself, in place of delegating it to the policy. Check the permission first, then the state. The view then calls one method, e.g. `post.can_publish?`.
+
+```ruby
+class PostDecorator < ApplicationDecorator
+  ### Policy ###
+
+  def can_publish?
+    policy.publish? && object.may_publish?
+  end
+end
+```
+
+```erb
+<% if post.can_publish? %>
+  <%= button_to "Publish", post_publication_path(post) %>
+<% end %>
+```
+
 ### Failed events
 
 Set `whiny_persistence: true` on the `aasm` block, as in [Layout](#layout). A bang event, e.g. `publish!`, then raises `ActiveRecord::RecordInvalid` when the record fails to save. Without it, the event returns `false`, and the failure is easy to miss.
