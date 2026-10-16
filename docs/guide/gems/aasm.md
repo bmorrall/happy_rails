@@ -24,10 +24,10 @@ class Post < ApplicationRecord
 
   aasm column: :status, whiny_persistence: true do
     state :draft, initial: true
-    state :published
+    state :submitted, :approved, :rejected, :published
 
     event :publish do
-      transitions from: :draft, to: :published
+      transitions from: :approved, to: :published
     end
   end
 
@@ -165,6 +165,36 @@ end
   </section>
 <% end %>
 ```
+
+### Events that aren't available yet
+
+A view MAY show an event's button disabled, when the user has permission but the record isn't ready yet, e.g. a Publish button on a submitted post that still needs approval. The user then sees what comes next.
+
+Keep the event's `can_` check for the button that works, e.g. `can_publish?`. Add a second check for the disabled button, with the permission first, then the state it waits in. Name it after what it waits for, e.g. `can_publish_once_approved?`. The view picks between them, as with an alternative link in [Draper: Permissions](../draper/#permissions).
+
+```ruby
+class PostDecorator < ApplicationDecorator
+  ### Policy ###
+
+  def can_publish?
+    policy.publish? && object.may_publish?
+  end
+
+  def can_publish_once_approved?
+    policy.publish? && object.submitted?
+  end
+end
+```
+
+```erb
+<% if post.can_publish? %>
+  <%= button_to "Publish", post_publication_path(post) %>
+<% elsif post.can_publish_once_approved? %>
+  <%= button_to "Publish", post_publication_path(post), disabled: true %>
+<% end %>
+```
+
+The disabled button is only a hint. If the form is sent anyway, the event fails and the action raises its `Error`, as in [Failed events](#failed-events).
 
 ### Failed events
 
