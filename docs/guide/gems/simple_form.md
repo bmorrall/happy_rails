@@ -2,7 +2,7 @@
 title: Simple Form
 parent: Gems
 grand_parent: The Guide
-nav_order: 7
+nav_order: 8
 ---
 
 # Simple Form
@@ -15,13 +15,13 @@ Build forms with `simple_form_for`, and pass it a model or a form object, as you
 
 Add each field with `form.input`, not a Rails field helper, e.g. `form.text_field`. `form.input` wraps the field with its label, hint and errors, so every field on every form is built the same way.
 
-Pass a field's choices from the form object's `collection_for_<attribute>` method, and read the form object through `form.object`, e.g. `collection: form.object.collection_for_status`. You MUST NOT use the instance variable, e.g. `@create_post_form`. The fields then only depend on the form they're in, so you can move them to a partial or share them between forms without changing them.
+Pass a field's choices from the form object's `collection_for_<attribute>` method, and read the form object through `form.object`, e.g. `collection: form.object.collection_for_category`. You MUST NOT use the instance variable, e.g. `@create_post_form`. The fields then only depend on the form they're in, so you can move them to a partial or share them between forms without changing them.
 
 ```erb
 <%# app/views/posts/new.html.erb %>
 <%= simple_form_for @create_post_form do |form| %>
   <%= form.input :title %>
-  <%= form.input :status, collection: form.object.collection_for_status %>
+  <%= form.input :category, collection: form.object.collection_for_category %>
   <%= form.button :submit %>
 <% end %>
 ```

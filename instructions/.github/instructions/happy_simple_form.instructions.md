@@ -6,7 +6,7 @@ applyTo: "app/models/**/*.rb,app/views/**/*,app/inputs/**/*.rb,app/helpers/**/*.
 
 - Build forms with `simple_form_for`, passing a model or a form object, e.g. `simple_form_for @create_post_form`. You MUST NOT use `form_with` in an app that uses Simple Form.
 - Add each field with `form.input`, not a Rails field helper, e.g. `form.input :title` instead of `form.text_field :title`.
-- Pass a field's choices from the form object's `collection_for_<attribute>` method, read through `form.object`, e.g. `form.input :status, collection: form.object.collection_for_status`. You MUST NOT read the form's instance variable for it, e.g. `@create_post_form.collection_for_status`.
+- Pass a field's choices from the form object's `collection_for_<attribute>` method, read through `form.object`, e.g. `form.input :category, collection: form.object.collection_for_category`. You MUST NOT read the form's instance variable for it, e.g. `@create_post_form.collection_for_category`.
 - Style inputs only in the wrappers in `config/initializers/simple_form.rb`. You MUST NOT style a single input in a view with `input_html`, `label_html` or `wrapper_html`, e.g. `input_html: { class: "form-control-lg" }`.
 - When some forms need a different layout, add a named wrapper to `config/initializers/simple_form.rb` and pick it with `wrapper:`, e.g. `config.wrappers :inline` and `simple_form_for @search_form, wrapper: :inline`.
 - Give each model that a form can pick a `to_label` method, returning the text to show in a select, in a `concerning :Labels` block under a `### Modules (SimpleForm) ###` heading, e.g. `def to_label = body.truncate(50)` in `Comment`. You MUST NOT build `[label, id]` pairs for a select, e.g. `comments.map { |comment| [comment.body, comment.id] }`.

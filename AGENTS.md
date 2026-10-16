@@ -24,6 +24,7 @@ Each convention is written twice: once in the guide or testing pages for people,
 | `docs/guide/views.md` | `instructions/.github/instructions/happy_views.instructions.md` |
 | `docs/guide/mailers.md` | `instructions/.github/instructions/happy_mailers.instructions.md` |
 | `docs/guide/code-style.md` | `instructions/.github/instructions/happy_style.instructions.md` |
+| `docs/guide/gems/aasm.md` | `instructions/.github/instructions/happy_aasm.instructions.md` |
 | `docs/guide/gems/devise.md` | `instructions/.github/instructions/happy_devise.instructions.md` |
 | `docs/guide/gems/draper.md` | `instructions/.github/instructions/happy_draper.instructions.md` |
 | `docs/guide/gems/honeybadger.md` | `instructions/.github/instructions/happy_honeybadger.instructions.md` |
@@ -43,6 +44,7 @@ Each convention is written twice: once in the guide or testing pages for people,
 | `docs/testing/views.md` | `instructions/.github/instructions/happy_rspec_views.instructions.md` |
 | `docs/testing/mailers.md` | `instructions/.github/instructions/happy_rspec_mailers.instructions.md` |
 | `docs/testing/code-style.md` | `instructions/.github/instructions/happy_rspec_style.instructions.md` |
+| `docs/testing/gems/aasm.md` | `instructions/.github/instructions/happy_rspec_aasm.instructions.md` |
 | `docs/testing/gems/devise.md` | `instructions/.github/instructions/happy_rspec_devise.instructions.md` |
 | `docs/testing/gems/draper.md` | `instructions/.github/instructions/happy_rspec_draper.instructions.md` |
 | `docs/testing/gems/honeybadger.md` | `instructions/.github/instructions/happy_rspec_honeybadger.instructions.md` |

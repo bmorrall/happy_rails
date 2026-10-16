@@ -2,7 +2,7 @@
 title: Pundit
 parent: Gems
 grand_parent: The Guide
-nav_order: 4
+nav_order: 5
 ---
 
 # Pundit
@@ -147,7 +147,7 @@ Lay out every policy the same way, so you know where to find a rule:
 
 1. The `Scope` class.
 2. A permission for each action, in the same order as the controller: `index?`, `show?`, `new?`, `edit?`, `create?`, `update?`, `destroy?`, then any custom actions in alphabetical order. See [Controllers: RESTful resources](../../controllers/#restful-resources).
-3. Other permission checks, under a comment heading named after what they cover. Use the association for checks on an association, e.g. `### Comments ###`, and the feature for checks on a feature, e.g. `update_published?` under `### Publishing ###`. Name a feature's heading after the model's `concerning` block for it, e.g. `concerning :Publishing` in `Post`, so the policy and the model group a feature the same way. See [Models: Layout](../../models/#layout). Put the headings in alphabetical order.
+3. Other permission checks, under a comment heading named after what they cover. Use the association for checks on an association, e.g. `### Comments ###`, and the feature for checks on a feature, e.g. `publish?` under `### Publishing ###`. Name a feature's heading after the model's `concerning` block for it, e.g. `concerning :Publishing` in `Post`, so the policy and the model group a feature the same way. See [Models: Layout](../../models/#layout). Put the headings in alphabetical order.
 4. The permitted attributes methods, under `### Permitted Attributes ###`. Always put this heading last. See [Strong parameters](#strong-parameters).
 
 Keeping an association's checks together shows everything a user can do with it, e.g. who can comment on a post and who can approve the comments.
@@ -190,7 +190,11 @@ class PostPolicy < ApplicationPolicy
 
   ### Publishing ###
 
-  def update_published?
+  def publish?
+    user.app_admin? || user.publishing_manager?
+  end
+
+  def update_featured?
     user.app_admin? || user.publishing_manager?
   end
 
@@ -198,7 +202,7 @@ class PostPolicy < ApplicationPolicy
 
   def permitted_attributes
     attributes = [:title, :body]
-    attributes << :published if update_published?
+    attributes << :featured if update_featured?
     attributes
   end
 end
@@ -463,19 +467,19 @@ end
 
 ### Access dependent params
 
-Some attributes only some users can change, e.g. only an App Admin or a Publishing Manager can set `published`. Give each one its own permission method in the policy, named `update_<attribute>?`: `update_published?`. Then the rule has a name, and you can test it and reuse it on its own.
+Some attributes only some users can change, e.g. only an App Admin or a Publishing Manager can set `featured`. Give each one its own permission method in the policy, named `update_<attribute>?`: `update_featured?`. Then the rule has a name, and you can test it and reuse it on its own.
 
 In `permitted_attributes`, start with the attributes every user can set. Then append each restricted attribute when its check is true. This doesn't break the rule about building lists, because the extra attributes come from checks in the same method, not from another list.
 
 ```ruby
 class PostPolicy < ApplicationPolicy
-  def update_published?
+  def update_featured?
     user.app_admin? || user.publishing_manager?
   end
 
   def permitted_attributes
     attributes = [:title, :body]
-    attributes << :published if update_published?
+    attributes << :featured if update_featured?
     attributes
   end
 end
@@ -502,7 +506,7 @@ module Api
 
       def post_params
         attributes = [:title, :body]
-        attributes << :published if policy(@post).update_published?
+        attributes << :featured if policy(@post).update_featured?
         params.require(:post).permit(attributes)
       end
     end
@@ -565,10 +569,10 @@ class UpdatePostForm < ApplicationForm
 
   ### Collections ###
 
-  def collection_for_status
-    statuses = ["draft"]
-    statuses << "published" if policy(post).update_published?
-    statuses
+  def collection_for_category
+    categories = ["opinion", "review"]
+    categories << "news" if policy(post).use_news_category?
+    categories
   end
 end
 ```

@@ -134,18 +134,18 @@ class CreatePostForm < ApplicationForm
 
   attribute :title, :string
 
-  attribute :status, :string
+  attribute :category, :string
 
   ### Collections ###
 
-  def collection_for_status
-    Post.statuses.keys
+  def collection_for_category
+    Post.categories.keys
   end
 
   ### Validations ###
 
-  validates :status,
-    inclusion: { in: ->(form) { form.collection_for_status } }
+  validates :category,
+    inclusion: { in: ->(form) { form.collection_for_category } }
 end
 ```
 
@@ -236,7 +236,7 @@ class UpdatePostForm < ApplicationForm
 
   def initialize(post, current_user, params = {})
     @post = post
-    super(current_user, params.reverse_merge(title: post.title, status: post.status))
+    super(current_user, params.reverse_merge(title: post.title, category: post.category))
   end
 end
 ```

@@ -2,7 +2,7 @@
 title: Pundit
 parent: Gems
 grand_parent: Testing
-nav_order: 4
+nav_order: 5
 ---
 
 # Pundit
@@ -13,7 +13,7 @@ For the code itself, see [Pundit](../../../guide/gems/pundit/).
 
 A policy reads properties of the user and the record, e.g. `user.app_admin?` or `post.user_is_author?(user)`. Test those properties, not personas. A persona is a mix of properties, so a spec written for personas hides which property gives the access. Request specs cover the personas. See [RSpec: Personas](../rspec/#personas).
 
-Write a `permissions` block for each permission, in the same order as the policy, as in [Pundit: Layout](../../../guide/gems/pundit/#layout): the actions in controller order, then the checks under each heading, e.g. `create_comment?` under `### Comments ###`, then `update_published?` under `### Publishing ###`. All of a permission's rules are then in one place, so you can see what it allows and spot a missing case.
+Write a `permissions` block for each permission, in the same order as the policy, as in [Pundit: Layout](../../../guide/gems/pundit/#layout): the actions in controller order, then the checks under each heading, e.g. `create_comment?` under `### Comments ###`, then `publish?` under `### Publishing ###`. All of a permission's rules are then in one place, so you can see what it allows and spot a missing case.
 
 Inside the block, write an example for each property of the user the permission reads, and one for a user with none of them. Build the user and the record inside the example, as in [RSpec: Contexts](../rspec/#contexts), and you MUST NOT write contexts. Name the example after the user's property, then the record's when it plays a part, e.g. `"permits a copy editor"` or `"forbids a user with no role for a post another user wrote"`. You MUST NOT name a persona, e.g. "permits an author". When the policy accepts a missing user, pass `nil` and say so in the name, e.g. `"permits a published post when there is no user"`.
 

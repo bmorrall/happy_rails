@@ -63,6 +63,7 @@ Each [gem](../guide/gems/) has its own file. If your app does not use a gem, del
 
 | File | Gem | Applies to |
 | --- | --- | --- |
+| `happy_aasm.instructions.md` | AASM | `app/models/**`, `app/actions/**`, `app/forms/**`, `app/controllers/**`, `app/jobs/**` |
 | `happy_devise.instructions.md` | Devise | `config/routes.rb`, `app/models/user.rb`, `app/controllers/users/**`, `app/views/devise/**` |
 | `happy_draper.instructions.md` | Draper | `app/decorators/**`, `app/controllers/**`, `app/views/**`, `app/helpers/**` |
 | `happy_honeybadger.instructions.md` | Honeybadger | `app/models/**`, `app/actions/**`, `app/controllers/**`, `app/jobs/**`, `app/services/**` |
@@ -89,6 +90,7 @@ The rules for specs are in their own `happy_rspec_*` files, one for each area an
 | `happy_rspec_views.instructions.md` | `spec/helpers/**`, `spec/requests/**` |
 | `happy_rspec_mailers.instructions.md` | `spec/mailers/**` |
 | `happy_rspec_style.instructions.md` | `spec/**` |
+| `happy_rspec_aasm.instructions.md` | `spec/models/**`, `spec/actions/**` |
 | `happy_rspec_devise.instructions.md` | `spec/requests/users/**` |
 | `happy_rspec_draper.instructions.md` | `spec/decorators/**`, `spec/support/**` |
 | `happy_rspec_honeybadger.instructions.md` | `spec/**` |

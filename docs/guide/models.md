@@ -61,7 +61,7 @@ class Post < ApplicationRecord
 
   ### Enumerations ###
 
-  enum :status, { draft: 0, published: 1 }
+  enum :status, { draft: "draft", published: "published" }
 
   ### Associations ###
 
@@ -340,7 +340,28 @@ end
 
 ## Enums
 
-> **TODO:** Describe how you handle this.
+Store an enum's values as strings, e.g. `enum :status, { draft: "draft", published: "published" }`. You SHOULD NOT map an enum to integers. An app that already stores integers can keep them.
+
+A string reads the same in the database as in the code, so a query, a dump or a report shows `"published"`, not `1`. It also keeps its meaning when you reorder or remove a value. An integer only means something through the mapping in the model.
+
+```ruby
+class Post < ApplicationRecord
+  ### Enumerations ###
+
+  enum :status, { draft: "draft", published: "published" }
+end
+```
+
+When an enum does map to integers, give every value its integer in a hash, e.g. `enum :status, { draft: 0, published: 1 }`. You MUST NOT list the values in an array, e.g. `enum :status, [:draft, :published]`. Rails then numbers them by their place in the list, so adding a value anywhere but the end changes what the stored numbers mean.
+
+```ruby
+# Don't do this
+class Post < ApplicationRecord
+  ### Enumerations ###
+
+  enum :status, [:draft, :published]
+end
+```
 
 ## Secrets
 

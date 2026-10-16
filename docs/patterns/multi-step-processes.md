@@ -80,7 +80,13 @@ When steps call other services or take a while, a failure halfway through should
 class Post < ApplicationRecord
   ### Enumerations ###
 
-  enum :publish_status, { checking_links: 0, publishing: 1, notifying: 2, done: 3, failed: 4 }
+  enum :publish_status, {
+    checking_links: "checking_links",
+    publishing: "publishing",
+    notifying: "notifying",
+    done: "done",
+    failed: "failed"
+  }
 
   # ...
 end

@@ -2,7 +2,7 @@
 title: Devise
 parent: Gems
 grand_parent: Testing
-nav_order: 1
+nav_order: 2
 ---
 
 # Devise

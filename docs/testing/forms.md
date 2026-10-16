@@ -16,11 +16,11 @@ Cover every `collection_for_<attribute>` method with a unit test, in `spec/forms
 
 ```ruby
 RSpec.describe CreatePostForm do
-  describe "#collection_for_status" do
-    it "returns every post status" do
+  describe "#collection_for_category" do
+    it "returns every post category" do
       form = described_class.new(Post.new, build(:user))
 
-      expect(form.collection_for_status).to eq(["draft", "published"])
+      expect(form.collection_for_category).to eq(["news", "opinion", "review"])
     end
   end
 end

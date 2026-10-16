@@ -27,6 +27,6 @@ ln -s ../../.github/skills/happy-rails-setup .claude/skills/happy-rails-setup
 
 `happy_style` and `happy_rspec_style` hold my style preferences, not Happy Rails conventions. If your app has its own style, delete them.
 
-The gem files (`happy_devise`, `happy_draper`, `happy_honeybadger`, `happy_pundit`, `happy_simple_form`, `happy_turbo`, `happy_view_component` and `happy_wisper`) only matter if your app uses that gem. Delete the ones you do not need, with their `happy_rspec_` files, e.g. `happy_rspec_pundit`.
+The gem files (`happy_aasm`, `happy_devise`, `happy_draper`, `happy_honeybadger`, `happy_pundit`, `happy_simple_form`, `happy_turbo`, `happy_view_component` and `happy_wisper`) only matter if your app uses that gem. Delete the ones you do not need, with their `happy_rspec_` files, e.g. `happy_rspec_pundit`.
 
 The `happy_rspec*` files hold the rules for specs, written for RSpec, e.g. `happy_rspec_actions` for `spec/actions/`. If your app does not use RSpec, delete all of them. `happy_rspec_shoulda_matchers` and `happy_rspec_webmock` only matter if your app uses Shoulda Matchers or WebMock.
