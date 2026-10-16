@@ -89,3 +89,7 @@ describe "#create_newsletter" do
   end
 end
 ```
+
+## Gateways
+
+You MUST NOT stub a service's gateway in its spec, e.g. with `instance_double(NewsletterGateway)`. Stub the requests with the service's helpers, as in [Service specs](#service-specs). The spec then still checks the full message the service sends, through the gateway. See [Services: Gateways](../../guide/services/#gateways).

@@ -53,6 +53,48 @@ A controller reads the value before the view renders. See [Controllers: Values f
 
 A job calls an action too. It MAY call a service directly only when the job is the only place that does the task, e.g. `NotifySubscribersJob` calls `NewsletterClient#deliver`. Move the call into an action when a second caller needs it, as in [Actions: When to write an action](../actions/#when-to-write-an-action).
 
+## Request bodies
+
+Build the request body in the service. Take records as arguments, e.g. `create_newsletter(post)`, and turn them into the body the other service expects.
+
+The body's format belongs to the other service. When its API changes, only the service changes, and every action that calls it gets the new format.
+
+When the body needs its own class, put that class inside the service, e.g. `NewsletterClient::NewsletterPayload` in `app/services/newsletter_client/newsletter_payload.rb`. It is not a service, because it has no operations of its own. Kept with the service, it's easy to find, and you delete it with the service. A class your app uses for its own work still goes in `app/models/`, even when a service sends it.
+
+```ruby
+class NewsletterClient
+  class NewsletterPayload
+    def initialize(post)
+      @post = post
+    end
+
+    def to_h
+      { title: @post.title, body: @post.body }
+    end
+  end
+end
+```
+
+```ruby
+class NewsletterClient
+  def create_newsletter(post)
+    # ...
+    connection.post("#{api_path}/newsletters", NewsletterPayload.new(post).to_h)
+  end
+end
+```
+
+You MUST NOT make the caller build the body. Pass a value the service can't read from the record as a keyword argument instead. A [gateway](#gateways) is the one exception: the service builds the body and passes it to the gateway as a hash.
+
+```ruby
+# Don't do this
+class NewsletterClient
+  def create_newsletter(payload)
+    # ...
+  end
+end
+```
+
 ## Configuration
 
 Read a service's settings, e.g. an API key, from `Rails.application.config.x`. Give each service its own namespace, named after it, e.g. `config.x.newsletter_client`. Rails keeps `config.x` for app settings, so your keys never clash with a setting from Rails or a gem.
@@ -187,6 +229,52 @@ class NewsletterClient
   end
 end
 ```
+
+## Gateways
+
+Start with the HTTP calls in the service. When the service gets too big to read, move the code that talks to the other service's API into a gateway in `lib/`, e.g. `NewsletterGateway` in `lib/newsletter_gateway.rb`. The gateway does the mechanical work: the endpoints, headers, requests and replies. The service keeps the domain work: it takes records, builds the request bodies, and calls the gateway.
+
+Write the gateway in plain Ruby. It takes and returns plain values, e.g. strings, arrays and hashes, and knows nothing about your records. You MUST NOT use Rails in a gateway, e.g. `Rails.application.config`, `Rails.logger`, credentials or `ENV`. You can then move it to a gem, or copy it to another app, as it is.
+
+Take every setting as a keyword argument to `initialize`, with no default. The service reads the settings from `config.x`, as in [Configuration](#configuration), and passes them to the gateway.
+
+```ruby
+# lib/newsletter_gateway.rb
+class NewsletterGateway
+  def initialize(api_key:, base_url:, api_path:)
+    @api_key = api_key
+    @base_url = base_url
+    @api_path = api_path
+  end
+
+  def create_newsletter(body)
+    # ...
+  end
+end
+```
+
+```ruby
+# app/services/newsletter_client.rb
+class NewsletterClient
+  def initialize(
+    api_key: Rails.application.config.x.newsletter_client.api_key!,
+    base_url: Rails.application.config.x.newsletter_client.base_url!,
+    api_path: Rails.application.config.x.newsletter_client.api_path!
+  )
+    @gateway = NewsletterGateway.new(api_key:, base_url:, api_path:)
+  end
+
+  def create_newsletter(post)
+    @gateway.create_newsletter(NewsletterPayload.new(post).to_h)
+  end
+end
+```
+
+Write one gateway for each outside API. When more than one service uses the same API, they share its gateway.
+
+Give the gateway its own errors, with the details of the failed call, as in [Errors](#errors). The service rescues them like any library's errors, and raises its own errors with the same details. Callers then still rescue only the service's errors, e.g. `NewsletterClient::Error`.
+
+Rails loads `lib/` with `config.autoload_lib`, the default in new apps since Rails 7.1.
 
 ## Testing
 
