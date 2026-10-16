@@ -59,7 +59,7 @@ Build the request body in the service. Take records as arguments, e.g. `create_n
 
 The body's format belongs to the other service. When its API changes, only the service changes, and every action that calls it gets the new format.
 
-When the body needs its own class, put that class inside the service, e.g. `NewsletterClient::NewsletterPayload` in `app/services/newsletter_client/newsletter_payload.rb`. It is not a service, because it has no operations of its own. Kept with the service, it's easy to find, and you delete it with the service. A class your app uses for its own work still goes in `app/models/`, even when a service sends it.
+When the body needs its own class, put that class inside the service, e.g. `NewsletterClient::NewsletterPayload` in `app/services/newsletter_client/newsletter_payload.rb`. It is not a service, because it has no operations of its own. Kept with the service, it's easy to find, and you delete it with the service. A class your app uses for its own work stays with the rest of your app's code, e.g. in `app/models/` or `app/serializers/`, even when a service sends it.
 
 ```ruby
 class NewsletterClient
