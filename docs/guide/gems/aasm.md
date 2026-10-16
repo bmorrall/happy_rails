@@ -265,9 +265,27 @@ module Posts
 end
 ```
 
+### Locks
+
+Call an event inside `with_lock` when two users could act on the record at once, e.g. two Copy Editors reviewing the same post. Without the lock, both load it as `submitted`, both events pass, and the last save wins. `with_lock` reloads the record, so the event checks the current state, as in [Actions: Locks](../../actions/#locks).
+
+Set the event's values inside the lock, after it reloads the record. Inside the lock, do nothing if the event has already happened, e.g. `next if post.rejected?`, so the action is safe to retry. If another user moved the record somewhere else first, the event raises `AASM::InvalidTransition`, and the action raises its `Error`.
+
+| State inside the lock | What happens |
+| --- | --- |
+| `rejected` | `next`: the work is already done, so the action succeeds |
+| `submitted` | The action rejects the post |
+| Anything else, e.g. `approved` | `reject!` raises `AASM::InvalidTransition`, and the action raises its `Error` |
+
+Check the state the event leads to, e.g. `rejected?`, not whether the event is allowed, e.g. `may_reject?`. `next unless post.may_reject?` would also skip a post another user approved first. The action would then succeed without rejecting the post, and the user would never know.
+
+You SHOULD NOT use AASM's `requires_lock` option. It hides the lock in the model, away from the action it protects. It also locks when the event runs, after the action has set the event's values, and Rails won't lock a record with unsaved changes.
+
+`with_lock` opens a transaction, so the action doesn't need another one. Every write inside the lock commits or rolls back with the event.
+
 ### Events that need input
 
-Some events need input from the user, e.g. a rejection needs a reason. Validate the input in a form, and pass it to the action. The action saves it and calls the event. The permission and `may_reject?` stay the same, so the view shows the form whenever the user can reject the post.
+Some events need input from the user, e.g. a rejection needs a reason. Validate the input in a form, and pass it to the action. The action saves it and calls the event, inside a lock as in [Locks](#locks). The permission and `may_reject?` stay the same, so the view shows the form whenever the user can reject the post.
 
 ```ruby
 class RejectPostForm < ApplicationForm
@@ -304,9 +322,13 @@ module Posts
     # ...
 
     def call
-      post.rejection_reason = reason
-      post.rejected_by = rejected_by
-      post.reject!
+      post.with_lock do
+        next if post.rejected?
+
+        post.rejection_reason = reason
+        post.rejected_by = rejected_by
+        post.reject!
+      end
     rescue AASM::InvalidTransition, ActiveRecord::RecordInvalid => e
       raise Error, e.message
     end
