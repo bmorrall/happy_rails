@@ -165,6 +165,92 @@ class Post < ApplicationRecord
 end
 ```
 
+Check the state being entered with its predicate, e.g. `rejected?`. When a record changes state, e.g. with `post.update!(status: :rejected)`, the new state is set before the save, so the predicate is already true when validations run. Use `status_in_database` only to check the state being left, e.g. `if: -> { status_in_database == "published" }`.
+
+A value that only belongs to one state SHOULD be blank in every other state. Validate its absence outside the state, and clear it in the code that moves the record out of the state. A stale value can't then linger, e.g. an old rejection reason on a post that went back to draft.
+
+```ruby
+validates :rejection_reason,
+  absence: true,
+  unless: :rejected?
+```
+
+A state with several validations MAY group them in `with_options`, so the condition is written once.
+
+```ruby
+with_options if: :rejected? do
+  validates :rejection_reason,
+    presence: true
+
+  validates :rejected_by,
+    presence: true
+end
+```
+
+When a validation applies to several states, name a predicate after what those states have in common, e.g. `has_been_approved?` for `approved? || published?`. You SHOULD NOT name it after the states, e.g. `approved_or_published?`. The name then says why the value is required, and stays true when a new state joins the list.
+
+```ruby
+class Post < ApplicationRecord
+  # ...
+
+  ### Validations ###
+
+  validates :approved_by,
+    presence: true,
+    if: :has_been_approved?
+
+  # ...
+
+  ### Public Methods ###
+
+  def has_been_approved?
+    approved? || published?
+  end
+end
+```
+
+When a value can't change once a record is in a state, lock it with a validation on the state and the change. You SHOULD NOT reset it in a callback. The validation shows the mistake, and a callback hides it. See [Callbacks](#callbacks).
+
+```ruby
+class Post < ApplicationRecord
+  # ...
+
+  ### Validations ###
+
+  validate :slug_unchanged,
+    if: -> { published? && will_save_change_to_slug? }
+
+  # ...
+
+  private
+
+  def slug_unchanged
+    errors.add(:slug, "can't change once the post is published")
+  end
+end
+```
+
+### Validations that run on change
+
+An expensive validation, e.g. one that runs a query, SHOULD run only on a save that changes a value it reads. A record that saves often then doesn't repeat the work when nothing it checks has changed. When the validation also reads the state, run it when the state changes too, so the record can't enter the state without the check.
+
+```ruby
+validates :slug,
+  uniqueness: true,
+  if: -> { will_save_change_to_slug? || will_save_change_to_status? }
+```
+
+Leave cheap validations to run on every save, e.g. `presence` or `length`. They cost almost nothing, and they still catch a value that was changed without a validation, e.g. with `update_column`. A skipped check can't see changes to other records either, e.g. a duplicate slug saved since. Back a rule like that with a database constraint, e.g. a unique index, as in [Database constraints](#database-constraints).
+
+A validation that compares a value with the current time SHOULD run only on the save that changes the value, e.g. `if: :will_save_change_to_publish_at?`. Otherwise it fails every later save once the time has passed, e.g. a typo fix on a scheduled post.
+
+```ruby
+validates :publish_at,
+  comparison: { greater_than: -> { Time.zone.now } },
+  allow_nil: true,
+  if: :will_save_change_to_publish_at?
+```
+
 ### Database constraints
 
 You MAY back a business rule that must never break with a database constraint, as well as the validation, e.g. a check constraint. A validation misses writes that skip it, e.g. `update_column`, `update_all` or SQL. The validation still gives the user a clear error, and the constraint catches everything else.
@@ -181,7 +267,7 @@ class AddRejectionReasonToPosts < ActiveRecord::Migration[8.0]
 end
 ```
 
-String enum values keep the constraint readable, e.g. `status <> 'rejected'`. See [Enums](#enums).
+String enum values keep the constraint readable, e.g. `status <> 'rejected'`. See [Enums](#enums). A constraint MAY also check that a value is blank outside its state, e.g. `(status = 'rejected') = (rejection_reason IS NOT NULL)`.
 
 > **TODO:** Describe how you handle the rest of this.
 

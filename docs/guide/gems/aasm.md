@@ -287,7 +287,7 @@ class RejectPostForm < ApplicationForm
   def submit
     return false unless valid?
 
-    Posts::RejectPost.call(post, reason:)
+    Posts::RejectPost.call(post, reason:, rejected_by: current_user)
     post
   rescue Posts::RejectPost::Error
     errors.add(:base, "Post could not be rejected.")
@@ -305,6 +305,7 @@ module Posts
 
     def call
       post.rejection_reason = reason
+      post.rejected_by = rejected_by
       post.reject!
     rescue AASM::InvalidTransition, ActiveRecord::RecordInvalid => e
       raise Error, e.message
