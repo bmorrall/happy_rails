@@ -96,6 +96,76 @@ end
 <% end %>
 ```
 
+### Groups of events
+
+Some events show together in one part of the page, e.g. a review panel with buttons to approve, reject or request changes. Give the decorator a check for the group, and build it from the events' `can_` checks, e.g. `can_review?`. The panel then shows only when it has a button in it, and it stays right when one event's permission changes.
+
+You MUST NOT give the group a permission or state check of its own, e.g. `policy.review? && object.submitted?`. It can drift from the events, and show an empty panel or hide a button the user can press.
+
+```ruby
+class Post < ApplicationRecord
+  ### Modules (AASM) ###
+
+  # ...
+
+  aasm column: :status, whiny_persistence: true do
+    # ...
+
+    event :approve do
+      transitions from: :submitted, to: :approved
+    end
+
+    event :reject do
+      transitions from: :submitted, to: :rejected
+    end
+
+    event :request_changes do
+      transitions from: :submitted, to: :draft
+    end
+  end
+end
+```
+
+```ruby
+class PostDecorator < ApplicationDecorator
+  ### Policy ###
+
+  def can_approve?
+    policy.approve? && object.may_approve?
+  end
+
+  def can_reject?
+    policy.reject? && object.may_reject?
+  end
+
+  def can_request_changes?
+    policy.request_changes? && object.may_request_changes?
+  end
+
+  def can_review?
+    can_approve? || can_reject? || can_request_changes?
+  end
+end
+```
+
+```erb
+<% if post.can_review? %>
+  <section class="review-panel">
+    <% if post.can_approve? %>
+      <%= button_to "Approve", post_approval_path(post) %>
+    <% end %>
+
+    <% if post.can_reject? %>
+      <%= button_to "Reject", post_rejection_path(post) %>
+    <% end %>
+
+    <% if post.can_request_changes? %>
+      <%= button_to "Request changes", post_change_request_path(post) %>
+    <% end %>
+  </section>
+<% end %>
+```
+
 ### Failed events
 
 Set `whiny_persistence: true` on the `aasm` block, as in [Layout](#layout). A bang event, e.g. `publish!`, then raises `ActiveRecord::RecordInvalid` when the record fails to save. Without it, the event returns `false`, and the failure is easy to miss.

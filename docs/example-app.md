@@ -22,7 +22,13 @@ This page describes the app, so you know what each example is talking about. The
 
 ```ruby
 class Post < ApplicationRecord
-  enum :status, { draft: "draft", published: "published" }
+  enum :status, {
+    draft: "draft",
+    submitted: "submitted",
+    approved: "approved",
+    rejected: "rejected",
+    published: "published"
+  }
   enum :category, { news: "news", opinion: "opinion", review: "review" }
 
   belongs_to :author,
@@ -57,13 +63,13 @@ The app has these personas, from the most access to the least. See [Principles: 
 | --- | --- | --- |
 | App Admins | App Admin | Do anything |
 | Editors | Publishing Manager | Publish any post |
-| Editors | Copy Editor | Edit draft posts |
+| Editors | Copy Editor | Edit draft posts, and review submitted posts |
 | Authors | Author | Edit the posts they wrote |
 | Authors | Co-author | Edit the posts they were added to |
 | Users | User | Read published posts, comment on them, and write posts |
 | | Guest | Read published posts |
 
-App Admin, Publishing Manager and Copy Editor are roles on the whole app. A Copy Editor's role only covers draft posts. Author and Co-author are roles on one record: a user is the Author of the posts they wrote, and a Co-author of the posts they were added to, and of no others.
+App Admin, Publishing Manager and Copy Editor are roles on the whole app. A Copy Editor's role only covers draft posts, and reviewing submitted posts. Author and Co-author are roles on one record: a user is the Author of the posts they wrote, and a Co-author of the posts they were added to, and of no others.
 
 ## Tasks
 
@@ -73,6 +79,7 @@ These are the tasks the examples use. Each one shows up on more than one page.
 - **Comment on a post.** A signed-in user can comment on a published post, with `POST /posts/:post_id/comments`.
 - **Approve a comment.** The post's Author approves a comment with `POST /posts/:post_id/comments/:comment_id/approval`, so other readers can see it.
 - **Live comments.** Readers who have a post open see a comment appear as soon as the Author approves it, without reloading the page.
+- **Review a post.** The Author submits a draft for review. A Copy Editor then approves it, rejects it, or requests changes, which sends it back to a draft. The routes are `POST /posts/:post_id/approval`, `POST /posts/:post_id/rejection` and `POST /posts/:post_id/change_request`.
 - **Publish a post.** A Publishing Manager or an App Admin publishes a post with `POST /posts/:post_id/publication`, and can unpublish it with `DELETE /posts/:post_id/publication`. The `Posts::PublishPost` action does the work.
 - **Share a draft.** The Author can make a preview link for a draft post, with `POST /posts/:post_id/preview_link`, so others can read it before it's published. `SharePostForm` makes the link's token, and the post saves only a digest of it. The app shows the link once, right after it's made.
 - **Schedule a post.** A post can be published at a later time. The user who schedules it is saved as `scheduled_by`, and `PublishScheduledPostJob` publishes it at `publish_at`.
