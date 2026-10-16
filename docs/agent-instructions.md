@@ -68,6 +68,7 @@ Each [gem](../guide/gems/) has its own file. If your app does not use a gem, del
 | `happy_honeybadger.instructions.md` | Honeybadger | `app/models/**`, `app/actions/**`, `app/controllers/**`, `app/jobs/**`, `app/services/**` |
 | `happy_pundit.instructions.md` | Pundit | `app/policies/**`, `app/controllers/**`, `app/views/**`, `app/forms/**` |
 | `happy_simple_form.instructions.md` | Simple Form | `app/models/**`, `app/views/**`, `app/inputs/**`, `app/helpers/**`, `config/initializers/simple_form.rb` |
+| `happy_turbo.instructions.md` | Turbo | `app/models/**`, `app/actions/**` |
 | `happy_view_component.instructions.md` | ViewComponent | `app/components/**` |
 | `happy_wisper.instructions.md` | Wisper | `app/actions/**` |
 
@@ -94,6 +95,7 @@ The rules for specs are in their own `happy_rspec_*` files, one for each area an
 | `happy_rspec_pundit.instructions.md` | `spec/policies/**` |
 | `happy_rspec_shoulda_matchers.instructions.md` | `spec/models/**`, `spec/forms/**` |
 | `happy_rspec_simple_form.instructions.md` | `spec/requests/**`, `spec/features/**`, `spec/support/**` |
+| `happy_rspec_turbo.instructions.md` | `spec/actions/**`, `spec/features/**` |
 | `happy_rspec_view_component.instructions.md` | `spec/components/**`, `spec/support/**` |
 | `happy_rspec_webmock.instructions.md` | `spec/**` |
 | `happy_rspec_wisper.instructions.md` | `spec/**` |
@@ -106,7 +108,7 @@ Ask your agent to set up Happy Rails to run it, e.g. "Set up this app for Happy 
 
 | Reference | Sets up |
 | --- | --- |
-| `references/rspec.md` | `spec/rails_helper.rb`, `spec/support/time_helpers.rb`, `spec/support/capybara.rb`, `spec/support/forms.rb`, `spec/support/user_access_spec_helpers.rb` |
+| `references/rspec.md` | `spec/rails_helper.rb`, `spec/support/time_helpers.rb`, `spec/support/capybara.rb`, `spec/support/forms.rb`, `spec/support/actions.rb`, `spec/support/user_access_spec_helpers.rb` |
 | `references/actions.md` | `ApplicationAction`, `ValidatedCallable`, `NonTransactionalCallable` |
 | `references/forms.md` | `ApplicationForm` |
 | `references/validators.md` | `UnmodifiedValidator`, `PersistedValidator`, `raise_on_missing_translations` |
@@ -118,6 +120,7 @@ Ask your agent to set up Happy Rails to run it, e.g. "Set up this app for Happy 
 | `references/honeybadger.md` | `HoneybadgerCauseContext` |
 | `references/pundit.md` | `ApplicationPolicy`, `PunditAuthorization`, `PunditPolicies`, `spec/support/pundit.rb` |
 | `references/shoulda_matchers.md` | `spec/support/shoulda_matchers.rb` |
+| `references/turbo.md` | `config/cable.yml`, `spec/support/turbo.rb` |
 | `references/view_component.md` | `spec/support/view_component.rb` |
 
 Claude Code reads skills from `.claude/skills/`, not `.github/skills/`. To use the skill there, link it:

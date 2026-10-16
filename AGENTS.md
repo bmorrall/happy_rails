@@ -29,6 +29,7 @@ Each convention is written twice: once in the guide or testing pages for people,
 | `docs/guide/gems/honeybadger.md` | `instructions/.github/instructions/happy_honeybadger.instructions.md` |
 | `docs/guide/gems/pundit.md` | `instructions/.github/instructions/happy_pundit.instructions.md` |
 | `docs/guide/gems/simple_form.md` | `instructions/.github/instructions/happy_simple_form.instructions.md` |
+| `docs/guide/gems/turbo.md` | `instructions/.github/instructions/happy_turbo.instructions.md` |
 | `docs/guide/gems/view_component.md` | `instructions/.github/instructions/happy_view_component.instructions.md` |
 | `docs/guide/gems/wisper.md` | `instructions/.github/instructions/happy_wisper.instructions.md` |
 | `docs/testing/principles.md`, `directory-layout.md`, `gems/rspec.md` | `instructions/.github/instructions/happy_rspec.instructions.md` |
@@ -48,6 +49,7 @@ Each convention is written twice: once in the guide or testing pages for people,
 | `docs/testing/gems/pundit.md` | `instructions/.github/instructions/happy_rspec_pundit.instructions.md` |
 | `docs/testing/gems/shoulda_matchers.md` | `instructions/.github/instructions/happy_rspec_shoulda_matchers.instructions.md` |
 | `docs/testing/gems/simple_form.md` | `instructions/.github/instructions/happy_rspec_simple_form.instructions.md` |
+| `docs/testing/gems/turbo.md` | `instructions/.github/instructions/happy_rspec_turbo.instructions.md` |
 | `docs/testing/gems/view_component.md` | `instructions/.github/instructions/happy_rspec_view_component.instructions.md` |
 | `docs/testing/gems/webmock.md` | `instructions/.github/instructions/happy_rspec_webmock.instructions.md` |
 | `docs/testing/gems/wisper.md` | `instructions/.github/instructions/happy_rspec_wisper.instructions.md` |

@@ -7,4 +7,5 @@ Rules: `.github/instructions/happy_rspec.instructions.md`, `.github/instructions
 - Include `ActionView::RecordIdentifier` for every spec in `spec/support/record_identifier.rb`, so specs can call `dom_id`. Copy `assets/spec/support/record_identifier.rb`.
 - Include `Capybara::RSpecMatchers` for request and feature specs in `spec/support/capybara.rb`, so request specs can check the response HTML with Capybara matchers. Copy `assets/spec/support/capybara.rb`. When a gem's specs check HTML too, add its spec type to the same file, e.g. `config.include Capybara::RSpecMatchers, type: :component`.
 - Give specs in `spec/forms/` a `:form` type in `spec/support/forms.rb`. Copy `assets/spec/support/forms.rb`.
+- Give specs in `spec/actions/` an `:action` type in `spec/support/actions.rb`. Copy `assets/spec/support/actions.rb`.
 - When a model has a `concerning :UserAccess` block, add the `grant_user_access` matcher in a `UserAccessSpecHelpers` module in `spec/support/user_access_spec_helpers.rb`, included for `type: :model`. Copy `assets/spec/support/user_access_spec_helpers.rb`.

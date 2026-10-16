@@ -1,6 +1,6 @@
 ---
 name: happy-rails-setup
-description: Set up a Rails app for the Happy Rails conventions. Writes the base classes, shared concerns, config settings and spec/support files the conventions rely on, e.g. ApplicationAction, ApplicationForm and UnmodifiedValidator, plus the setup for each supported gem the app uses (Devise, Draper, Honeybadger, Pundit, RSpec, Shoulda Matchers, ViewComponent). Use when starting a new Rails app, when adding Happy Rails to an existing app, after adding one of those gems, or when a class the instructions name, e.g. ApplicationAction or PunditAuthorization, does not exist yet.
+description: Set up a Rails app for the Happy Rails conventions. Writes the base classes, shared concerns, config settings and spec/support files the conventions rely on, e.g. ApplicationAction, ApplicationForm and UnmodifiedValidator, plus the setup for each supported gem the app uses (Devise, Draper, Honeybadger, Pundit, RSpec, Shoulda Matchers, Turbo, ViewComponent). Use when starting a new Rails app, when adding Happy Rails to an existing app, after adding one of those gems, or when a class the instructions name, e.g. ApplicationAction or PunditAuthorization, does not exist yet.
 ---
 
 # Happy Rails setup
@@ -31,4 +31,5 @@ Do them once. The rules in `.github/instructions/happy_*.instructions.md` assume
 | `references/honeybadger.md` | The app uses `honeybadger` |
 | `references/pundit.md` | The app uses `pundit` |
 | `references/shoulda_matchers.md` | The app uses `shoulda-matchers` |
+| `references/turbo.md` | The app uses `turbo-rails` |
 | `references/view_component.md` | The app uses `view_component` |

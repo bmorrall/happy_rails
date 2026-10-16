@@ -71,6 +71,7 @@ These are the tasks the examples use. Each one shows up on more than one page.
 - **Write and edit a post.** Any user can write a post. The Author, a Co-author or an App Admin can edit it, and a Copy Editor can edit it while it's a draft. The routes are `GET /posts/new`, `POST /posts`, `GET /posts/:id/edit` and `PATCH /posts/:id`.
 - **Comment on a post.** A signed-in user can comment on a published post, with `POST /posts/:post_id/comments`.
 - **Approve a comment.** The post's Author approves a comment with `POST /posts/:post_id/comments/:comment_id/approval`, so other readers can see it.
+- **Live comments.** Readers who have a post open see a comment appear as soon as the Author approves it, without reloading the page.
 - **Publish a post.** A Publishing Manager or an App Admin publishes a post with `POST /posts/:post_id/publication`, and can unpublish it with `DELETE /posts/:post_id/publication`. The `Posts::PublishPost` action does the work.
 - **Share a draft.** The Author can make a preview link for a draft post, with `POST /posts/:post_id/preview_link`, so others can read it before it's published. `SharePostForm` makes the link's token, and the post saves only a digest of it. The app shows the link once, right after it's made.
 - **Schedule a post.** A post can be published at a later time. The user who schedules it is saved as `scheduled_by`, and `PublishScheduledPostJob` publishes it at `publish_at`.

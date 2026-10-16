@@ -143,6 +143,19 @@ end
 
 `||=` keeps a type that a spec sets itself. Do the same for any other folder rspec-rails doesn't know, e.g. `spec/components/` for [ViewComponent](../view_component/#setup). Include setup for form specs with `type: :form`, e.g. `config.include Shoulda::Matchers::ActiveModel, type: :form`. See [Shoulda Matchers: Validations](../shoulda_matchers/#validations).
 
+### Action specs
+
+Give action specs an `:action` type in `spec/support/actions.rb`, in the same way. Include setup for action specs with `type: :action`, e.g. the Turbo matchers. See [Turbo: Action specs](../turbo/#action-specs).
+
+```ruby
+# spec/support/actions.rb
+RSpec.configure do |config|
+  config.define_derived_metadata(file_path: %r{/spec/actions/}) do |metadata|
+    metadata[:type] ||= :action
+  end
+end
+```
+
 > **TODO:** Describe how you handle the rest of this.
 
 ## Layout and naming
