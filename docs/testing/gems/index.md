@@ -10,4 +10,6 @@ has_children: true
 How I test with RSpec and its companion gems, and how I test the code each gem in [the guide](../../guide/gems/) adds.
 {: .fs-5 .fw-300 }
 
+Apart from RSpec, every gem is optional. Each page shows how to test the code one gem adds, within the guide's rules, if your app uses it.
+
 Each gem has its own page here and its own instruction file. If your app does not use a gem, skip its page and delete its `happy_rspec_*.instructions.md` file.
