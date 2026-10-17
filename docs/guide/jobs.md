@@ -26,6 +26,47 @@ Pass the record to the job, not its ID, e.g. `NotifySubscribersJob.perform_later
 NotifySubscribersJob.perform_later(post)
 ```
 
+### Queues
+
+Every job SHOULD name its queue with `queue_as`, even when it uses the default queue. The name shows that someone chose the queue. You can then give a queue its own workers, or run it at a higher priority, without changing the job.
+
+```ruby
+class NotifySubscribersJob < ApplicationJob
+  queue_as :default
+
+  # ...
+end
+```
+
+Each job SHOULD use one of these queues, from the highest priority to the lowest:
+
+- `high`: jobs that have to run on time, e.g. `PublishScheduledPostJob`.
+- `default`: most jobs, e.g. `NotifySubscribersJob`.
+- `mailers`: emails sent with `deliver_later`.
+- `low`: jobs that can wait, e.g. `PurgeAbandonedDraftsJob`.
+
+These are a starting point. Add a queue when a group of jobs needs its own workers or its own priority.
+
+When the queue depends on the job's arguments, pass `queue_as` a block, and read the arguments with `arguments`. The job then picks the queue for every caller. See [Actions: Calling other actions](../actions/#calling-other-actions) for why callers leave the queue to the job.
+
+```ruby
+class NotifySubscribersJob < ApplicationJob
+  queue_as do
+    post = arguments.first
+    post.news? ? :high : :default
+  end
+
+  # ...
+end
+```
+
+Rails puts emails sent with `deliver_later` on the `default` queue. Set `deliver_later_queue_name` in `config/application.rb` to move them to the `mailers` queue.
+
+```ruby
+# config/application.rb
+config.action_mailer.deliver_later_queue_name = :mailers
+```
+
 ### Records deleted before the job runs
 
 If the record is deleted before the job runs, Active Job can't load it, and raises `ActiveJob::DeserializationError`. It raises the error before `perform` runs, so a `rescue` in `perform` doesn't catch it. When the record could reasonably be gone by then, e.g. a user can delete a post before its subscribers are notified, add `discard_on ActiveJob::DeserializationError` to that job. The job then stops quietly, because there is no work left to do.

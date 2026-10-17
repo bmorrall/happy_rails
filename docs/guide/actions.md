@@ -65,6 +65,8 @@ module Posts
 end
 ```
 
+Leave the queue to the job. You SHOULD NOT pick it in the caller with `set(queue:)`, e.g. `NotifySubscribersJob.set(queue: :high).perform_later(post)`. Then you can read a job's queue from its class, and every caller puts it on the same queue. When the queue depends on the job's arguments, pass `queue_as` a block in the job instead. See [Jobs: Queues](../jobs/#queues).
+
 ### Errors from other actions
 
 The actions an action calls are part of how it does its task, so its callers never see their errors. Rescue the other action's error and raise your own, as for any other error. The caller of `Posts::ArchivePost` then rescues `Posts::ArchivePost::Error` alone, and you can move `Posts::UnpublishPost` in or out without changing any caller.

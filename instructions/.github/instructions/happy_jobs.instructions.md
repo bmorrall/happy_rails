@@ -6,6 +6,9 @@ applyTo: "app/jobs/**/*.rb,lib/tasks/**/*.rake"
 
 - Write background jobs with Active Job. Inherit from `ApplicationJob` and enqueue with `perform_later`, e.g. `NotifySubscribersJob.perform_later(post)`.
 - Pass records to a job, not their IDs, e.g. `NotifySubscribersJob.perform_later(post)`, not `NotifySubscribersJob.perform_later(post.id)`. You MUST NOT call `find` in `perform` to load a record from an ID argument.
+- Every job SHOULD name its queue with `queue_as`, even the default one, e.g. `queue_as :default` in `NotifySubscribersJob`.
+- Each job SHOULD use one of these queues, from the highest priority to the lowest: `high` for jobs that have to run on time, e.g. `PublishScheduledPostJob`; `default` for most jobs, e.g. `NotifySubscribersJob`; `mailers` for emails sent with `deliver_later`; `low` for jobs that can wait, e.g. `PurgeAbandonedDraftsJob`. Add a queue when a group of jobs needs its own workers or its own priority.
+- When the queue depends on the job's arguments, pass `queue_as` a block and read them with `arguments`, e.g. `queue_as { arguments.first.news? ? :high : :default }` in `NotifySubscribersJob`.
 - When a job's record could reasonably be deleted before the job runs, add `discard_on ActiveJob::DeserializationError` to that job, e.g. in `NotifySubscribersJob`. You MUST NOT rescue the missing record in `perform`.
 - You MUST NOT add `discard_on ActiveJob::DeserializationError` to `ApplicationJob`. Add it only to the jobs whose records might be gone.
 - Enqueue a job only after the transactions that change its arguments have committed. Set `self.enqueue_after_transaction_commit = true` in the job class, e.g. in `NotifySubscribersJob`.

@@ -30,12 +30,131 @@ end
 RSpec.describe NotifySubscribersJob do
   describe ".perform_now" do
     it "sends the post to the newsletter service" do
-      post = create(:post)
+      post = build_stubbed(:post)
       newsletter_request = stub_newsletter_create
 
       described_class.perform_now(post)
 
       expect(newsletter_request).to have_been_requested
+    end
+  end
+end
+```
+
+## Background jobs
+
+Rails tests `perform_later` itself. Your job adds declarations that change what it does: `queue_as`, `discard_on ActiveJob::DeserializationError` and `enqueue_after_transaction_commit`. In a `describe ".perform_later"` block, test each declaration the job has. Everything the job does when it runs goes in `describe ".perform_now"`, e.g. the requests it makes and the records it changes.
+
+`retry_on`, `rescue_from` and any other `discard_on` act when the job runs, so test them in `.perform_now`. `perform_now` runs the job's error handlers, e.g. a `retry_on` example can check that the job is enqueued again with `have_enqueued_job(described_class)`.
+
+You SHOULD NOT check the job's arguments in `.perform_later`. No declaration changes them, and the request spec already checks that the action enqueues the job with them. See [Controllers: Request specs](../controllers/#request-specs).
+
+Build the records with `build_stubbed` when the example doesn't run the job from the queue, e.g. for the queue and the transaction. `perform_later` saves a record as its GlobalID, so it only needs an `id`. See [RSpec: Doubles, build_stubbed or create](../gems/rspec/#doubles-build_stubbed-or-create).
+
+Include `ActiveJob::TestHelper` in job specs, in `spec/support/active_job.rb`, as for [feature specs](#feature-specs).
+
+```ruby
+# spec/support/active_job.rb
+RSpec.configure do |config|
+  config.include ActiveJob::TestHelper, type: :job
+  # ...
+end
+```
+
+### Queues
+
+Check that the job is enqueued on the queue its `queue_as` names, with `have_enqueued_job(...).on_queue`. See [Jobs: Queues](../../guide/jobs/#queues).
+
+```ruby
+RSpec.describe NotifySubscribersJob do
+  describe ".perform_later" do
+    it "enqueues the job on the default queue" do
+      post = build_stubbed(:post)
+
+      expect { described_class.perform_later(post) }.to have_enqueued_job(described_class).on_queue("default")
+    end
+  end
+end
+```
+
+When `queue_as` takes a block, write one example for each queue it can pick.
+
+```ruby
+RSpec.describe NotifySubscribersJob do
+  describe ".perform_later" do
+    it "enqueues news posts on the high queue" do
+      post = build_stubbed(:post, category: :news)
+
+      expect { described_class.perform_later(post) }.to have_enqueued_job(described_class).on_queue("high")
+    end
+
+    it "enqueues other posts on the default queue" do
+      post = build_stubbed(:post, category: :opinion)
+
+      expect { described_class.perform_later(post) }.to have_enqueued_job(described_class).on_queue("default")
+    end
+  end
+end
+```
+
+### Records deleted before the job runs
+
+When the job has `discard_on ActiveJob::DeserializationError`, enqueue the job, delete the record, then run the queue with `perform_enqueued_jobs`. Check that it doesn't raise and does none of its work. See [Jobs: Records deleted before the job runs](../../guide/jobs/#records-deleted-before-the-job-runs).
+
+Check the work the job would otherwise do, e.g. the request to the newsletter service, so the example fails if the job runs. When the job waits for the commit, check that it was enqueued before you delete the record, so the example can't pass against an empty queue.
+
+Use `create`, not `build_stubbed`, because the example deletes the record and runs the job. A stubbed post was never saved, so the job is discarded even without the delete, and the example passes without testing anything.
+
+You MUST NOT use `perform_now` for this. `perform_now` takes the record as it is, so the spec never loads it from the queue and can't see that it is gone.
+
+```ruby
+RSpec.describe NotifySubscribersJob do
+  describe ".perform_later" do
+    it "is discarded when the post is deleted before it runs", :aggregate_failures do
+      post = create(:post)
+      newsletter_request = stub_newsletter_create
+      described_class.perform_later(post)
+      expect(described_class).to have_been_enqueued
+
+      post.destroy!
+
+      expect { perform_enqueued_jobs }.not_to raise_error
+      expect(newsletter_request).not_to have_been_requested
+    end
+  end
+end
+```
+
+### Enqueueing after a transaction
+
+When the job sets `enqueue_after_transaction_commit`, check that it waits for the transaction to commit, and that it isn't enqueued when the transaction rolls back. See [Jobs: Enqueueing after a transaction](../../guide/jobs/#enqueueing-after-a-transaction).
+
+You SHOULD NOT write either check for a job that enqueues at once, because a rolled-back transaction doesn't remove it from the queue.
+
+```ruby
+RSpec.describe NotifySubscribersJob do
+  describe ".perform_later" do
+    it "waits for the transaction to commit before enqueuing the job", :aggregate_failures do
+      post = build_stubbed(:post)
+
+      expect do
+        ActiveRecord::Base.transaction do
+          described_class.perform_later(post)
+
+          expect(described_class).not_to have_been_enqueued
+        end
+      end.to have_enqueued_job(described_class)
+    end
+
+    it "does not enqueue the job when the transaction rolls back" do
+      post = build_stubbed(:post)
+
+      expect do
+        ActiveRecord::Base.transaction do
+          described_class.perform_later(post)
+          raise ActiveRecord::Rollback
+        end
+      end.not_to have_enqueued_job(described_class)
     end
   end
 end
@@ -70,39 +189,6 @@ RSpec.describe PurgeAbandonedDraftsJob do
       described_class.perform_now
 
       expect(Post.exists?(post.id)).to be(true)
-    end
-  end
-end
-```
-
-## Deleted records
-
-When a job discards a missing record, test it with `perform_later`, not `perform_now`. `perform_now` takes the record as it is, so the spec never loads it again and can't see that it is gone. Enqueue the job, delete the record, then run the job with `perform_enqueued_jobs`. Check that it doesn't raise and does none of its work. Name the `describe` block `".perform_later"`, after the method the spec calls.
-
-Include `ActiveJob::TestHelper` in job specs for `perform_enqueued_jobs`, in `spec/support/active_job.rb`, as for [feature specs](#feature-specs).
-
-```ruby
-# spec/support/active_job.rb
-RSpec.configure do |config|
-  config.include ActiveJob::TestHelper, type: :job
-  # ...
-end
-```
-
-```ruby
-RSpec.describe NotifySubscribersJob do
-  # ...
-
-  describe ".perform_later" do
-    it "does nothing when the post was deleted" do
-      post = create(:post)
-      newsletter_request = stub_newsletter_create
-
-      described_class.perform_later(post)
-      post.destroy
-
-      expect { perform_enqueued_jobs }.not_to raise_error
-      expect(newsletter_request).not_to have_been_requested
     end
   end
 end
