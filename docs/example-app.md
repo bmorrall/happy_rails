@@ -13,7 +13,7 @@ This page describes the app, so you know what each example is talking about. The
 ## Records
 
 - **User**: someone who has signed in. A user can hold one role on the whole app, e.g. Publishing Manager.
-- **Post**: an article a user writes. Each post has an author, a title, a body, a category and a status. The category is news, opinion or review. A post starts as a draft, and is published when it's ready. Only an App Admin or a Publishing Manager can feature a post, or file it under news.
+- **Post**: an article a user writes. Each post has an author, a title, a body, a word count, a category and a status. The category is news, opinion or review. A post starts as a draft, and is published when it's ready. Only an App Admin or a Publishing Manager can feature a post, or file it under news.
 - **Coauthorship**: a user the Author adds to a post as a Co-author, so they can edit it too.
 - **Comment**: a reply to a published post. Comments belong to a post, and are approved before other readers see them.
 - **Tag**: a label on a post, so readers can find related posts.

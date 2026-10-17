@@ -65,7 +65,7 @@ You MUST NOT test Rails' own options, e.g. `allow_blank:` or `strict:`. Rails ha
 
 ## Models and forms that use a validator
 
-A model or form spec checks that an attribute uses the validator, not every case the validator handles. The validator's own spec covers those. Give each validator a matcher named after it, e.g. `validate_isbn_format_of` for `IsbnFormatValidator`. The matcher checks one value the validator allows and one it rejects, with Shoulda Matchers' `allow_value`, as for any validation. See [Shoulda Matchers: Validations](../gems/shoulda_matchers/#validations).
+A model or form spec checks that an attribute uses the validator, not every case the validator handles. The validator's own spec covers those. Give each validator a matcher named after it, e.g. `validate_isbn_format_of` for `IsbnFormatValidator`. The matcher checks one value the validator allows and one it rejects, with Shoulda Matchers' `allow_value`, as for any validation without a matcher of its own. See [Shoulda Matchers: Validations](../gems/shoulda_matchers/#validations).
 
 Check what the validator does, not that it's declared. You MUST NOT look it up with `validators_on`, for the same reason the guide never tests that a callback is registered.
 
