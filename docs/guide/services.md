@@ -84,7 +84,7 @@ class NewsletterClient
 end
 ```
 
-You MUST NOT make the caller build the body. Pass a value the service can't read from the record as a keyword argument instead. A [gateway](#gateways) is the one exception: the service builds the body and passes it to the gateway as a hash.
+You MUST NOT make the caller build the body. Pass a value the service can't read from the record as a keyword argument instead. A [gateway](#gateways) is the one exception: the service builds the body and passes it to the gateway as a hash, or as a `Data` object the gateway defines.
 
 ```ruby
 # Don't do this
@@ -235,6 +235,57 @@ end
 Start with the HTTP calls in the service. When the service gets too big to read, move the code that talks to the other service's API into a gateway in `lib/`, e.g. `NewsletterGateway` in `lib/newsletter_gateway.rb`. The gateway does the mechanical work: the endpoints, headers, requests and replies. The service keeps the domain work: it takes records, builds the request bodies, and calls the gateway.
 
 Write the gateway in plain Ruby. It takes and returns plain values, e.g. strings, arrays and hashes, and knows nothing about your records. You MUST NOT use Rails in a gateway, e.g. `Rails.application.config`, `Rails.logger`, credentials or `ENV`. You can then move it to a gem, or copy it to another app, as it is.
+
+A gateway MAY also take and return `Data` objects that it defines itself, e.g. `NewsletterGateway::CreateNewsletterRequest` for a request body and `NewsletterGateway::Newsletter` for the reply. Define them at the top of the gateway, so they move with it. Name a request after the gateway method that takes it, e.g. `create_newsletter` takes a `CreateNewsletterRequest`, because each call can send different fields. Name a reply after what it holds, e.g. `Newsletter`, so more than one method can return it. A `Data` object names the fields the API uses, can't be changed, and raises an error when a field is missing, or when the caller asks for one it doesn't have. Use `Data`, not a `Struct`.
+
+The service builds the request from its records, as it would a hash. The gateway turns it into the body it sends, and builds the reply from the response.
+
+```ruby
+# lib/newsletter_gateway.rb
+class NewsletterGateway
+  CreateNewsletterRequest = Data.define(:title, :body)
+  Newsletter = Data.define(:id, :status)
+
+  # ...
+
+  def create_newsletter(request)
+    response = connection.post("#{@api_path}/newsletters", request.to_h)
+    Newsletter.new(id: response.body["id"], status: response.body["status"])
+  end
+end
+```
+
+```ruby
+# app/services/newsletter_client.rb
+class NewsletterClient
+  # ...
+
+  def create_newsletter(post)
+    request = NewsletterGateway::CreateNewsletterRequest.new(title: post.title, body: post.body)
+    @gateway.create_newsletter(request)
+  end
+end
+```
+
+A reply can hold more than the resource, e.g. a page of results with a cursor for the next page, or the request ID the other service gave the call. Return a response object then, named after the method, e.g. `fetch_all_stats` returns a `FetchAllStatsResponse`. It holds the resources and the extra values. Each resource keeps its own object, e.g. `NewsletterStats`, which stays the same whichever method returns it.
+
+```ruby
+# lib/newsletter_gateway.rb
+class NewsletterGateway
+  NewsletterStats = Data.define(:newsletter_id, :open_rate)
+  FetchAllStatsResponse = Data.define(:stats, :next_cursor)
+
+  # ...
+
+  def fetch_all_stats(newsletter_ids, cursor: nil)
+    response = connection.get("#{@api_path}/stats", ids: newsletter_ids.join(","), cursor:)
+    stats = response.body["stats"].map do |item|
+      NewsletterStats.new(newsletter_id: item["newsletter_id"], open_rate: item["open_rate"])
+    end
+    FetchAllStatsResponse.new(stats:, next_cursor: response.body["next_cursor"])
+  end
+end
+```
 
 Take every setting as a keyword argument to `initialize`, with no default. The service reads the settings from `config.x`, as in [Configuration](#configuration), and passes them to the gateway.
 
