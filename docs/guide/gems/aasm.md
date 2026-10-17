@@ -22,7 +22,7 @@ class Post < ApplicationRecord
   # AASM must come first: the model can override its scopes and constants
   include AASM
 
-  aasm column: :status, whiny_persistence: true do
+  aasm column: :status, whiny_persistence: true, no_direct_assignment: true do
     state :draft, initial: true
     state :submitted, :approved, :rejected, :published
 
@@ -52,6 +52,24 @@ class Post < ApplicationRecord
 end
 ```
 
+Change the state only with an event. You MUST NOT write the state column yourself, e.g. `post.update!(status: "published")`, `post.status = "published"`, `posts.update_all(status: "published")`, `post.update_column(:status, "published")` or `post.aasm.current_state = :published`. Writing the column skips the event's transitions and guards. It also skips the action, so the work that goes with the event never happens, e.g. notifying subscribers.
+
+Set `no_direct_assignment: true` on the `aasm` block, as in [Layout](#layout). Assigning the column, e.g. `post.status = "published"` or `post.update!(status: "published")`, then raises `AASM::NoDirectAssignmentError`. It doesn't catch `update_all`, `update_column` or `aasm.current_state=`, because they skip the column's writer.
+
+```ruby
+# Don't do this
+module Posts
+  class PublishPost < ApplicationAction
+    # ...
+
+    def call
+      post.update!(status: "published")
+      # ...
+    end
+  end
+end
+```
+
 ## Guards
 
 Use a guard for a condition on the record's saved values, e.g. a scheduled post can't be published before its `publish_at`. The record already holds the answer, so `may_publish?` knows it before anyone presses a button.
@@ -62,7 +80,7 @@ class Post < ApplicationRecord
 
   # ...
 
-  aasm column: :status, whiny_persistence: true do
+  aasm column: :status, whiny_persistence: true, no_direct_assignment: true do
     # ...
 
     event :publish do
@@ -142,7 +160,7 @@ class Post < ApplicationRecord
 
   # ...
 
-  aasm column: :status, whiny_persistence: true do
+  aasm column: :status, whiny_persistence: true, no_direct_assignment: true do
     # ...
 
     event :approve do
