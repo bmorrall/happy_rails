@@ -59,37 +59,35 @@ Build the request body in the service. Take records as arguments, e.g. `create_n
 
 The body's format belongs to the other service. When its API changes, only the service changes, and every action that calls it gets the new format.
 
-When the body needs its own class, put that class inside the service, e.g. `NewsletterClient::NewsletterPayload` in `app/services/newsletter_client/newsletter_payload.rb`. It is not a service, because it has no operations of its own. Kept with the service, it's easy to find, and you delete it with the service. A class your app uses for its own work stays with the rest of your app's code, e.g. in `app/models/` or `app/serializers/`, even when a service sends it.
-
-```ruby
-class NewsletterClient
-  class NewsletterPayload
-    def initialize(post)
-      @post = post
-    end
-
-    def to_h
-      { title: @post.title, body: @post.body }
-    end
-  end
-end
-```
+Build the body as a hash. When it takes more than a line, build it in a private method on the service, named after what it builds, e.g. `newsletter_body(post)`. Kept with the service, it's easy to find, and you delete it with the service. A class your app uses for its own work stays with the rest of your app's code, e.g. in `app/models/` or `app/serializers/`, even when a service sends it.
 
 ```ruby
 class NewsletterClient
   def create_newsletter(post)
     # ...
-    connection.post("#{api_path}/newsletters", NewsletterPayload.new(post).to_h)
+    connection.post("#{api_path}/newsletters", newsletter_body(post))
+  end
+
+  private
+
+  def newsletter_body(post)
+    {
+      title: post.title,
+      body: post.body,
+      author_name: post.author.name
+    }
   end
 end
 ```
 
-You MUST NOT make the caller build the body. Pass a value the service can't read from the record as a keyword argument instead. A [gateway](#gateways) is the one exception: the service builds the body and passes it to the gateway as a hash, or as a `Data` object the gateway defines.
+You SHOULD NOT define a `Data` object for the body in a service. A request object describes what a [gateway](#gateways) takes, and the gateway defines it. When you move the HTTP calls into a gateway, the private method builds the gateway's request instead of a hash, and nothing else in the service is renamed.
+
+You MUST NOT make the caller build the request. Pass a value the service can't read from the record as a keyword argument instead. A [gateway](#gateways) is the one exception: the service builds the request and passes it to the gateway, as a hash or as a `Data` object the gateway defines.
 
 ```ruby
 # Don't do this
 class NewsletterClient
-  def create_newsletter(payload)
+  def create_newsletter(request)
     # ...
   end
 end
@@ -232,18 +230,18 @@ end
 
 ## Gateways
 
-Start with the HTTP calls in the service. When the service gets too big to read, move the code that talks to the other service's API into a gateway in `lib/`, e.g. `NewsletterGateway` in `lib/newsletter_gateway.rb`. The gateway does the mechanical work: the endpoints, headers, requests and replies. The service keeps the domain work: it takes records, builds the request bodies, and calls the gateway.
+Start with the HTTP calls in the service. When the service gets too big to read, move the code that talks to the other service's API into a gateway in `lib/`, e.g. `NewsletterGateway` in `lib/newsletter_gateway.rb`. The gateway does the mechanical work: the endpoints, headers, requests and replies. The service keeps the domain work: it takes records, builds the requests, and calls the gateway.
 
 Write the gateway in plain Ruby. It takes and returns plain values, e.g. strings, arrays and hashes, and knows nothing about your records. You MUST NOT use Rails in a gateway, e.g. `Rails.application.config`, `Rails.logger`, credentials or `ENV`. You can then move it to a gem, or copy it to another app, as it is.
 
-A gateway MAY also take and return `Data` objects that it defines itself, e.g. `NewsletterGateway::CreateNewsletterRequest` for a request body and `NewsletterGateway::Newsletter` for the reply. Define them at the top of the gateway, so they move with it. Name a request after the gateway method that takes it, e.g. `create_newsletter` takes a `CreateNewsletterRequest`, because each call can send different fields. Name a reply after what it holds, e.g. `Newsletter`, so more than one method can return it. A `Data` object names the fields the API uses, can't be changed, and raises an error when a field is missing, or when the caller asks for one it doesn't have. Use `Data`, not a `Struct`.
+A gateway MAY also take and return `Data` objects that it defines itself, e.g. `NewsletterGateway::CreateNewsletterRequest` for a request and `NewsletterGateway::Newsletter` for the reply. Define them at the top of the gateway, so they move with it. Name a request after the gateway method that takes it, e.g. `create_newsletter` takes a `CreateNewsletterRequest`, because each call can send different fields. Name it after the gateway method, not the service method that builds it. Several service methods can call one gateway method, e.g. `create_public_newsletter` and `create_private_newsletter` on `NewsletterClient` both build a `CreateNewsletterRequest`, with a different `visibility`. Name a reply after what it holds, e.g. `Newsletter`, so more than one method can return it. A `Data` object names the fields the API uses, can't be changed, and raises an error when a field is missing, or when the caller asks for one it doesn't have. Use `Data`, not a `Struct`.
 
 The service builds the request from its records, as it would a hash. The gateway turns it into the body it sends, and builds the reply from the response.
 
 ```ruby
 # lib/newsletter_gateway.rb
 class NewsletterGateway
-  CreateNewsletterRequest = Data.define(:title, :body)
+  CreateNewsletterRequest = Data.define(:title, :body, :visibility)
   Newsletter = Data.define(:id, :status)
 
   # ...
@@ -260,8 +258,13 @@ end
 class NewsletterClient
   # ...
 
-  def create_newsletter(post)
-    request = NewsletterGateway::CreateNewsletterRequest.new(title: post.title, body: post.body)
+  def create_public_newsletter(post)
+    request = NewsletterGateway::CreateNewsletterRequest.new(title: post.title, body: post.body, visibility: "public")
+    @gateway.create_newsletter(request)
+  end
+
+  def create_private_newsletter(post)
+    request = NewsletterGateway::CreateNewsletterRequest.new(title: post.title, body: post.body, visibility: "private")
     @gateway.create_newsletter(request)
   end
 end
@@ -298,9 +301,7 @@ class NewsletterGateway
     @api_path = api_path
   end
 
-  def create_newsletter(body)
-    # ...
-  end
+  # ...
 end
 ```
 
@@ -315,9 +316,7 @@ class NewsletterClient
     @gateway = NewsletterGateway.new(api_key:, base_url:, api_path:)
   end
 
-  def create_newsletter(post)
-    @gateway.create_newsletter(NewsletterPayload.new(post).to_h)
-  end
+  # ...
 end
 ```
 
