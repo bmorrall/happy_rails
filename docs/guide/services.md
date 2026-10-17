@@ -30,6 +30,56 @@ end
 response = NewsletterClient.new.create_newsletter(post)
 ```
 
+### One request per method
+
+Each public method makes one request to the other service. When one request needs the reply to another, let an [action](../actions/) link them: it calls the first method, and passes the reply on to the second, e.g. `Posts::SendNewsletter` creates the newsletter, then hands its ID on for delivery. You SHOULD NOT chain requests inside a service method.
+
+Between the requests, the action can save what it has so far, e.g. the newsletter's ID on the post. If the delivery fails, a retry delivers the same newsletter, instead of creating a second one. The service stays simple: each method sends one message, and its errors come from one request.
+
+```ruby
+module Posts
+  class SendNewsletter < ApplicationAction
+    # ...
+
+    def call
+      newsletter = NewsletterClient.new.create_public_newsletter(post)
+      post.update!(newsletter_id: newsletter.id)
+      NotifySubscribersJob.perform_later(post)
+    end
+  end
+end
+```
+
+```ruby
+# Don't do this
+class NewsletterClient
+  def create_and_deliver(post)
+    newsletter = create_public_newsletter(post)
+    deliver_newsletter(newsletter.id)
+  end
+end
+```
+
+A request that only serves another request MAY stay in the service, e.g. fetching an access token, or looking up the other service's own ID for one of yours. The app never keeps or uses its reply. Make it in a private method, so callers still make one call. When you move the HTTP calls into a [gateway](#gateways), it moves to the gateway.
+
+```ruby
+class NewsletterClient
+  def create_public_newsletter(post)
+    list_id = find_list_id("Weekly digest")
+    # ...
+  end
+
+  private
+
+  def find_list_id(name)
+    response = connection.get("#{api_path}/lists", name:)
+    response.body["lists"].first["id"]
+  end
+end
+```
+
+When the app saves that reply, e.g. to skip the lookup next time, it is no longer only for the other request. Move it to an action, as above.
+
 ## Calling a service
 
 Actions are the gateway to services. Forms, controllers and jobs call an action, and the action calls the service. The action then decides how its task uses the service, e.g. what happens when the service fails, and every caller gets the same behaviour. See [Actions](../actions/).
