@@ -56,6 +56,7 @@ applyTo: "spec/**/*.rb"
 - In unit specs, e.g. decorator and action specs, build a record with an `instance_double` that stubs only the values the code reads, e.g. `post = instance_double(Post, published_at: nil)`. You MUST NOT use a plain `double`, e.g. `double("post")`.
 - When an `instance_double` can't stand in for the record, e.g. the code passes it to a route helper or a form, build it with `build_stubbed`, e.g. `post = build_stubbed(:post, title: "Hello")`.
 - Use `create` only when the code needs the record in the database, e.g. when it runs a query, or a request or feature spec loads the record by its ID.
+- You SHOULD NOT stub a chain of calls with `receive_message_chain`. Move the chain into a method on the class it starts from, so the spec stubs one method, e.g. a scoped association such as `allow(post).to receive(:approved_comments)` for `post.comments.approved`, or a `perform_later_` method on a job such as `PublishScheduledPostJob.perform_later_for(post)`.
 - When the code generates a string with a known format, match it with `a_string_matching` and a regexp for the whole string, with the parts the spec knows written in, e.g. `a_string_matching(/\Apost-#{post.id}-\h{32}\z/)` for `"post-#{post.id}-#{SecureRandom.hex(16)}"`. Use `a_kind_of(String)` only as a last resort, when the string has no format the spec can describe.
 - TODO: Which spec types to write, and when.
 - TODO: Where to put specs and how to name them.

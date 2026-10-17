@@ -217,6 +217,19 @@ get post_path(post)
 
 > **TODO:** Describe how you handle the rest of this.
 
+### Message chains
+
+You SHOULD NOT stub a chain of calls with `receive_message_chain`. A chain stub hides which object does what, and it keeps passing when a step in the chain changes. Move the chain into a method on the class it starts from, so the spec stubs one method. For example, use a scope or a scoped association on the model, such as `post.approved_comments` for `post.comments.approved`, or a `perform_later_` method on a job, such as `PublishScheduledPostJob.perform_later_for(post)`. See [Models: Scopes and queries](../../../guide/models/#scopes-and-queries) and [Jobs: Jobs that run at a set time](../../../guide/jobs/#jobs-that-run-at-a-set-time).
+
+```ruby
+allow(post).to receive(:approved_comments).and_return(comments)
+```
+
+```ruby
+# Don't do this
+allow(post).to receive_message_chain(:comments, :approved).and_return(comments)
+```
+
 ## Traits
 
 > **TODO:** Describe how you handle this.

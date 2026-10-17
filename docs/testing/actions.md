@@ -14,7 +14,7 @@ Write an action spec as a unit spec, and name the `describe` block `".call"`, af
 
 Use `instance_double`, e.g. `instance_double(Post)`, not a plain `double`. See [RSpec: Doubles, build_stubbed or create](../gems/rspec/#doubles-build_stubbed-or-create).
 
-An action does one task, so its unit spec stays short. If the spec needs a lot of stubs to set up, the action is often doing too much. Split it into smaller actions. You SHOULD NOT stub a chain of calls with `receive_message_chain`. Move the chain into a method on the class it starts from, so the spec stubs one method, e.g. a scope or a scoped association on the model, such as `post.approved_comments` for `post.comments.approved`, or `perform_later_for` on a job. See [Models: Scopes and queries](../../guide/models/#scopes-and-queries) and [Jobs: Jobs that run at a set time](../../guide/jobs/#jobs-that-run-at-a-set-time).
+An action does one task, so its unit spec stays short. If the spec needs a lot of stubs to set up, the action is often doing too much. Split it into smaller actions. If a chain of calls is hard to stub, move it into a method so the spec stubs one method. See [RSpec: Message chains](../gems/rspec/#message-chains).
 
 ```ruby
 RSpec.describe Posts::ArchivePost do
