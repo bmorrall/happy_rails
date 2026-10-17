@@ -120,6 +120,25 @@ response = NewsletterClient.new.create_newsletter(post)
 post.update!(newsletter_id: response.id) if response.is_a?(NewsletterGateway::Newsletter)
 ```
 
+### Pages
+
+When the other service returns its results a page at a time, read one page in each call. Take the cursor as a keyword argument, e.g. `list_newsletters(cursor: nil)`, and return it with the page, e.g. as `next_cursor`. The caller decides whether to read the next page.
+
+The caller knows how many results it needs. A controller shows one page. A job can work through one page in each run, so a failure retries only that page, and it never holds every result at once. You SHOULD NOT read every page in the service.
+
+```ruby
+class SyncNewslettersJob < ApplicationJob
+  def perform(cursor = nil)
+    page = NewsletterClient.new.list_newsletters(cursor:)
+    # ...
+
+    return if page.next_cursor.nil?
+
+    SyncNewslettersJob.perform_later(page.next_cursor)
+  end
+end
+```
+
 ## Configuration
 
 Read a service's settings, e.g. an API key, from `Rails.application.config.x`. Give each service its own namespace, named after it, e.g. `config.x.newsletter_client`. Rails keeps `config.x` for app settings, so your keys never clash with a setting from Rails or a gem.
@@ -297,22 +316,22 @@ class NewsletterClient
 end
 ```
 
-A reply can hold more than the resource, e.g. a page of results with a cursor for the next page, or the request ID the other service gave the call. Return a response object then, named after the method, e.g. `fetch_all_stats` returns a `FetchAllStatsResponse`. It holds the resources and the extra values. Each resource keeps its own object, e.g. `NewsletterStats`, which stays the same whichever method returns it.
+A reply can hold more than the resource, e.g. a page of results with a cursor for the next page, or the request ID the other service gave the call. Return a response object then, named after the method, e.g. `list_newsletters` returns a `ListNewslettersResponse`. It holds the resources and the extra values. Each resource keeps its own object, e.g. `Newsletter`, which stays the same whichever method returns it. Like the service, the gateway reads one page in each call. See [Pages](#pages).
 
 ```ruby
 # lib/newsletter_gateway.rb
 class NewsletterGateway
-  NewsletterStats = Data.define(:newsletter_id, :open_rate)
-  FetchAllStatsResponse = Data.define(:stats, :next_cursor)
+  Newsletter = Data.define(:id, :status)
+  ListNewslettersResponse = Data.define(:newsletters, :next_cursor)
 
   # ...
 
-  def fetch_all_stats(newsletter_ids, cursor: nil)
-    response = connection.get("#{@api_path}/stats", ids: newsletter_ids.join(","), cursor:)
-    stats = response.body["stats"].map do |item|
-      NewsletterStats.new(newsletter_id: item["newsletter_id"], open_rate: item["open_rate"])
+  def list_newsletters(cursor: nil)
+    response = connection.get("#{@api_path}/newsletters", cursor:)
+    newsletters = response.body["newsletters"].map do |item|
+      Newsletter.new(id: item["id"], status: item["status"])
     end
-    FetchAllStatsResponse.new(stats:, next_cursor: response.body["next_cursor"])
+    ListNewslettersResponse.new(newsletters:, next_cursor: response.body["next_cursor"])
   end
 end
 ```
