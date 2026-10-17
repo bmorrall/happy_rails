@@ -93,6 +93,33 @@ class NewsletterClient
 end
 ```
 
+## Replies
+
+Return a reply the caller reads by its fields, e.g. `response.id`. You SHOULD NOT return a hash. A service MAY define a `Data` object for a reply, at the top of the service, named after what it holds, e.g. `NewsletterClient::Newsletter`. Use `Data`, not a `Struct`.
+
+```ruby
+class NewsletterClient
+  Newsletter = Data.define(:id, :status)
+
+  def create_newsletter(post)
+    response = connection.post("#{api_path}/newsletters", newsletter_body(post))
+    Newsletter.new(id: response.body["id"], status: response.body["status"])
+  end
+
+  # ...
+end
+```
+
+When you move the HTTP calls into a [gateway](#gateways), the reply moves to the gateway, e.g. `NewsletterGateway::Newsletter`. The service MAY then return the gateway's reply as it is. It holds only plain values, so a copy in the service would add nothing.
+
+Code outside the service MUST NOT name the reply's class, e.g. `NewsletterGateway::Newsletter` in an action. It reads the fields instead. The class can then move to the gateway, or change with the other service's API, and only the service changes.
+
+```ruby
+# Don't do this
+response = NewsletterClient.new.create_newsletter(post)
+post.update!(newsletter_id: response.id) if response.is_a?(NewsletterGateway::Newsletter)
+```
+
 ## Configuration
 
 Read a service's settings, e.g. an API key, from `Rails.application.config.x`. Give each service its own namespace, named after it, e.g. `config.x.newsletter_client`. Rails keeps `config.x` for app settings, so your keys never clash with a setting from Rails or a gem.
@@ -234,7 +261,7 @@ Start with the HTTP calls in the service. When the service gets too big to read,
 
 Write the gateway in plain Ruby. It takes and returns plain values, e.g. strings, arrays and hashes, and knows nothing about your records. You MUST NOT use Rails in a gateway, e.g. `Rails.application.config`, `Rails.logger`, credentials or `ENV`. You can then move it to a gem, or copy it to another app, as it is.
 
-A gateway MAY also take and return `Data` objects that it defines itself, e.g. `NewsletterGateway::CreateNewsletterRequest` for a request and `NewsletterGateway::Newsletter` for the reply. Define them at the top of the gateway, so they move with it. Name a request after the gateway method that takes it, e.g. `create_newsletter` takes a `CreateNewsletterRequest`, because each call can send different fields. Name it after the gateway method, not the service method that builds it. Several service methods can call one gateway method, e.g. `create_public_newsletter` and `create_private_newsletter` on `NewsletterClient` both build a `CreateNewsletterRequest`, with a different `visibility`. Name a reply after what it holds, e.g. `Newsletter`, so more than one method can return it. A `Data` object names the fields the API uses, can't be changed, and raises an error when a field is missing, or when the caller asks for one it doesn't have. Use `Data`, not a `Struct`.
+A gateway MAY also take and return `Data` objects that it defines itself, e.g. `NewsletterGateway::CreateNewsletterRequest` for a request and `NewsletterGateway::Newsletter` for the reply. Define them at the top of the gateway, so they move with it. Name a request after the gateway method that takes it, e.g. `create_newsletter` takes a `CreateNewsletterRequest`, because each call can send different fields. Name it after the gateway method, not the service method that builds it. Several service methods can call one gateway method, e.g. `create_public_newsletter` and `create_private_newsletter` on `NewsletterClient` both build a `CreateNewsletterRequest`, with a different `visibility`. Name a reply after what it holds, e.g. `Newsletter`, so more than one method can return it. The service MAY return the gateway's reply as it is. See [Replies](#replies). A `Data` object names the fields the API uses, can't be changed, and raises an error when a field is missing, or when the caller asks for one it doesn't have. Use `Data`, not a `Struct`.
 
 The service builds the request from its records, as it would a hash. The gateway turns it into the body it sends, and builds the reply from the response.
 
