@@ -60,7 +60,7 @@ class NewsletterClient
 end
 ```
 
-A request that only serves another request MAY stay in the service, e.g. fetching an access token, or looking up the other service's own ID for one of yours. The app never keeps or uses its reply. Make it in a private method, so callers still make one call. When you move the HTTP calls into a [gateway](#gateways), it moves to the gateway.
+A request that only serves another request MAY stay in the service, e.g. fetching an access token, or looking up the other service's own ID for one of yours. It only reads, so a retry can repeat it safely, and the app never keeps or uses its reply. A request that changes something in the other service, e.g. reserving a slot before booking it, goes through an action, even when the app doesn't keep its reply. Make a read-only request in a private method, so callers still make one call. When you move the HTTP calls into a [gateway](#gateways), it moves to the gateway.
 
 ```ruby
 class NewsletterClient
