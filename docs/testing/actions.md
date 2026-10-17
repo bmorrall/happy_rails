@@ -14,7 +14,7 @@ Write an action spec as a unit spec, and name the `describe` block `".call"`, af
 
 Use `instance_double`, e.g. `instance_double(Post)`, not a plain `double`. See [RSpec: Doubles, build_stubbed or create](../gems/rspec/#doubles-build_stubbed-or-create).
 
-An action does one task, so its unit spec stays short. If the spec needs a lot of stubs to set up, the action is often doing too much. Split it into smaller actions. If a chain of calls is hard to stub, move the chain into a method on the model, so the spec stubs one method. See [Models: Scopes and queries](../../guide/models/#scopes-and-queries).
+An action does one task, so its unit spec stays short. If the spec needs a lot of stubs to set up, the action is often doing too much. Split it into smaller actions. You SHOULD NOT stub a chain of calls with `receive_message_chain`. Move the chain into a method on the class it starts from, so the spec stubs one method, e.g. a scope or a scoped association on the model, such as `post.approved_comments` for `post.comments.approved`, or `perform_later_for` on a job. See [Models: Scopes and queries](../../guide/models/#scopes-and-queries) and [Jobs: Jobs that run at a set time](../../guide/jobs/#jobs-that-run-at-a-set-time).
 
 ```ruby
 RSpec.describe Posts::ArchivePost do
@@ -123,20 +123,43 @@ RSpec.describe Posts::PublishPost do
 end
 ```
 
-When the action calls a chain of methods, e.g. `PublishScheduledPostJob.set(wait_until: post.publish_at).perform_later(post)` in `Posts::EnqueuePublish`, stub the chain with `allow(...).to receive_message_chain`. After the call, check each step's arguments with `have_received`. Use `allow`, not `expect`. `have_received` only works on a stub, and `with` on the chain only checks the last step.
+When the action enqueues a job, stub the job's class method and check its arguments, e.g. `PublishScheduledPostJob.perform_later_for` in `Posts::EnqueuePublishes`. The job spec checks when the job runs.
 
 ```ruby
-RSpec.describe Posts::EnqueuePublish do
+RSpec.describe Posts::EnqueuePublishes do
   describe ".call" do
-    it "enqueues the post to publish at its publish time" do
-      publish_at = Time.zone.local(2026, 10, 31, 9, 0)
-      post = instance_double(Post, publish_at:)
-      allow(PublishScheduledPostJob).to receive_message_chain(:set, :perform_later)
+    it "enqueues each post to publish" do
+      post = instance_double(Post)
+      posts = instance_double(ActiveRecord::Relation)
+      allow(posts).to receive(:find_each).and_yield(post)
+
+      expect(PublishScheduledPostJob).to receive(:perform_later_for).with(post)
+
+      described_class.call(posts)
+    end
+  end
+end
+```
+
+When the action works out the job's arguments, check the arguments it passes, e.g. the newsletter ID in `Posts::EnqueueStatsRefresh`. Stub the values it reads them from to cover each case, e.g. a post that was never sent.
+
+```ruby
+RSpec.describe Posts::EnqueueStatsRefresh do
+  describe ".call" do
+    it "enqueues a refresh with the post's newsletter ID" do
+      post = instance_double(Post, newsletter_id?: true, newsletter_id: "newsletter-1")
+
+      expect(RefreshNewsletterStatsJob).to receive(:perform_later).with("newsletter-1")
 
       described_class.call(post)
+    end
 
-      expect(PublishScheduledPostJob).to have_received(:set).with(wait_until: publish_at)
-      expect(PublishScheduledPostJob.set).to have_received(:perform_later).with(post)
+    it "does nothing when the post was never sent" do
+      post = instance_double(Post, newsletter_id?: false)
+
+      expect(RefreshNewsletterStatsJob).not_to receive(:perform_later)
+
+      described_class.call(post)
     end
   end
 end

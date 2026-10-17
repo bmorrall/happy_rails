@@ -45,17 +45,41 @@ When several forms and jobs run the same steps, see [Patterns: Multi-Step Proces
 
 An action MAY enqueue a job. The job's work doesn't run in the action, so it doesn't add a step that the action has to retry or roll back. If the action enqueues inside a transaction, make sure the job waits for the transaction to commit. See [Jobs: Enqueueing after a transaction](../jobs/#enqueueing-after-a-transaction).
 
-When enqueuing a job takes more than a plain `perform_later`, e.g. working out when the job runs and what it runs with, put it in an action, and start the action's name with `Enqueue`, e.g. `Posts::EnqueuePublish`. Every caller then enqueues the job the same way. The name tells the caller that the work happens later, not by the time the action returns. For a plain `perform_later`, enqueue the job in the caller.
+When enqueuing takes more than calling the job with what the caller has, put it in an action, and start the action's name with `Enqueue`. Every caller then enqueues the jobs the same way. The name tells the caller that the work happens later, not by the time the action returns.
+
+For example, the action enqueues one job for each post in a collection, e.g. `Posts::EnqueuePublishes`.
 
 ```ruby
 module Posts
-  class EnqueuePublish < ApplicationAction
+  class EnqueuePublishes < ApplicationAction
+    def initialize(posts)
+      @posts = posts
+    end
+
+    def call
+      posts.find_each { |post| PublishScheduledPostJob.perform_later_for(post) }
+    end
+
+    private
+
+    attr_reader :posts
+  end
+end
+```
+
+Or it works out the job's arguments from the records it's given, e.g. when the job takes other records than the caller has, or none at all. `Posts::EnqueueStatsRefresh` takes a post, and enqueues `RefreshNewsletterStatsJob` with the post's newsletter ID. The job takes only the ID, so it knows nothing about posts.
+
+```ruby
+module Posts
+  class EnqueueStatsRefresh < ApplicationAction
     def initialize(post)
       @post = post
     end
 
     def call
-      PublishScheduledPostJob.set(wait_until: post.publish_at).perform_later(post)
+      return unless post.newsletter_id?
+
+      RefreshNewsletterStatsJob.perform_later(post.newsletter_id)
     end
 
     private
@@ -64,6 +88,8 @@ module Posts
   end
 end
 ```
+
+When the caller already has the job's arguments, call the job in the caller, e.g. `PublishScheduledPostJob.perform_later_for(post)`. Settings the job works out from its own arguments, e.g. when it runs, go in the job, not the action. See [Jobs: Jobs that run at a set time](../jobs/#jobs-that-run-at-a-set-time).
 
 Leave the queue to the job. You SHOULD NOT pick it in the caller with `set(queue:)`, e.g. `NotifySubscribersJob.set(queue: :high).perform_later(post)`. Then you can read a job's queue from its class, and every caller puts it on the same queue. When the queue depends on the job's arguments, pass `queue_as` a block in the job instead. See [Jobs: Queues](../jobs/#queues).
 

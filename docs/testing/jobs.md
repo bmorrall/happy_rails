@@ -160,6 +160,23 @@ RSpec.describe NotifySubscribersJob do
 end
 ```
 
+### Jobs that run at a set time
+
+When the job has a class method that enqueues it, e.g. `perform_later_for`, test it in a `describe` block named after the method, e.g. `describe ".perform_later_for"`. Check that it enqueues the job for the time it works out, with `have_enqueued_job(...).at`. See [Jobs: Jobs that run at a set time](../../guide/jobs/#jobs-that-run-at-a-set-time).
+
+```ruby
+RSpec.describe PublishScheduledPostJob do
+  describe ".perform_later_for" do
+    it "enqueues the job to run at the post's publish time" do
+      publish_at = Time.zone.local(2026, 10, 31, 9, 0)
+      post = build_stubbed(:post, publish_at:)
+
+      expect { described_class.perform_later_for(post) }.to have_enqueued_job(described_class).at(publish_at)
+    end
+  end
+end
+```
+
 ## Scheduling
 
 With all the work for a scheduled task in its job, the job spec covers the whole task. Cover every path through the job, e.g. the drafts it deletes and the posts it keeps. You MUST NOT write a spec for the rake task. It has nothing left to test. See [Jobs: Scheduling](../../guide/jobs/#scheduling).

@@ -131,6 +131,24 @@ An action that writes more than once has its own transaction. Open a transaction
 
 ### Jobs that run at a set time
 
+When the job works out its enqueue settings from its arguments, e.g. `wait_until: post.publish_at`, put them in a class method on the job, e.g. `perform_later_for`. Its name SHOULD start with `perform_later_`, so callers can see that it enqueues the job and doesn't run it. Callers call the class method, not `set(...).perform_later`. Every caller then enqueues the job the same way, and a caller's spec stubs one method, not a chain.
+
+```ruby
+class PublishScheduledPostJob < ApplicationJob
+  def self.perform_later_for(post)
+    set(wait_until: post.publish_at).perform_later(post)
+  end
+
+  # ...
+end
+```
+
+```ruby
+PublishScheduledPostJob.perform_later_for(post)
+```
+
+A `perform_later_` method takes the same arguments as the job. You SHOULD NOT give a job one that takes other records and works out the job's arguments from them, e.g. `RefreshNewsletterStatsJob.perform_later_for(post)` for a job that takes a newsletter ID. That ties a job that knows nothing about posts to `Post`. Put that work in an `Enqueue` action instead, e.g. `Posts::EnqueueStatsRefresh`. See [Actions: Calling other actions](../actions/#calling-other-actions).
+
 A job enqueued with `wait_until` runs at that time, even if the record has changed since. When a user can change or cancel the time, e.g. reschedule a post, check that the work is still due at the start of `perform`. If it isn't, return and do nothing. The job enqueued for the new time does the work.
 
 ```ruby
