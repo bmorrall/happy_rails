@@ -635,7 +635,7 @@ Pass `have_http_status` a named status, e.g. `:not_found` or `:unprocessable_con
 
 You MUST NOT check a status with `be_successful`, `be_ok`, `be_redirect`, `be_not_found` or a status type, e.g. `have_http_status(:success)`. Some accept a range of statuses, e.g. `be_successful` passes for a `204` when the action has to return `200`. None of them say which status came back when they fail. `have_http_status` with a named status checks one status, and its failure message shows the one it got.
 
-When the action redirects, check where it redirects to with `redirect_to`, e.g. `expect(response).to redirect_to(post_path(draft))`. On the next line, check the flash. Compare the whole flash with a hash, e.g. `expect(flash.to_hash).to match("notice" => "Post was updated.")`, rather than checking one key. If the action sets any other flash, e.g. an `alert` as well as the `notice`, the spec fails and the failure message shows it. You MUST NOT check a redirect with `have_http_status(:found)` or `be_redirect`. `redirect_to` checks the status and where it goes.
+When the action redirects, check where it redirects to with `redirect_to`, e.g. `expect(response).to redirect_to(post_path(draft))`. On the next line, check the flash with the matcher for its key, e.g. `expect(flash).to have_flash_notice("Post was updated.")`. Each one checks the whole flash, not one key. If the action sets any other flash, e.g. an `alert` as well as the `notice`, the spec fails and the failure message shows the flash it got. You MUST NOT check a single flash key, e.g. `flash[:notice]`, or compare the flash hash by hand. You MUST NOT check a redirect with `have_http_status(:found)` or `be_redirect`. `redirect_to` checks the status and where it goes.
 
 ```ruby
 RSpec.describe "Posts" do
@@ -671,7 +671,7 @@ RSpec.describe "Posts" do
         }.to change { draft.reload.title }.to("New title")
 
         expect(response).to redirect_to(post_path(draft))
-        expect(flash.to_hash).to match("notice" => "Post was updated.")
+        expect(flash).to have_flash_notice("Post was updated.")
       end
 
       it "shows the form again with a blank title" do
@@ -692,6 +692,28 @@ Don't check a status with a generic matcher or a number:
 # Don't do this
 expect(response).to be_successful
 expect(response).to have_http_status(200)
+```
+
+The flash matchers live in `spec/support/flash_spec_helpers.rb`, included for request specs. There's one for each flash key the app uses, named `have_flash_<key>`. List the keys in `FLASH_KEYS`, e.g. add `success` and `error` for an app with `add_flash_types :success, :error`.
+
+```ruby
+# spec/support/flash_spec_helpers.rb
+module FlashSpecHelpers
+  extend RSpec::Matchers::DSL
+
+  FLASH_KEYS = %w[notice alert].freeze
+
+  FLASH_KEYS.each do |key|
+    matcher :"have_flash_#{key}" do |message|
+      match { |flash| values_match?({ key => message }, flash.to_hash) }
+      failure_message { |flash| "expected the flash to be #{{ key => message }}, but it was #{flash.to_hash}" }
+    end
+  end
+end
+
+RSpec.configure do |config|
+  config.include FlashSpecHelpers, type: :request
+end
 ```
 
 ### Several checks per request
@@ -716,7 +738,7 @@ RSpec.describe "Posts" do
         }.to change(Post, :count).by(1)
 
         expect(response).to redirect_to(post_path(Post.last))
-        expect(flash.to_hash).to match("notice" => "Post was created.")
+        expect(flash).to have_flash_notice("Post was created.")
       end
 
       it "shows the form again with a blank title" do
@@ -905,7 +927,7 @@ expect(response.body).to have_button("Publish")
 expect(response.body).not_to have_css("form[action='#{post_publication_path(published_post)}']")
 ```
 
-A generic matcher takes no arguments, e.g. `have_welcome_new_author_banner`. A matcher for one record takes the record and ends in `_for_<resource>`, e.g. `have_publish_button_for_post(post)`. The name then says which record the element belongs to.
+A generic matcher takes no arguments, e.g. `have_welcome_new_author_banner`. A matcher for one record takes the record and ends in `_for_<resource>`, e.g. `have_publish_button_for_post(post)`. The name then says which record the element belongs to. A matcher for a message takes the message, and requires it, e.g. `have_flash_notice("Post was updated.")`.
 
 Define a matcher with `matcher`. Make every matcher work with both `to` and `not_to`, with as little code as it needs. Check the element with a Capybara matcher in its `match` block. When the matcher checks one thing, `match` is all it needs. RSpec runs the same block for `not_to`, and flips the result.
 

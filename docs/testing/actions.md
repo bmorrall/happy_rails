@@ -300,7 +300,7 @@ RSpec.describe "Posts::Archives" do
 
       expect(comment.reload).to be_locked
       expect(response).to redirect_to(posts_path)
-      expect(flash.to_hash).to match("notice" => "Post was archived.")
+      expect(flash).to have_flash_notice("Post was archived.")
     end
   end
 end

@@ -120,7 +120,7 @@ RSpec.describe "Posts::Comments" do
         post post_comments_path(published_post), params: { comment: { body: "Hello" } }
 
         expect(response).to redirect_to(post_path(published_post))
-        expect(flash.to_hash).to match("notice" => "Comment was created.")
+        expect(flash).to have_flash_notice("Comment was created.")
       end
 
       context "with a Turbo Stream" do
@@ -167,7 +167,7 @@ RSpec.describe "Posts" do
         get new_post_path
 
         expect(response).to redirect_to(new_user_session_path)
-        expect(flash.to_hash).to match("alert" => "You need to sign in or sign up before continuing.")
+        expect(flash).to have_flash_alert("You need to sign in or sign up before continuing.")
       end
     end
   end
@@ -200,7 +200,7 @@ it "redirects with an alert when the newsletter service fails" do
   post post_newsletter_path(published_post)
 
   expect(response).to redirect_to(post_path(published_post))
-  expect(flash.to_hash).to match("alert" => "Newsletter could not be sent. Please try again later.")
+  expect(flash).to have_flash_alert("Newsletter could not be sent. Please try again later.")
 end
 ```
 
@@ -277,7 +277,7 @@ RSpec.describe "Posts" do
         }.to change(Post, :count).by(1)
 
         expect(response).to redirect_to(post_path(Post.last))
-        expect(flash.to_hash).to match("notice" => "Post was created.")
+        expect(flash).to have_flash_notice("Post was created.")
       end
 
       it "shows the form again with a blank title" do
