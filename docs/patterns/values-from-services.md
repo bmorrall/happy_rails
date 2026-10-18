@@ -58,32 +58,13 @@ class PostsController < ApplicationController
 end
 ```
 
-### Give it to the view with a helper method
+### Pass it to a partial
 
-Add a helper method when a partial or a helper needs the value, so you don't have to pass it down. The helper method only returns the value the action read. It never calls the service.
-
-```ruby
-class PostsController < ApplicationController
-  helper_method :newsletter_stats
-
-  # GET /posts/:id
-  def show
-    @newsletter_stats = fetch_newsletter_stats
-  end
-
-  private
-
-  attr_reader :newsletter_stats
-
-  # ...
-end
-```
+When a partial shows the value, pass it as a local. The guide [defaults against `helper_method`](../../guide/controllers/#instance-variables), and a partial [gets every value as a local](../../guide/views/#templates-and-partials).
 
 ```erb
-<%# app/views/posts/_newsletter_stats.html.erb %>
-<% if newsletter_stats %>
-  <p>Open rate: <%= number_to_percentage(newsletter_stats.open_rate, precision: 1) %></p>
-<% end %>
+<%# app/views/posts/show.html.erb %>
+<%= render "newsletter_stats", newsletter_stats: @newsletter_stats %>
 ```
 
 ### Decorate it
@@ -120,7 +101,7 @@ end
 
 ## A value for each record
 
-A list must not make one request for each record. Each request adds to the time the page takes, and a long list can run into the other service's rate limits.
+A list makes one request for the whole page, not one for each record. Each request adds to the time the page takes, and a long list can run into the other service's rate limits.
 
 ### Fetch them in one call
 
@@ -158,9 +139,13 @@ end
 <% end %>
 ```
 
+The template then doesn't need to know the keys.
+
 ### Pass the values to the decorators
 
 With Draper, fetch the values in one call as above, then pass them to each record's decorator in its [context](../../guide/gems/draper/#context). The decorator looks up its own value and decorates it, so the view calls `post.newsletter_stats`. The decorator gets the values, never the service.
+
+The `context:` lambda only gets the controller, so it reads the values through a helper method, e.g. `c.helpers.newsletter_stats`.
 
 ```ruby
 class PostsController < ApplicationController

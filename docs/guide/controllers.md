@@ -84,6 +84,8 @@ class PostsController < ApplicationController
 end
 ```
 
+You SHOULD NOT add a `helper_method` to a controller. The view reads instance variables, and a partial gets them as locals, e.g. `render "form", post: @post`. Then the template shows where each value comes from.
+
 ## Values from services
 
 When a page shows a value read from another service, e.g. a newsletter's open rate, read it in the action or a `set_` callback, before the view renders. Call the service from a private method, and assign the value to an instance variable.
@@ -105,7 +107,26 @@ class PostsController < ApplicationController
 end
 ```
 
-A helper method MAY give the value to the view, e.g. for a partial. It only returns the value the action read, and MUST NOT call the service:
+When a template, a helper or a decorator's context needs a service value, a helper method MAY give it. It only returns the value the action read:
+
+```ruby
+class PostsController < ApplicationController
+  helper_method :newsletter_stats
+
+  # GET /posts/:id
+  def show
+    @newsletter_stats = fetch_newsletter_stats
+  end
+
+  private
+
+  attr_reader :newsletter_stats
+
+  # ...
+end
+```
+
+The helper method MUST NOT call the service. The view then decides when the request is made, and an error from the service stops the page halfway through rendering:
 
 ```ruby
 class PostsController < ApplicationController
@@ -122,7 +143,7 @@ class PostsController < ApplicationController
 end
 ```
 
-When a list shows a value for each record, read them all in one call, e.g. `NewsletterClient#fetch_all_stats`. Give the view a helper method that looks up one record's value, e.g. `newsletter_stats_for(post)`. You MUST NOT make one request for each record.
+When a list shows a value for each record, read them all in one call, e.g. `NewsletterClient#fetch_all_stats`. You SHOULD give the view a helper method that looks up one record's value, e.g. `newsletter_stats_for(post)`. The template then doesn't need to know the keys. You MUST NOT make one request for each record.
 
 See [Patterns: Values from Services](../../patterns/values-from-services/) for examples and other options.
 

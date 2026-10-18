@@ -73,6 +73,23 @@ You MUST NOT let the partial reach for `@post`.
 <p>By <%= @post.author.name %></p>
 ```
 
+You SHOULD NOT call a controller's helper method in a partial, e.g. `newsletter_stats_for(post)` from a `helper_method`. Call it in the template that renders the partial, and pass the value as a local. The partial then works on any page, not only on pages whose controller defines the helper method.
+
+```erb
+<%# app/views/posts/index.html.erb %>
+<% @posts.each do |post| %>
+  <%= render "posts/newsletter_stats", newsletter_stats: newsletter_stats_for(post) %>
+<% end %>
+```
+
+Don't call it from inside a partial:
+
+```erb
+<%# app/views/posts/_post.html.erb %>
+<%# Don't do this %>
+<%= render "posts/newsletter_stats", newsletter_stats: newsletter_stats_for(post) %>
+```
+
 ### Data attributes
 
 Set data attributes with the `data:` option of a tag helper, e.g. `tag.div` or `content_tag`, or of another helper such as `link_to`. You MUST NOT write them as HTML in the template.
