@@ -167,26 +167,61 @@ end
 
 When the action calls another service, stub the service like any other collaborator, with an `instance_double` returned from the method the action builds it with, e.g. `NewsletterClient.new`. You MUST NOT stub the HTTP request in an action spec. The service's own spec checks the requests it sends, so the action spec only checks what the action asks the service for.
 
-When the action builds the service with its default constructor, e.g. `NewsletterClient.new`, set up the stubbed client in a `let`. Every example gets the same client, so the `let` hides nothing about the example. Each example then stubs the methods it needs on `newsletter_client`, which also sets up the `let`.
+When the action builds the service with its default constructor, e.g. `NewsletterClient.new`, build the stubbed client in a `let`, and stub the constructor to return it in a `before`. Every example gets the same client, so the `let` hides nothing about the example. The `before` puts the stub in place for every example, even one that never names `newsletter_client`. If the action then calls the service by mistake, the `instance_double` fails with the method it didn't expect, instead of a real client making a request.
+
+```ruby
+RSpec.describe Posts::SendNewsletter do
+  let(:newsletter_client) { instance_double(NewsletterClient) }
+
+  before do
+    allow(NewsletterClient).to receive(:new).and_return(newsletter_client)
+  end
+
+  # ...
+end
+```
+
+You SHOULD stub the client's methods in each example. Each example then shows what it expects the service to do.
+
+```ruby
+it "saves the newsletter ID" do
+  post = instance_double(Post, update!: true)
+  allow(newsletter_client).to receive(:create_newsletter).with(post)
+    .and_return(NewsletterClient::Newsletter.new(id: "nl_123", status: "sent"))
+
+  described_class.call(post)
+
+  expect(post).to have_received(:update!).with(newsletter_id: "nl_123")
+end
+```
 
 To check the action's errors, stub the service to raise each error the action handles. Raise an error built with the details a real failure carries, e.g. `NewsletterClient::Error.new("Server error", status: 500)`, not the bare class, so a check on the error's details has something to compare.
 
 ```ruby
-RSpec.describe Posts::SendNewsletter do
-  let(:newsletter_client) do
-    instance_double(NewsletterClient).tap do |newsletter_client|
-      allow(NewsletterClient).to receive(:new).and_return(newsletter_client)
-    end
+it "raises a ServiceError when the newsletter service fails" do
+  post = instance_double(Post)
+  allow(newsletter_client).to receive(:create_newsletter).with(post)
+    .and_raise(NewsletterClient::Error.new("Server error", status: 500))
+
+  expect { described_class.call(post) }.to raise_error(described_class::ServiceError, "Server error")
+end
+```
+
+When every example in a `context` needs the same stub, you MAY stub it in a `before` in that context instead, e.g. in `context "when the newsletter service fails"`. Each example still builds its own records.
+
+```ruby
+context "when the newsletter service fails" do
+  before do
+    allow(newsletter_client).to receive(:create_newsletter)
+      .and_raise(NewsletterClient::Error.new("Server error", status: 500))
   end
 
-  describe ".call" do
-    it "raises a ServiceError when the newsletter service fails" do
-      post = instance_double(Post)
-      allow(newsletter_client).to receive(:create_newsletter).with(post)
-        .and_raise(NewsletterClient::Error.new("Server error", status: 500))
+  it "raises a ServiceError" do
+    # ...
+  end
 
-      expect { described_class.call(post) }.to raise_error(described_class::ServiceError)
-    end
+  it "does not save a newsletter ID" do
+    # ...
   end
 end
 ```

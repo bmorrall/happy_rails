@@ -113,24 +113,26 @@ Turbo asks for a stream with the `Accept` header, not a format extension, so a T
 ```ruby
 RSpec.describe "Posts::Comments" do
   describe "POST /posts/:post_id/comments" do
-    let(:published_post) { create(:post, published_at: Time.zone.now) }
+    context "with a published post" do
+      let(:published_post) { create(:post, published_at: Time.zone.now) }
 
-    it "redirects to the post" do
-      post post_comments_path(published_post), params: { comment: { body: "Hello" } }
+      it "redirects to the post" do
+        post post_comments_path(published_post), params: { comment: { body: "Hello" } }
 
-      expect(response).to redirect_to(post_path(published_post))
-      expect(flash.to_hash).to match("notice" => "Comment was created.")
-    end
+        expect(response).to redirect_to(post_path(published_post))
+        expect(flash.to_hash).to match("notice" => "Comment was created.")
+      end
 
-    context "with a Turbo Stream" do
-      it "responds with a Turbo Stream" do
-        post post_comments_path(published_post),
-          params: { comment: { body: "Hello" } },
-          headers: { "Accept" => Mime[:turbo_stream].to_s }
+      context "with a Turbo Stream" do
+        it "responds with a Turbo Stream" do
+          post post_comments_path(published_post),
+            params: { comment: { body: "Hello" } },
+            headers: { "Accept" => Mime[:turbo_stream].to_s }
 
-        expect(response).to have_http_status(:ok)
+          expect(response).to have_http_status(:ok)
 
-        expect(response.media_type).to eq(Mime[:turbo_stream].to_s)
+          expect(response.media_type).to eq(Mime[:turbo_stream].to_s)
+        end
       end
     end
   end

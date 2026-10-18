@@ -14,42 +14,40 @@ Write a unit spec for each validator, in `spec/validators/`, e.g. `spec/validato
 
 Build the validator under test with `described_class`, and run it against a stand-in record. You MUST NOT rely on the option name to find it, e.g. `validates :value, isbn_format: true`. Then the spec runs the class it describes, even if the option name and the class name stop matching.
 
-Make the stand-in record a `Struct` with one attribute, called `value`, that includes `ActiveModel::Validations`. Give it a `name`, which Rails needs to build error messages. Pass the validator's options in each example, e.g. `message:`.
+Make the stand-in record a `Struct` with one attribute, called `value`, that includes `ActiveModel::Validations`. Give it a `name`, which Rails needs to build error messages. Build it in a `let(:record)` at the top of the spec. Every example runs the validator against the same kind of record, so the `let` hides nothing about the example. Pass the validator's options in each example, e.g. `message:`.
 
 ```ruby
 RSpec.describe IsbnFormatValidator do
-  subject(:record) { record_class.new }
-
-  let(:record_class) do
+  let(:record) do
     Struct.new(:value) do
       include ActiveModel::Validations
 
       def self.name = "Record"
-    end
-  end
-
-  def validate(value, **options)
-    record.value = value
-    described_class.new(attributes: [:value], **options).validate(record)
+    end.new
   end
 
   it "allows a valid ISBN" do
-    validate("9780306406157")
+    validate(record, "9780306406157")
 
     expect(record.errors[:value]).to be_empty
   end
 
   it "rejects an ISBN with the wrong check digit" do
-    validate("9780306406158")
+    validate(record, "9780306406158")
 
     expect(record.errors).to be_of_kind(:value, :invalid_isbn)
     expect(record.errors[:value]).to eq(["is not a valid ISBN"])
   end
 
   it "uses the message it is given" do
-    validate("9780306406158", message: "is not an ISBN we know")
+    validate(record, "9780306406158", message: "is not an ISBN we know")
 
     expect(record.errors[:value]).to eq(["is not an ISBN we know"])
+  end
+
+  def validate(record, value, **options)
+    record.value = value
+    described_class.new(attributes: [:value], **options).validate(record)
   end
 end
 ```

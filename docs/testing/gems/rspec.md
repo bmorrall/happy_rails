@@ -186,9 +186,121 @@ RSpec.describe PostDecorator do
 end
 ```
 
-Only write a `context` when several examples share setup that the other examples in the `describe` don't. You MUST NOT write a `context` for one example, and you MUST NOT set up a default with `let` for a `context` to override.
+Only write a `context` when several examples share setup that the other examples in the `describe` don't. A `context` MAY hold every example in its `describe` when its name gives the state they run in, e.g. `context "with a published post"`. You MUST NOT write a `context` for one example, and you MUST NOT set up a default with `let` for a `context` to override.
 
 The contexts that request specs require are the exception: a context for each persona, for each way the request can be authenticated, and for a Turbo Stream. Write them even when they hold one example. Define the user and the records each persona needs in its own context, as described in [Personas](#personas).
+
+### let and let!
+
+Only declare a `let` for the setup a `context` is about. Every example in the context runs with that setup, even one that doesn't read it. That setup is:
+
+- the persona's signed-in `user`, and the records that give it its role, e.g. in `context "as a user", "with a post as the author"`
+- the state the context is named for, e.g. `let(:draft) { create(:post, published_at: nil) }` in `context "with a draft post"`
+- setup the examples share, e.g. the comment that each example in `context "with a comment awaiting approval"` approves or rejects
+
+You MUST NOT declare a `let` for a record only some examples need. Build it inside the example that needs it. The other examples then don't carry setup they never use.
+
+```ruby
+RSpec.describe "Posts" do
+  describe "GET /posts", :aggregate_failures do
+    context "as a user" do
+      let(:user) { create(:user) }
+
+      before { sign_in user }
+
+      it "lists my drafts" do
+        create(:post, author: user, title: "My draft", published_at: nil)
+
+        get posts_path
+
+        expect(response).to have_http_status(:ok)
+
+        expect(response.body).to have_link("My draft")
+      end
+
+      it "does not list another author's draft" do
+        create(:post, title: "Their draft", published_at: nil)
+
+        get posts_path
+
+        expect(response).to have_http_status(:ok)
+
+        expect(response.body).not_to have_link("Their draft")
+      end
+    end
+  end
+end
+```
+
+You MUST NOT declare a `let` for the one example that uses it:
+
+```ruby
+context "as a user" do
+  let(:user) { create(:user) }
+
+  # Don't do this
+  let(:other_post) { create(:post, title: "Their draft", published_at: nil) }
+
+  # ...
+end
+```
+
+Declare a `let` in the `context` it's for. You MUST NOT declare a `let` in a `describe` block. A `describe` names the method or route under test, not the setup its examples run with. There are two exceptions: a stubbed service double in an action spec, see [Actions](../../actions/), and the stand-in record in a validator spec, see [Validators](../../validators/). This rule doesn't cover `subject`, e.g. `subject(:post)` in a model spec, see [Models](../../models/#spec-layout).
+
+You SHOULD use `let!` for a record that an example checks with `expect { }.to change` or `not_to change`. A lazy `let` that's first read inside the block creates its record there, so the change could come from the factory, not from the code under test. E.g. with a lazy `let(:draft)`, `delete post_path(draft)` creates the post and deletes it inside the block, so `Post.count` doesn't change.
+
+```ruby
+context "as a user", "with a draft post as the author" do
+  let(:user) { create(:user) }
+
+  let!(:draft) { create(:post, author: user) }
+
+  before { sign_in user }
+
+  it "deletes the post" do
+    expect {
+      delete post_path(draft)
+    }.to change(Post, :count).by(-1)
+
+    # ...
+  end
+end
+```
+
+Don't leave the record lazy:
+
+```ruby
+context "as a user", "with a draft post as the author" do
+  let(:user) { create(:user) }
+
+  # Don't do this
+  let(:draft) { create(:post, author: user) }
+
+  # ...
+end
+```
+
+Also use `let!` when a context's examples need a record to exist without naming it, e.g. a post that a list shows. Otherwise use `let`. When only one example needs the record, call `create` in that example, before the `expect` block.
+
+```ruby
+RSpec.describe "Posts" do
+  describe "GET /posts", :aggregate_failures do
+    context "with a published post" do
+      let!(:published_post) { create(:post, title: "Hello World", published_at: Time.zone.now) }
+
+      it "lists the post" do
+        get posts_path
+
+        expect(response).to have_http_status(:ok)
+
+        expect(response.body).to have_link("Hello World")
+      end
+
+      # ...
+    end
+  end
+end
+```
 
 ## Factories
 
@@ -316,11 +428,11 @@ end
 
 Write one `context` for each persona whose role plays a part in the action, and for the User and the Guest. Put them in rank order, with the Guest last. Leave out a persona whose role plays no part in the action, e.g. the Copy Editor and the Author in a spec for publishing a post. Neither role has anything to do with publishing, so they get the same answer as the User. The policy spec tests each property the rule reads, so it covers them too. See [Pundit: Policy specs](../pundit/).
 
-Name the context after the persona's role, e.g. `"as a publishing manager"`, so the reader can tell what it's for. Use `"when not signed in"` for the Guest. Keep `"as a"` for personas, and name other contexts another way, e.g. `"with a Turbo Stream"`. For a role on the record under test, use "the", e.g. `"as the author"` of the post the request acts on.
+Name the context after the persona's role on the whole app, e.g. `"as a publishing manager"`, so the reader can tell what it's for. Use `"as a user"` for a persona with no role on the whole app, and `"when not signed in"` for the Guest. Keep `"as a"` for personas, and name other contexts another way, e.g. `"with a Turbo Stream"`.
 
-For a persona with more than one role, name each role, highest first, e.g. `"as a copy editor as the author"`.
+When the persona's role is on the record under test, describe the record in a second argument to `context`, with the role after it, e.g. `context "as a user", "with a post as the author"`. The first argument then always names a role on the whole app, and the second names the record and the role the persona holds on it. For a persona with both, put each in its own argument, e.g. `context "as a copy editor", "with a post as the author"`.
 
-Each persona context implies the record it acts on. For a role on a record, it's the record the persona holds the role on, e.g. an Author acts on a post they wrote. When a context uses a different record, describe that record in a second argument to `context`, e.g. `context "as an author", "with a post written by another user"`. RSpec joins the two into one description.
+When a context uses a record the persona has no role on, describe that record in the second argument, e.g. `context "as a user", "with a post written by another user"`. When the context needs the record in a particular state, put the state in the record's description, e.g. `context "as a user", "with a draft post as the author"`. RSpec joins the two into one description.
 
 Set up the persona inside its context, as a signed-in `user`. Build the user with a [persona trait](#persona-traits) for a role on the whole app, or give it the role on the record. Define the `user` and the records the context needs inside the context, not in the `describe` block above it. You MUST NOT define a `let` for each persona, e.g. `let(:author)`. Then every context reads on its own, in the same way, and shows how the user gets their access.
 
@@ -331,6 +443,7 @@ RSpec.describe "Posts::Publications" do
   describe "POST /posts/:post_id/publication", :aggregate_failures do
     context "as an app admin" do
       let(:user) { create(:user, :app_admin) }
+
       let(:draft) { create(:post) }
 
       before { sign_in user }
@@ -343,6 +456,7 @@ RSpec.describe "Posts::Publications" do
 
     context "as a publishing manager" do
       let(:user) { create(:user, :publishing_manager) }
+
       let(:draft) { create(:post) }
 
       before { sign_in user }
@@ -355,6 +469,7 @@ RSpec.describe "Posts::Publications" do
 
     context "as a user" do
       let(:user) { create(:user) }
+
       let(:draft) { create(:post) }
 
       before { sign_in user }
@@ -377,13 +492,14 @@ RSpec.describe "Posts::Publications" do
 end
 ```
 
-An Author can update a post they wrote, but not someone else's. The second context is still an Author, with a post of their own, so it's `"as an author"`, not `"as the author"`. It acts on another user's post. The User and Guest contexts are left out to keep the example short.
+An Author can update a post they wrote, but not someone else's. The second context is a user with a post of their own, so they're an Author, but not of the post the request acts on. Its second argument says so. The User and Guest contexts are left out to keep the example short.
 
 ```ruby
 RSpec.describe "Posts" do
   describe "PATCH /posts/:id", :aggregate_failures do
-    context "as the author" do
+    context "as a user", "with a post as the author" do
       let(:user) { create(:user) }
+
       let(:draft) { create(:post, author: user) }
 
       before { sign_in user }
@@ -394,8 +510,9 @@ RSpec.describe "Posts" do
       end
     end
 
-    context "as an author", "with a post written by another user" do
+    context "as a user", "with a post written by another user" do
       let(:user) { create(:user) }
+
       let(:draft) { create(:post) }
 
       before do
@@ -421,8 +538,9 @@ When the action redirects, check where it redirects to with `redirect_to`, e.g. 
 ```ruby
 RSpec.describe "Posts" do
   describe "GET /posts/:id", :aggregate_failures do
-    context "as the author" do
+    context "as a user", "with a post as the author" do
       let(:user) { create(:user) }
+
       let(:draft) { create(:post, author: user, title: "Hello World") }
 
       before { sign_in user }
@@ -438,9 +556,10 @@ RSpec.describe "Posts" do
   end
 
   describe "PATCH /posts/:id", :aggregate_failures do
-    context "as the author" do
+    context "as a user", "with a post as the author" do
       let(:user) { create(:user) }
-      let(:draft) { create(:post, author: user) }
+
+      let!(:draft) { create(:post, author: user) }
 
       before { sign_in user }
 
@@ -546,6 +665,8 @@ RSpec.feature "Post Publishing" do
   end
 end
 ```
+
+You MUST NOT use `let` or `let!` in feature specs. Build every record in the scenario, under its `# GIVEN` and `# AND` comments, e.g. `create(:post, title: "Hello World")` under `# AND there is a draft post` above. The scenario then tells the whole story, setup included.
 
 ### Scoping to a record
 

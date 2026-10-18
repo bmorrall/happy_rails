@@ -82,3 +82,19 @@ RSpec.describe NewsletterClient do
   end
 end
 ```
+
+### let groups
+
+In a persona context, leave a blank line between the persona's `let`s and the `let`s for the records it acts on. The persona's `let`s are the signed-in `user` and the records that give it its role on the whole app. The record `let`s build what the context's second argument describes, including the record the persona holds a role on. The two groups then match the two parts of the context's name, e.g. `"as a user"` and `"with a draft post as the author"`.
+
+```ruby
+context "as a user", "with a draft post as the author" do
+  let(:user) { create(:user) }
+
+  let!(:draft) { create(:post, author: user) }
+
+  before { sign_in user }
+
+  # ...
+end
+```
