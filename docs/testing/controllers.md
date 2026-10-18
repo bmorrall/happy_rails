@@ -257,7 +257,7 @@ class PostsController < ApplicationController
         notice: "Post was created."
     else
       render :new,
-        status: :unprocessable_entity
+        status: :unprocessable_content
     end
   end
 end
@@ -285,7 +285,7 @@ RSpec.describe "Posts" do
           post posts_path, params: { post: { title: "" } }
         }.not_to change(Post, :count)
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end

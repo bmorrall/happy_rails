@@ -631,7 +631,11 @@ Rank a membership persona with the others, by the app's persona list, e.g. the M
 
 Check the response of every request. When the action responds with a page or data, check the status with `have_http_status`, e.g. `expect(response).to have_http_status(:ok)`. Leave a blank line above and below it, so the status stands apart from the request and from the checks on the body.
 
-When the action redirects, check where it redirects to with `redirect_to`, e.g. `expect(response).to redirect_to(post_path(draft))`. On the next line, check the flash. Compare the whole flash with a hash, e.g. `expect(flash.to_hash).to match("notice" => "Post was updated.")`, rather than checking one key. If the action sets any other flash, e.g. an `alert` as well as the `notice`, the spec fails and the failure message shows it.
+Pass `have_http_status` a named status, e.g. `:not_found` or `:unprocessable_content`. You MUST NOT pass a number, e.g. `have_http_status(404)`. The name says what the status means, so the reader doesn't have to look it up.
+
+You MUST NOT check a status with `be_successful`, `be_ok`, `be_redirect`, `be_not_found` or a status type, e.g. `have_http_status(:success)`. Some accept a range of statuses, e.g. `be_successful` passes for a `204` when the action has to return `200`. None of them say which status came back when they fail. `have_http_status` with a named status checks one status, and its failure message shows the one it got.
+
+When the action redirects, check where it redirects to with `redirect_to`, e.g. `expect(response).to redirect_to(post_path(draft))`. On the next line, check the flash. Compare the whole flash with a hash, e.g. `expect(flash.to_hash).to match("notice" => "Post was updated.")`, rather than checking one key. If the action sets any other flash, e.g. an `alert` as well as the `notice`, the spec fails and the failure message shows it. You MUST NOT check a redirect with `have_http_status(:found)` or `be_redirect`. `redirect_to` checks the status and where it goes.
 
 ```ruby
 RSpec.describe "Posts" do
@@ -675,11 +679,19 @@ RSpec.describe "Posts" do
           patch post_path(draft), params: { post: { title: "" } }
         }.not_to change { draft.reload.title }
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end
 end
+```
+
+Don't check a status with a generic matcher or a number:
+
+```ruby
+# Don't do this
+expect(response).to be_successful
+expect(response).to have_http_status(200)
 ```
 
 ### Several checks per request
@@ -712,7 +724,7 @@ RSpec.describe "Posts" do
           post posts_path, params: { post: { title: "" } }
         }.not_to change(Post, :count)
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end

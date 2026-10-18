@@ -151,7 +151,7 @@ See [Patterns: Values from Services](../../patterns/values-from-services/) for e
 
 An action that changes a record, e.g. `create` or `update`, can succeed or fail. Write the happy case first, in an `if`, and the failure case in the `else`. Then each action reads the same way: what happens when it works, then what happens when it doesn't.
 
-When the action fails and shows the form again, render it with `status: :unprocessable_entity`. The form then shows the errors, and Turbo knows the request failed. When there's no form to show, redirect instead, with a message that says what went wrong.
+When the action fails and shows the form again, render it with `status: :unprocessable_content`. The form then shows the errors, and Turbo knows the request failed. On Rack before 3.1, use `:unprocessable_entity`, which is the older name for the same status. `:unprocessable_content` raises an error there. When there's no form to show, redirect instead, with a message that says what went wrong.
 
 ```ruby
 class PostsController < ApplicationController
@@ -164,7 +164,7 @@ class PostsController < ApplicationController
         notice: "Post was created."
     else
       render :new,
-        status: :unprocessable_entity
+        status: :unprocessable_content
     end
   end
 
@@ -175,7 +175,7 @@ class PostsController < ApplicationController
         notice: "Post was updated."
     else
       render :edit,
-        status: :unprocessable_entity
+        status: :unprocessable_content
     end
   end
 end
@@ -215,7 +215,7 @@ class PostsController < ApplicationController
         notice: "Post was created."
     else
       render :new,
-        status: :unprocessable_entity
+        status: :unprocessable_content
     end
   end
 end
@@ -383,7 +383,7 @@ module Posts
         else
           format.html do
             render :new,
-              status: :unprocessable_entity
+              status: :unprocessable_content
           end
         end
       end

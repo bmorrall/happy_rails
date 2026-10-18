@@ -26,7 +26,7 @@ def create
       notice: "Post was created."
   else
     render :new,
-      status: :unprocessable_entity
+      status: :unprocessable_content
   end
 end
 ```
@@ -66,7 +66,7 @@ respond_to do |format|
   else
     format.html do
       render :new,
-        status: :unprocessable_entity
+        status: :unprocessable_content
     end
   end
 end

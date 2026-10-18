@@ -373,7 +373,7 @@ def create
       notice: "Post was created."
   else
     render :new,
-      status: :unprocessable_entity
+      status: :unprocessable_content
   end
 end
 ```
