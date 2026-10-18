@@ -533,7 +533,22 @@ end
 
 Some roles come from membership of a parent record, and cover the records inside it. E.g. a Magazine Editor can edit every post in the magazines they edit. Name the context after the membership role, in the first argument, the same as a role on the whole app, e.g. `context "as a magazine editor"`. The role belongs to the persona, not to one post, so it doesn't go in the second argument.
 
-Give the user the membership in the persona's `let`s, e.g. `let!(:magazine) { create(:magazine, editors: [user]) }`. Use `let!`, because the request reads the membership, and an example might never name it. The magazine is part of the persona's setup, so it sits with the `user`, in the persona's group of `let`s.
+Give the user the membership in the persona's `let`s, e.g. `let!(:magazine) { create_magazine_with_magazine_editor(user) }`. Use `let!`, because the request reads the membership, and an example might never name it. The magazine is part of the persona's setup, so it sits with the `user`, in the persona's group of `let`s.
+
+You SHOULD write a helper for each membership role, named `create_<parent>_with_<role>`, and use it instead of building the membership inline. It takes the user, gives it the role, and returns the parent record. Put it in the parent's spec helpers module, e.g. `MagazineSpecHelpers`, see [Where to put matchers](#where-to-put-matchers). Every spec then gives a user the role the same way, and a change to how memberships work only changes the helper.
+
+```ruby
+# spec/support/magazine_spec_helpers.rb
+module MagazineSpecHelpers
+  def create_magazine_with_magazine_editor(user)
+    create(:magazine, editors: [user])
+  end
+end
+
+RSpec.configure do |config|
+  config.include MagazineSpecHelpers, type: :request
+end
+```
 
 Write one context for the membership persona, with no second argument. Build each post in the example that needs it, and name the example after where the post sits, e.g. `it "updates a post in the magazine"` and `it "does not update a post in another magazine"`. The context is about the persona, and each example shows which post it acts on. A role on the post still goes in the second argument, e.g. `context "as a magazine editor", "with a post as the author"`. Build that post in the persona's magazine, e.g. `create(:post, magazine:, author: user)`.
 
@@ -542,7 +557,7 @@ RSpec.describe "Posts" do
   describe "PATCH /posts/:id", :aggregate_failures do
     context "as a magazine editor" do
       let(:user) { create(:user) }
-      let!(:magazine) { create(:magazine, editors: [user]) }
+      let!(:magazine) { create_magazine_with_magazine_editor(user) }
 
       before { sign_in user }
 
