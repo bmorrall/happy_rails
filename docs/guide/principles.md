@@ -80,7 +80,11 @@ You MUST NOT reach the signed-in user through a global, e.g. `Current.user` from
 
 A persona stands for one type of person who uses the app. Name each persona after its role, e.g. a Publishing Manager or an Author. A role lets a user take certain actions on certain records.
 
-Some roles apply to the whole app. A Publishing Manager can publish any post. A role on the whole app might be a role the user is given, or a flag on the user, e.g. an Employee is a user with `employee` set. Other roles apply to one record. A user is the Author of the posts they wrote, and of no others. In an app with projects, any user might be added to one project as its Project Manager. A user can hold a role on one record and not on the next.
+Some roles apply to the whole app. A Publishing Manager can publish any post. A role on the whole app might be a role the user is given, or a flag on the user, e.g. an Employee is a user with `employee` set.
+
+Other roles apply to one record. A user is the Author of the posts they wrote, and of no others. A user can hold a role on one record and not on the next.
+
+A role on a parent record can cover the records inside it. A Magazine Editor can edit every post in the magazine they were added to, and none in other magazines. The role comes from the membership, not from the posts, so a post added to the magazine later is covered too.
 
 Group the personas, and rank the groups from the most access to the least. Each app has its own groups. A publishing app might use these:
 

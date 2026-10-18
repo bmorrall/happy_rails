@@ -550,7 +550,7 @@ RSpec.configure do |config|
 end
 ```
 
-Write one context for the membership persona, with no second argument. Build each post in the example that needs it, and name the example after where the post sits, e.g. `it "updates a post in the magazine"` and `it "does not update a post in another magazine"`. The context is about the persona, and each example shows which post it acts on. A role on the post still goes in the second argument, e.g. `context "as a magazine editor", "with a post as the author"`. Build that post in the persona's magazine, e.g. `create(:post, magazine:, author: user)`.
+When the persona's examples act on different posts, e.g. a post in its magazine and a post in another magazine, write one context with no second argument. Build each post in the example that needs it, and name the example after where the post sits, e.g. `it "updates a post in the magazine"` and `it "does not update a post in another magazine"`. The context is about the persona, and each example shows which post it acts on. Use this shape whenever the spec covers a post outside the membership.
 
 ```ruby
 RSpec.describe "Posts" do
@@ -576,6 +576,50 @@ RSpec.describe "Posts" do
       end
     end
   end
+end
+```
+
+When every example acts on the same post, describe it in the second argument instead, with its state and where it sits. This follows the same state rule as other personas.
+
+```ruby
+context "as a magazine editor", "with a draft post in the magazine" do
+  let(:user) { create(:user) }
+  let!(:magazine) { create_magazine_with_magazine_editor(user) }
+
+  let(:draft) { create(:post, magazine:, published_at: nil) }
+
+  before { sign_in user }
+
+  # ...
+end
+```
+
+Cover posts outside the membership in a context with no second argument next to it. Like any persona context, it MAY hold one example.
+
+```ruby
+context "as a magazine editor" do
+  let(:user) { create(:user) }
+  let!(:magazine) { create_magazine_with_magazine_editor(user) }
+
+  before { sign_in user }
+
+  it "does not update a post in another magazine" do
+    draft = create(:post, published_at: nil)
+    # ...
+  end
+end
+```
+
+A role on the post still goes in the second argument, e.g. `context "as a magazine editor", "with a post as the author"`. Build that post in the persona's magazine.
+
+```ruby
+context "as a magazine editor", "with a post as the author" do
+  let(:user) { create(:user) }
+  let!(:magazine) { create_magazine_with_magazine_editor(user) }
+
+  let(:draft) { create(:post, magazine:, author: user) }
+
+  # ...
 end
 ```
 
