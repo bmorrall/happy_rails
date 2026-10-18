@@ -428,9 +428,9 @@ end
 
 Write one `context` for each persona whose role plays a part in the action, and for the User and the Guest. Put them in rank order, with the Guest last. Leave out a persona whose role plays no part in the action, e.g. the Copy Editor and the Author in a spec for publishing a post. Neither role has anything to do with publishing, so they get the same answer as the User. The policy spec tests each property the rule reads, so it covers them too. See [Pundit: Policy specs](../pundit/).
 
-Name the context after the persona's role on the whole app, e.g. `"as a publishing manager"`, so the reader can tell what it's for. Use `"as a user"` for a persona with no role on the whole app, and `"when not signed in"` for the Guest. Keep `"as a"` for personas, and name other contexts another way, e.g. `"with a Turbo Stream"`.
+Name the context after the persona's role on the whole app, e.g. `"as a publishing manager"`, so the reader can tell what it's for. A role through membership of a parent record goes here too, see [Roles through a membership](#roles-through-a-membership). Use `"as a user"` for a persona with neither, and `"when not signed in"` for the Guest. Keep `"as a"` for personas, and name other contexts another way, e.g. `"with a Turbo Stream"`.
 
-When the persona's role is on the record under test, describe the record in a second argument to `context`, with the role after it, e.g. `context "as a user", "with a post as the author"`. The first argument then always names a role on the whole app, and the second names the record and the role the persona holds on it. For a persona with both, put each in its own argument, e.g. `context "as a copy editor", "with a post as the author"`.
+When the persona's role is on the record under test, describe the record in a second argument to `context`, with the role after it, e.g. `context "as a user", "with a post as the author"`. The first argument then always names the persona's own role, and the second names the record and any role the persona holds on it. For a persona with both, put each in its own argument, e.g. `context "as a copy editor", "with a post as the author"`.
 
 When a context uses a record the persona has no role on, describe that record in the second argument, e.g. `context "as a user", "with a post written by another user"`. When the context needs the record in a particular state, put the state in the record's description, e.g. `context "as a user", "with a draft post as the author"`. RSpec joins the two into one description.
 
@@ -528,6 +528,45 @@ RSpec.describe "Posts" do
   end
 end
 ```
+
+#### Roles through a membership
+
+Some roles come from membership of a parent record, and cover the records inside it. E.g. a Magazine Editor can edit every post in the magazines they edit. Name the context after the membership role, in the first argument, the same as a role on the whole app, e.g. `context "as a magazine editor"`. The role belongs to the persona, not to one post, so it doesn't go in the second argument.
+
+Give the user the membership in the persona's `let`s, e.g. `let!(:magazine) { create(:magazine, editors: [user]) }`. Use `let!`, because the request reads the membership, and an example might never name it. The magazine is part of the persona's setup, so it sits with the `user`, in the persona's group of `let`s.
+
+Write one context for the membership persona, with no second argument. Build each post in the example that needs it, and name the example after where the post sits, e.g. `it "updates a post in the magazine"` and `it "does not update a post in another magazine"`. The context is about the persona, and each example shows which post it acts on. A role on the post still goes in the second argument, e.g. `context "as a magazine editor", "with a post as the author"`. Build that post in the persona's magazine, e.g. `create(:post, magazine:, author: user)`.
+
+```ruby
+RSpec.describe "Posts" do
+  describe "PATCH /posts/:id", :aggregate_failures do
+    context "as a magazine editor" do
+      let(:user) { create(:user) }
+      let!(:magazine) { create(:magazine, editors: [user]) }
+
+      before { sign_in user }
+
+      it "updates a post in the magazine" do
+        draft = create(:post, magazine:)
+
+        patch post_path(draft), params: { post: { title: "New title" } }
+        expect(draft.reload.title).to eq("New title")
+      end
+
+      it "does not update a post in another magazine" do
+        draft = create(:post)
+
+        patch post_path(draft), params: { post: { title: "New title" } }
+        expect(draft.reload.title).not_to eq("New title")
+      end
+    end
+  end
+end
+```
+
+For a persona with a role on the whole app and a membership role, name both in the first argument, highest first, e.g. `context "as a publishing manager as a magazine editor"`. Both are roles the persona holds, so they stay together.
+
+Rank a membership persona with the others, by the app's persona list, e.g. the Magazine Editor after the Copy Editor. See [The example app: Personas](../../../example-app/#personas).
 
 ### Responses
 

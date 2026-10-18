@@ -13,7 +13,8 @@ This page describes the app, so you know what each example is talking about. The
 ## Records
 
 - **User**: someone who has signed in. A user can hold one role on the whole app, e.g. Publishing Manager.
-- **Post**: an article a user writes. Each post has an author, a title, a body, a word count, a category and a status. The category is news, opinion or review. A post starts as a draft, and is published when it's ready. Only an App Admin or a Publishing Manager can feature a post, or file it under news.
+- **Post**: an article a user writes. Each post has an author, a magazine, a title, a body, a word count, a category and a status. The category is news, opinion or review. A post starts as a draft, and is published when it's ready. Only an App Admin or a Publishing Manager can feature a post, or file it under news.
+- **Magazine**: a magazine the app publishes. Each post belongs to one. Users are added to a magazine as its editors.
 - **Coauthorship**: a user the Author adds to a post as a Co-author, so they can edit it too.
 - **Comment**: a reply to a published post. Comments belong to a post, and are approved before other readers see them.
 - **Tag**: a label on a post, so readers can find related posts.
@@ -33,6 +34,7 @@ class Post < ApplicationRecord
 
   belongs_to :author,
     class_name: "User"
+  belongs_to :magazine
 
   has_many :comments,
     dependent: :destroy
@@ -64,18 +66,19 @@ The app has these personas, from the most access to the least. See [Principles: 
 | App Admins | App Admin | Do anything |
 | Editors | Publishing Manager | Publish any post |
 | Editors | Copy Editor | Edit draft posts, and review submitted posts |
+| Editors | Magazine Editor | Edit any post in the magazines they edit |
 | Authors | Author | Edit the posts they wrote |
 | Authors | Co-author | Edit the posts they were added to |
 | Users | User | Read published posts, comment on them, and write posts |
 | | Guest | Read published posts |
 
-App Admin, Publishing Manager and Copy Editor are roles on the whole app. A Copy Editor's role only covers draft posts, and reviewing submitted posts. Author and Co-author are roles on one record: a user is the Author of the posts they wrote, and a Co-author of the posts they were added to, and of no others.
+App Admin, Publishing Manager and Copy Editor are roles on the whole app. A Copy Editor's role only covers draft posts, and reviewing submitted posts. Magazine Editor is a role through membership of a parent record: a user is a Magazine Editor of the magazines they were added to as an editor, and the role covers every post in them. Author and Co-author are roles on one record: a user is the Author of the posts they wrote, and a Co-author of the posts they were added to, and of no others.
 
 ## Tasks
 
 These are the tasks the examples use. Each one shows up on more than one page.
 
-- **Write and edit a post.** Any user can write a post. The Author, a Co-author or an App Admin can edit it, and a Copy Editor can edit it while it's a draft. The routes are `GET /posts/new`, `POST /posts`, `GET /posts/:id/edit` and `PATCH /posts/:id`.
+- **Write and edit a post.** Any user can write a post. The Author, a Co-author, a Magazine Editor of its magazine or an App Admin can edit it, and a Copy Editor can edit it while it's a draft. The routes are `GET /posts/new`, `POST /posts`, `GET /posts/:id/edit` and `PATCH /posts/:id`.
 - **Comment on a post.** A signed-in user can comment on a published post, with `POST /posts/:post_id/comments`.
 - **Approve a comment.** The post's Author approves a comment with `POST /posts/:post_id/comments/:comment_id/approval`, so other readers can see it.
 - **Live comments.** Readers who have a post open see a comment appear as soon as the Author approves it, without reloading the page.

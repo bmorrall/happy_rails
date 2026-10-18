@@ -85,7 +85,7 @@ end
 
 ### let groups
 
-In a persona context, leave a blank line between the persona's `let`s and the `let`s for the records it acts on. The persona's `let`s are the signed-in `user` and the records that give it its role on the whole app. The record `let`s build what the context's second argument describes, including the record the persona holds a role on. The two groups then match the two parts of the context's name, e.g. `"as a user"` and `"with a draft post as the author"`.
+In a persona context, leave a blank line between the persona's `let`s and the `let`s for the records it acts on. The persona's `let`s are the signed-in `user` and the records that give it its role on the whole app or through a membership, e.g. the magazine a Magazine Editor edits. The record `let`s build what the context's second argument describes, including the record the persona holds a role on. The two groups then match the two parts of the context's name, e.g. `"as a user"` and `"with a draft post as the author"`.
 
 ```ruby
 context "as a user", "with a draft post as the author" do
