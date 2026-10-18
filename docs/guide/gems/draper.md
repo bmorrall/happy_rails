@@ -13,7 +13,7 @@ Presentation logic with [Draper](https://github.com/drapergem/draper).
 
 Use a decorator method for presentation logic about one record, e.g. `post.published_on`, not a `post_published_on(post)` helper. Then the decorator spec covers each path, and you don't need a helper spec for it.
 
-Keep helpers for general view elements that aren't about one record, e.g. `success_badge`, `date_tag` or `yes_no_tag`. The decorator builds its output with those helpers through `h`, e.g. `h.date_tag(object.published_at)`, so each element is marked up the same way everywhere. See [Views and Frontend: Helpers](../../views/#helpers).
+Keep helpers for general view elements that aren't about one record, e.g. `success_badge`, `date_tag` or `yes_no_tag`. The decorator builds its output with those helpers through `h`, e.g. `h.date_tag(object.published_at)`, so each element is marked up the same way everywhere. A decorator method SHOULD call the same helper the template would, rather than format the value again. It's a convenience: the view calls `post.published_on` instead of passing the record's value to `date_tag` itself. See [Views and Frontend: Helpers](../../views/#helpers).
 
 Keep decorator methods simple: a formatted value, a link, or a small element built with a helper, e.g. `status_badge`. You MUST NOT render a component or a partial from a decorator, e.g. `h.render(Posts::CardComponent.new(post: object))`. Render it in the view instead. The template then shows every part of the page it renders, and the decorator spec only checks simple values, not a whole component.
 
@@ -486,6 +486,25 @@ The view asks the record it was given:
 
 <% if post.can_publish? %>
   <%= button_to "Publish", publish_post_path(post) %>
+<% end %>
+```
+
+When a business rule decides whether a section of the page shows, put it in a `can_show_` predicate on the decorator, under `### Policy ###`, e.g. `can_show_newsletter_stats?` on `PostDecorator`. It reads like the other `can_` checks, so the view asks every show or hide question the same way. It doesn't have to call the policy. Like any other decorator method, it only reads the record's state.
+
+```ruby
+class PostDecorator < ApplicationDecorator
+  ### Policy ###
+
+  def can_show_newsletter_stats?
+    object.newsletter_id?
+  end
+end
+```
+
+```erb
+<% if post.can_show_newsletter_stats? %>
+  <h2>Newsletter</h2>
+  <p>Open rate: <%= newsletter_stats.open_rate %></p>
 <% end %>
 ```
 

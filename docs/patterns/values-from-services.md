@@ -34,10 +34,10 @@ end
 ```
 
 ```erb
-<% if @newsletter_stats %>
-  <p>Open rate: <%= number_to_percentage(@newsletter_stats.open_rate, precision: 1) %></p>
-<% end %>
+<p>Open rate: <%= newsletter_open_rate_tag(@newsletter_stats) %></p>
 ```
+
+A post that hasn't been sent has no stats, so `@newsletter_stats` can be `nil`. The template passes it to a helper that shows it, or shows it as unknown. See [Views: Helpers](../../guide/views/#helpers).
 
 ### Read it in a callback
 
@@ -69,7 +69,7 @@ When a partial shows the value, pass it as a local. The guide [defaults against 
 
 ### Decorate it
 
-With [Draper](../../guide/gems/draper/), decorate the value with `decorates_assigned`, as you would a record. Pass the decorator with `with:`, because the value isn't a model. `decorates_assigned` adds the helper method for you, and the decorator formats the value the same way on every page.
+With [Draper](../../guide/gems/draper/), decorate the value with `decorates_assigned`, as you would a record. Pass the decorator with `with:`, because the value isn't a model. `decorates_assigned` adds the helper method for you. The decorator calls the same [`newsletter_open_rate_tag`](../../guide/views/#helpers) helper as a template would, so the value looks the same on every page, and the view calls `newsletter_stats.open_rate` without passing it.
 
 ```ruby
 class PostsController < ApplicationController
@@ -88,16 +88,18 @@ end
 ```ruby
 class NewsletterStatsDecorator < ApplicationDecorator
   def open_rate
-    h.number_to_percentage(object.open_rate, precision: 1)
+    h.newsletter_open_rate_tag(object)
   end
 end
 ```
 
 ```erb
-<% if newsletter_stats %>
+<% if post.can_show_newsletter_stats? %>
   <p>Open rate: <%= newsletter_stats.open_rate %></p>
 <% end %>
 ```
+
+The post's decorator decides whether the section shows, with `can_show_newsletter_stats?`. The template doesn't check `newsletter_stats` for `nil`. Draper doesn't decorate `nil`, so this only works when every post with a newsletter has stats. If it might not, call `newsletter_open_rate_tag(@newsletter_stats)` instead, which shows missing stats as unknown. See [Draper: Permissions](../../guide/gems/draper/#permissions).
 
 ## A value for each record
 
@@ -137,21 +139,11 @@ end
 <% end %>
 ```
 
-The template then doesn't need to know the keys. A [helper](../../guide/views/#helpers) formats the value, and shows a post without stats as unknown, so the template only calls helpers.
-
-```ruby
-module NewslettersHelper
-  def newsletter_open_rate_tag(stats)
-    return unknown_value_tag if stats.nil?
-
-    number_to_percentage(stats.open_rate, precision: 1)
-  end
-end
-```
+The template then doesn't need to know the keys. The same `newsletter_open_rate_tag` helper as the [one value for the page](#assign-it-in-the-action) shows each value, so the template only calls helpers.
 
 ### Pass the values to the decorators
 
-With Draper, fetch the values in one call as above, then pass them to each record's decorator in its [context](../../guide/gems/draper/#context). The decorator looks up its own value and decorates it, so the view calls `post.newsletter_stats`. The decorator gets the values, never the service.
+With Draper, fetch the values in one call as above, then pass them to each record's decorator in its [context](../../guide/gems/draper/#context). The decorator looks up its own value and passes it to the same [`newsletter_open_rate_tag`](../../guide/views/#helpers) helper, so the view calls `post.newsletter_open_rate` without knowing the keys. The decorator gets the values, never the service.
 
 The `context:` lambda only gets the controller, so it reads the values through a helper method, e.g. `c.helpers.newsletter_stats`.
 
@@ -178,17 +170,22 @@ end
 
 ```ruby
 class PostDecorator < ApplicationDecorator
+  def newsletter_open_rate
+    h.newsletter_open_rate_tag(newsletter_stats)
+  end
+
+  private
+
   def newsletter_stats
-    stats = context.fetch(:newsletter_stats)[object.newsletter_id]
-    NewsletterStatsDecorator.new(stats) if stats
+    context.fetch(:newsletter_stats)[object.newsletter_id]
   end
 end
 ```
 
 ```erb
 <% posts.each do |post| %>
-  <% if post.newsletter_stats %>
-    <p>Open rate: <%= post.newsletter_stats.open_rate %></p>
+  <% if post.can_show_newsletter_stats? %>
+    <p>Open rate: <%= post.newsletter_open_rate %></p>
   <% end %>
 <% end %>
 ```

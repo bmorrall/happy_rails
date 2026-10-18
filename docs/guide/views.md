@@ -167,6 +167,40 @@ module UnknownValuesHelper
 end
 ```
 
+Whether a section of the page shows is a business rule, e.g. a post that was never sent as a newsletter has no newsletter section. Ask a predicate named after the rule, e.g. `post.can_show_newsletter_stats?` on the post's decorator, or a method on the model if the app doesn't use decorators. See [Draper: Permissions](../gems/draper/#permissions). You SHOULD NOT check a value for `nil` in the template instead. The predicate names the rule, its spec covers it, and every page that shows the section asks the same question.
+
+Inside a section that shows, a value can still be missing, e.g. a newsletter sent a minute ago has no stats yet. Pass the value to a helper, and let the helper choose what to show. The helper returns `unknown_value_tag` when there are no stats, and formats the open rate when there are. The template then only calls the helper, and the helper spec covers both cases.
+
+```erb
+<%# app/views/posts/show.html.erb %>
+<% if post.can_show_newsletter_stats? %>
+  <h2>Newsletter</h2>
+  <p>Open rate: <%= newsletter_open_rate_tag(@newsletter_stats) %></p>
+<% end %>
+```
+
+```ruby
+# app/helpers/newsletters_helper.rb
+module NewslettersHelper
+  def newsletter_open_rate_tag(stats)
+    return unknown_value_tag if stats.nil?
+
+    number_to_percentage(stats.open_rate, precision: 1)
+  end
+end
+```
+
+Don't check for the value in the template:
+
+```erb
+<%# app/views/posts/show.html.erb %>
+<%# Don't do this %>
+<% if @newsletter_stats %>
+  <h2>Newsletter</h2>
+  <p>Open rate: <%= number_to_percentage(@newsletter_stats.open_rate, precision: 1) %></p>
+<% end %>
+```
+
 ## Forms
 
 Prefer to build a form with `form_with`, and pass it a model or a form object as `model:`. `form_with` then works out the URL, the method and the param key from the model, fills each field with the model's value, and lets you show its errors. If the form needs its own attributes or validations, pass a form object instead of the model. See [Forms](../forms/).
