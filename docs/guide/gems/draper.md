@@ -45,7 +45,7 @@ Lay out a decorator in groups, each under a `### Name ###` comment:
 2. `### Links ###`: every method that returns a link to the record.
 3. Groups for your app's own elements, e.g. `### Badges ###`.
 4. One group for each association, named after it, e.g. `### Comments ###`. Put the `decorates_association` and the delegates to it in the group.
-5. `### Policy ###` last: the permission checks the view can make on the record. See [Permissions](#permissions).
+5. `### Policy ###` last: the permission checks the view can make on the record, and the `can_show_` checks for business rules, e.g. `can_show_newsletter_stats?`. See [Permissions](#permissions).
 
 Each method is then easy to find, and the groups read the same way in every decorator.
 
