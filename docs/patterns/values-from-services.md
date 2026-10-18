@@ -133,13 +133,21 @@ end
 
 ```erb
 <% @posts.each do |post| %>
-  <% if (stats = newsletter_stats_for(post)) %>
-    <p>Open rate: <%= number_to_percentage(stats.open_rate, precision: 1) %></p>
-  <% end %>
+  <p>Open rate: <%= newsletter_open_rate_tag(newsletter_stats_for(post)) %></p>
 <% end %>
 ```
 
-The template then doesn't need to know the keys.
+The template then doesn't need to know the keys. A [helper](../../guide/views/#helpers) formats the value, and shows a post without stats as unknown, so the template only calls helpers.
+
+```ruby
+module NewslettersHelper
+  def newsletter_open_rate_tag(stats)
+    return unknown_value_tag if stats.nil?
+
+    number_to_percentage(stats.open_rate, precision: 1)
+  end
+end
+```
 
 ### Pass the values to the decorators
 

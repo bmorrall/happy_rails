@@ -48,6 +48,8 @@ You MUST NOT write the same logic in the template.
 
 {: .rant }
 > Simple templates also keep your options open. When a template only outputs values and renders other parts, you can move it to a simpler rendering engine later, without first pulling logic out of it.
+>
+> I've seen a template library that only lets a template call helpers, loop over a list and use a basic conditional. Nothing else. I like views to be that simple, even in ERB, which lets you write any Ruby you want. If a template couldn't be written in a library like that, it's doing too much.
 
 When you render a partial, pass every value it uses as a named local, e.g. `post: @post`. You MUST NOT read an instance variable in a partial. The `render` call then shows everything the partial needs, and you can render it from any template, whatever instance variables that template has.
 
