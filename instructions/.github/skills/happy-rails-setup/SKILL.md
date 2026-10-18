@@ -26,6 +26,7 @@ Do them once. The rules in `.github/instructions/happy_*.instructions.md` assume
 | `references/jobs.md` | Always |
 | `references/controllers.md` | Always |
 | `references/views.md` | Always |
+| `references/aasm.md` | The app uses `aasm` |
 | `references/devise.md` | The app uses `devise` |
 | `references/draper.md` | The app uses `draper` |
 | `references/honeybadger.md` | The app uses `honeybadger` |
