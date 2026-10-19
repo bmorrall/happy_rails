@@ -376,7 +376,7 @@ When an API client tracks a request to another service, create a record for the 
 
 You MUST NOT pass a value back through a block or a result object. Both are a return value in disguise.
 
-See [Patterns: Values from Actions](../../patterns/values-from-actions/) for examples and other options.
+See [Patterns: Values from Actions](../../patterns/values-from-actions/) for examples and other options, and [Patterns: Records from a Legacy Database](../../patterns/records-from-a-legacy-database/) for an action that finds or copies a record the caller then uses.
 
 ## Error handling
 

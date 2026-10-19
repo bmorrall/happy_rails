@@ -19,6 +19,7 @@ This page describes the app, so you know what each example is talking about. The
 - **Comment**: a reply to a published post. Comments belong to a post, and are approved before other readers see them.
 - **Tag**: a label on a post, so readers can find related posts.
 - **Publication**: a record of each time a post is published, and who published it.
+- **LegacyUser**: a user in the database of the older system the app replaced. A user who hasn't been back since the switch is only there. Each has an email, and can have a secondary email.
 - **NewsletterServiceIntegration**: the app's connection to the outside newsletter service, with its API key and base URL. An App Admin sets it up.
 
 ```ruby
@@ -79,6 +80,7 @@ App Admin, Publishing Manager and Copy Editor are roles on the whole app. A Copy
 These are the tasks the examples use. Each one shows up on more than one page.
 
 - **Write and edit a post.** Posts are written in Markdown. `MarkdownRenderer` turns Markdown into HTML and plain text with Commonmarker, and the `markdown_tag` helper shows a post's body as HTML on its page. Any user can write a post. The Author, a Co-author, a Magazine Editor of its magazine or an App Admin can edit it, and a Copy Editor can edit it while it's a draft. The routes are `GET /posts/new`, `POST /posts`, `GET /posts/:id/edit` and `PATCH /posts/:id`.
+- **Bring over a legacy user.** When the app looks a user up by email, e.g. to add a Co-author to a post, it checks its own users first, by email or secondary email. If the user isn't there, `Users::ImportLegacyUser` copies them over from the legacy database.
 - **Comment on a post.** A signed-in user can comment on a published post, with `POST /posts/:post_id/comments`.
 - **Approve a comment.** The post's Author approves a comment with `POST /posts/:post_id/comments/:comment_id/approval`, so other readers can see it.
 - **Live comments.** Readers who have a post open see a comment appear as soon as the Author approves it, without reloading the page.
