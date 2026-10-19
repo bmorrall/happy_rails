@@ -377,11 +377,30 @@ You MUST NOT add a trait for a role on a record, e.g. the Author of a post. Buil
 
 When the code generates a value, e.g. a token or a key, match it as closely as the spec can. A loose match still passes when the code builds the value wrongly.
 
-Match a string with a known format with `a_string_matching` and a regexp for the whole string. Write in the parts the spec knows, e.g. the post's ID in a key built as `"post-#{post.id}-#{SecureRandom.hex(16)}"`. Use `a_kind_of(String)` only as a last resort, when the string has no format the spec can describe.
+Match a string with a known format with `match`, or `a_string_matching` inside another matcher, and a regexp for the whole string. Write in what the spec knows, e.g. the length and characters of a token made with `SecureRandom.urlsafe_base64`, or a record's ID when the code builds it into the value. Use `a_kind_of(String)` only as a last resort, when the string has no format the spec can describe.
+
+When the code saves something made from the value, check that too, e.g. the digest of a preview token saved on the post. The spec can't know the token, but it can check that the code kept the right digest of it.
+
+```ruby
+RSpec.describe SharePostForm do
+  describe "#submit" do
+    it "makes a preview token for the post" do
+      post = create(:post)
+
+      result = described_class.new(post, post.author).submit
+
+      expect(result.token).to match(/\A[\w-]{22}\z/)
+      expect(post.reload.preview_token_digest).to eq(Digest::SHA256.hexdigest(result.token))
+    end
+  end
+end
+```
+
+Inside another matcher, use `a_string_matching` in the same way, e.g. for a request ID that a service makes for each call and sends in a header.
 
 ```ruby
 expect(WebMock).to have_requested_newsletter_create(
-  body: hash_including(idempotency_key: a_string_matching(/\Apost-#{post.id}-\h{32}\z/))
+  headers: { "X-Request-Id" => a_string_matching(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/) }
 )
 ```
 

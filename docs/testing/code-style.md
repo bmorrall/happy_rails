@@ -77,7 +77,7 @@ RSpec.describe NewsletterClient do
     {
       title: post.title,
       body: post.body,
-      idempotency_key: a_string_matching(/\Apost-#{post.id}-\h{32}\z/)
+      author_name: post.author.name
     }
   end
 end

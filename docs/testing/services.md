@@ -33,7 +33,8 @@ WebMock matches a body hash exactly, but it only checks the headers you list. Li
 RSpec.describe NewsletterClient do
   describe "#create_newsletter" do
     it "creates a newsletter for the post" do
-      post = build_stubbed(:post, title: "Hello World", body: "My first post.")
+      author = build_stubbed(:user, name: "Ada Lovelace")
+      post = build_stubbed(:post, title: "Hello World", body: "My first post.", author:)
       stub_newsletter_create(id: "newsletter-1")
 
       response = described_class.new(api_key: "test-key").create_newsletter(post)
@@ -43,7 +44,7 @@ RSpec.describe NewsletterClient do
         body: {
           title: "Hello World",
           body: "My first post.",
-          idempotency_key: a_string_matching(/\Apost-#{post.id}-\h{32}\z/)
+          author_name: "Ada Lovelace"
         }
       )
       expect(response).to have_attributes(id: "newsletter-1")
@@ -51,8 +52,6 @@ RSpec.describe NewsletterClient do
   end
 end
 ```
-
-Match a generated value as closely as you can, e.g. the idempotency key above. See [RSpec and FactoryBot: Generated values](../gems/rspec/#generated-values).
 
 ## Configuration
 
