@@ -19,6 +19,7 @@ Do them once. The rules in `.github/instructions/happy_*.instructions.md` assume
 
 | Reference | When |
 | --- | --- |
+| `references/rails.md` | Always |
 | `references/rspec.md` | The app uses `rspec-rails` |
 | `references/actions.md` | Always |
 | `references/forms.md` | Always |

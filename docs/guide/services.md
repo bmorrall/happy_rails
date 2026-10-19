@@ -219,6 +219,43 @@ class NewsletterClient
 end
 ```
 
+### Timeouts
+
+Give every service a timeout, and set it in `config.x` like its other settings, e.g. `config.x.newsletter_client.timeout_seconds`. Pass it to the HTTP library, e.g. Faraday's `timeout`. Without it, Faraday waits for a reply as long as the other service takes. When the service keeps a connection pool, the timeouts are connection settings, so pass them to the pool, not to `initialize`. See [Patterns: Connection Pools](../../patterns/connection-pools/).
+
+A service MAY take more than one timeout, when one step needs its own limit, e.g. `open_timeout_seconds` for opening the connection, and `read_timeout_seconds` for the reply. Name each one after what it limits, and end it with its unit.
+
+Set the timeouts below the app's request timeout, e.g. 10 seconds under rack-timeout's 15. See [Tooling and CI: Request timeouts](../tooling/#request-timeouts). A request that calls a slow service then gets the service's own error, and the action handles it like any other failure. If the request timeout went first, it would raise `Rack::Timeout::RequestTimeoutException` instead, wherever the request happened to be, and the action couldn't handle it. When an action makes more than one request, keep their timeouts together below the limit.
+
+```ruby
+# config/application.rb
+config.x.newsletter_client.timeout_seconds = 10
+```
+
+```ruby
+class NewsletterClient
+  def initialize(
+    api_key: Rails.application.config.x.newsletter_client.api_key!,
+    base_url: Rails.application.config.x.newsletter_client.base_url!,
+    timeout_seconds: Rails.application.config.x.newsletter_client.timeout_seconds!
+  )
+    @api_key = api_key
+    @base_url = base_url
+    @timeout_seconds = timeout_seconds
+  end
+
+  # ...
+
+  private
+
+  def connection
+    Faraday.new(url: @base_url, request: { timeout: @timeout_seconds }) do |faraday|
+      # ...
+    end
+  end
+end
+```
+
 ### Optional services
 
 Some apps run without a service, e.g. in development without a newsletter API key. Give the service a `configured?` class method, which checks its required settings without the bang. Code that can work without the service checks `configured?` first, and skips the work when it's `false`.
