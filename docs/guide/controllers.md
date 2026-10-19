@@ -545,7 +545,7 @@ class NotifySubscribersJob < ApplicationJob
 
   def perform(post)
     NewsletterClient.new.deliver(post)
-  rescue NewsletterClient::DeliveryError
+  rescue NewsletterClient::UnprocessableError
     post.update!(newsletter_status: :failed)
   end
 end

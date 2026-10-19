@@ -80,12 +80,12 @@ describe "#create_newsletter" do
       .to raise_error(described_class::UnprocessableError)
   end
 
-  it "raises an Error when the newsletter service times out" do
+  it "raises a TimeoutError when the newsletter service times out" do
     post = build_stubbed(:post)
     stub_newsletter_create_timeout
 
     expect { described_class.new(api_key: "test-key").create_newsletter(post) }
-      .to raise_error(described_class::Error)
+      .to raise_error(described_class::TimeoutError)
   end
 end
 ```

@@ -298,11 +298,22 @@ When a service keeps connections open, share them through a connection pool on t
 
 ## Errors
 
-Give each service its own errors. Define an `Error` class inside the service, and a subclass for each failure a caller handles on its own, e.g. `NewsletterClient::UnprocessableError` when the newsletter service rejects a post. Callers then rescue the service's errors, not the errors of the HTTP library it happens to use.
+Give each service its own errors. Define an `Error` class inside the service. Callers then rescue the service's errors, not the errors of the HTTP library it happens to use.
 
 Rescue the library's errors inside the service, and raise the service's error instead. Ruby keeps the library's error as the `cause`.
 
 Give the error everything you'd want to know when the call fails: the request method and URL, the response status and the response body. The service is the only code that has them. With Honeybadger, the error adds them to the report with `to_honeybadger_context`. See [Honeybadger: Errors](../gems/honeybadger/#errors).
+
+A service MAY raise a subclass of `Error` for a failure a caller handles on its own. Add one only when a caller needs it. Without it, the failure raises the service's `Error` like any other. Name the subclass after its failure, e.g.:
+
+- `UnprocessableError` when the other service rejects the request, e.g. `Faraday::UnprocessableEntityError`. A form can show the reason to the user, as in [Actions: Error handling](../actions/#error-handling).
+- `TimeoutError` when the HTTP library says the request timed out, e.g. `Faraday::TimeoutError`. A controller can answer with a 504, as in [Controllers and Routes: Other services failing](../controllers/#other-services-failing).
+- `UnavailableError` when the other service can't be reached or is down, e.g. `Faraday::ConnectionFailed` or a 503 reply. A controller can answer with a 503, so the client tries again later.
+- `RateLimitedError` when the other service says the app sent too many requests, e.g. `Faraday::TooManyRequestsError`. A job can retry it later. Give it the reply's `Retry-After` value, e.g. `retry_after:`, so the caller knows how long to wait.
+- `UnauthorizedError` when the other service refuses the credentials, e.g. `Faraday::UnauthorizedError` or `Faraday::ForbiddenError`. A retry fails the same way, so a job can mark the `NewsletterServiceIntegration` as broken instead.
+- `NotFoundError` when the other service doesn't have the resource, e.g. `Faraday::ResourceNotFound` for a newsletter deleted on its side. A job can clear the post's `newsletter_id` instead of failing.
+
+Rescue the library's specific errors before its base error, because Ruby uses the first `rescue` that matches.
 
 ```ruby
 class NewsletterClient
@@ -313,11 +324,14 @@ class NewsletterClient
   end
 
   class UnprocessableError < Error; end
+  class TimeoutError < Error; end
 
   def create_newsletter(post)
     # ...
   rescue Faraday::UnprocessableEntityError => e
     raise UnprocessableError.new(e.message, **details_from(e))
+  rescue Faraday::TimeoutError => e
+    raise TimeoutError.new(e.message, **details_from(e))
   rescue Faraday::Error => e
     raise Error.new(e.message, **details_from(e))
   end
