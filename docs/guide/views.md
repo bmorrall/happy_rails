@@ -156,6 +156,24 @@ You MUST NOT format the value in place, e.g. with `l` or `strftime`, even when i
 <p>Featured: <%= @post.featured? ? "Yes" : "No" %></p>
 ```
 
+When a view needs a value from a [service for the app's own work](../services/#kinds-of-services), call the service in a helper, e.g. `markdown_tag` calls `MarkdownRenderer`. Templates, decorators and components then call the helper, not the service. Every page shows the value the same way, and the helper spec covers it.
+
+You MUST NOT call a [service for another system](../services/#kinds-of-services) in a helper, e.g. `NewsletterClient`. The view would then decide when the request is made, and an error from the other service would stop the page halfway through rendering. Read the value in the controller instead. See [Controllers and Routes: Values from services](../controllers/#values-from-services).
+
+```ruby
+# app/helpers/markdown_helper.rb
+module MarkdownHelper
+  def markdown_tag(markdown)
+    sanitize(MarkdownRenderer.new.render_html(markdown))
+  end
+end
+```
+
+```erb
+<%# app/views/posts/show.html.erb %>
+<%= markdown_tag(@post.body) %>
+```
+
 When a value isn't known, e.g. it's `nil`, strongly prefer to show it with an `unknown_value_tag` helper over a blank, a dash or "N/A" written in place. A helper or decorator that shows a value that can be `nil` then returns `unknown_value_tag` for it. Every page shows a missing value the same way, e.g. as a faded em dash. This isn't a hard rule: if your app already has its own way to show a missing value, keep using it. Give it an `aria-label`, so a screen reader says "Unknown" instead of reading out the dash.
 
 ```ruby

@@ -82,7 +82,7 @@ When the app saves that reply, e.g. to skip the lookup next time, it is no longe
 
 ## Calling a service
 
-Actions are the gateway to services. Forms, controllers and jobs call an action, and the action calls the service. The action then decides how its task uses the service, e.g. what happens when the service fails, and every caller gets the same behaviour. See [Actions](../actions/).
+Actions are the gateway to services for other systems. Forms, controllers and jobs call an action, and the action calls the service. The action then decides how its task uses the service, e.g. what happens when the service fails, and every caller gets the same behaviour. See [Actions](../actions/).
 
 ```ruby
 module Posts
@@ -219,6 +219,38 @@ class NewsletterClient
 end
 ```
 
+### Options
+
+Set the options a service gives its client or library inside the service, e.g. the JSON middleware on `NewsletterClient`'s Faraday connection, or the Commonmarker extensions `MarkdownRenderer` turns on. Keep them in a constant or a private method. Options are the values no caller needs to send: callers pass only what changes with each call. Every call then works the same way, and a change to the options happens in one place.
+
+Keep options out of `config.x`. They are the same in every environment, so they aren't settings.
+
+```ruby
+class NewsletterClient
+  # ...
+
+  private
+
+  def connection
+    Faraday.new(url: @base_url) do |faraday|
+      faraday.request :json
+      faraday.response :json
+      faraday.response :raise_error
+    end
+  end
+end
+```
+
+```ruby
+class MarkdownRenderer
+  # ...
+
+  def render_html(markdown)
+    Commonmarker.to_html(markdown, options: OPTIONS)
+  end
+end
+```
+
 ### Timeouts
 
 Give every service a timeout, and set it in `config.x` like its other settings, e.g. `config.x.newsletter_client.timeout_seconds`. Pass it to the HTTP library, e.g. Faraday's `timeout`. Without it, Faraday waits for a reply as long as the other service takes. When the service keeps a connection pool, the timeouts are connection settings, so pass them to the pool, not to `initialize`. See [Patterns: Connection Pools](../../patterns/connection-pools/).
@@ -331,7 +363,30 @@ When a service keeps connections open, share them through a connection pool on t
 
 ## Kinds of services
 
-> **TODO:** Describe how you handle this.
+Write a service for one of two kinds of work:
+
+- **Another system.** The service talks to a system outside the app, e.g. `NewsletterClient` calls the newsletter service's HTTP API, and `PostBackupBucket` saves posts to S3 through `Aws::S3::Client`. Every section on this page applies to it.
+- **The app's own work.** The service wraps a library the app uses, e.g. `MarkdownRenderer` turns Markdown into HTML and plain text with Commonmarker, and `PostPdf` builds a post's PDF with Prawn. It makes no requests, so the sections about requests, replies, pages, timeouts and gateways don't apply. [Method names](#method-names), [Configuration](#configuration), including [Options](#options), and [Errors](#errors) still do.
+
+```ruby
+class MarkdownRenderer
+  # ...
+
+  def render_html(markdown)
+    Commonmarker.to_html(markdown, options: OPTIONS)
+  end
+
+  def render_text(markdown)
+    # ...
+  end
+end
+```
+
+Write a service only to wrap another system or a library. A calculation on a record stays on its model, e.g. a post's word count. A task that changes data is an [action](../actions/).
+
+You MUST NOT save records in a service, of either kind. The service returns what it made, and the action that called it saves the result, e.g. `Posts::SendNewsletter` saves the newsletter's ID on the post.
+
+When a view needs a value from a service for the app's own work, a helper calls the service, e.g. `markdown_tag` calls `MarkdownRenderer`. Templates and decorators call the helper. See [Views and Frontend: Helpers](../views/#helpers). [Calling a service](#calling-a-service) covers services for other systems.
 
 ## Errors
 

@@ -19,7 +19,7 @@ Keep decorator methods simple: a formatted value, a link, or a small element bui
 
 A decorator method only changes its output based on the record's state, e.g. `object.published?`, or on a record passed in its context. See [Context](#context). You MUST NOT base it on the request, e.g. the current user, the params or a permission check. The method then returns the same value for the same records on every page, in a mailer or a broadcast, and its spec doesn't need a request. The `can_` permission checks are the one exception. See [Permissions](#permissions).
 
-You MUST NOT call another service from a decorator, or pass one in its context. Read the value in the controller instead. See [Controllers: Values from services](../../controllers/#values-from-services).
+You MUST NOT call another service from a decorator, or pass one in its context. Read the value in the controller instead. See [Controllers: Values from services](../../controllers/#values-from-services). For a [service for the app's own work](../../services/#kinds-of-services), call its helper through `h`, e.g. `h.markdown_tag(object.body)`.
 
 A list calls a decorator method once for each record, so a service call there makes one request for each record. The decorator spec would also have to stub the request.
 
