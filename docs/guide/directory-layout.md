@@ -76,8 +76,12 @@ module PunditAuthorization
   private
 
   def handle_not_authorized_error
-    redirect_to root_url,
+    redirect_to after_not_authorized_error_path,
       alert: "You are not authorized to perform this action."
+  end
+
+  def after_not_authorized_error_path
+    root_path
   end
 end
 ```

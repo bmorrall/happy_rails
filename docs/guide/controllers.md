@@ -522,7 +522,7 @@ See [Testing: Controllers and Routes](../../testing/controllers/#authentication)
 
 When you rescue an error with `rescue_from`, pass `with:` and the name of a private method. Start the name with `handle_`, then add the error class's name in snake case, e.g. `handle_record_not_found` for `ActiveRecord::RecordNotFound` and `handle_not_authorized_error` for `Pundit::NotAuthorizedError`. Keep the `Error` suffix, so the name says it handles a failure. You MUST NOT pass a block.
 
-A named method is easy to find, and every handler starts the same way. A subclass can also override it to handle the error its own way, and call `super` for the default. You can't do that with a block. See [Pundit: Unauthorised requests](../gems/pundit/#unauthorised-requests) for an example.
+A named method is easy to find, and every handler starts the same way. A subclass can also override it to handle the error its own way, and call `super` for the default. You can't do that with a block.
 
 ```ruby
 class ApplicationController < ActionController::Base
@@ -536,6 +536,10 @@ class ApplicationController < ActionController::Base
   end
 end
 ```
+
+When a handler redirects, and a subclass or a controller that includes it might send the user somewhere else, redirect to the path from a private method. Name it after the handler, with `after_` in place of `handle_` and `_path` on the end, e.g. `after_not_authorized_error_path` for `handle_not_authorized_error`. The other controller then overrides the path, not the handler, and calls `super` for the default. The alert stays in one place, and the override only says where the user goes. See [Pundit: Unauthorised requests](../gems/pundit/#unauthorised-requests) for an example.
+
+A handler that only one controller uses doesn't need a path method. Redirect in the handler.
 
 Use `rescue_from` only for errors that aren't part of the app's normal flow, e.g. a record that isn't found, or a request the user isn't allowed to make. When an error is an outcome the app expects, handle it where the work is done, in a form or a job. Either one can recover from the error, or add the error. A form adds it to its errors and returns `false`, so the controller takes its normal failure path. A job adds it to the record it works on, e.g. it marks a subscription as failed when its payment fails. The action then shows every outcome the user can expect as a normal path, and its request spec covers each one.
 
@@ -621,7 +625,7 @@ end
 
 When more than one controller calls actions in the group, put the `rescue_from` and its handler in a concern, as in [Directory Layout: Concerns](../directory-layout/#concerns). Name it after the base class, ending in `ErrorHandling`, e.g. `NewsletterActionErrorHandling` in `app/controllers/concerns/newsletter_action_error_handling.rb`. Include it in each controller that calls the group's actions. Every controller then handles the group's errors the same way, and the alert's text is in one place.
 
-Like any shared concern, its handler can't read the controller's instance variables. Redirect to the location from a private method named after the concern, e.g. `newsletter_action_error_location`, and return `root_url` from it. Every user can see the root page, so the redirect always works.
+Like any shared concern, its handler can't read the controller's instance variables. Redirect to the path from a private method instead, as in [Rescuing errors](#rescuing-errors), e.g. `after_newsletter_action_service_error_path`, and return `root_path` from it. Every user can see the root page, so the redirect always works.
 
 ```ruby
 module NewsletterActionErrorHandling
@@ -635,17 +639,17 @@ module NewsletterActionErrorHandling
   private
 
   def handle_newsletter_action_service_error
-    redirect_to newsletter_action_error_location,
+    redirect_to after_newsletter_action_service_error_path,
       alert: "Newsletter could not be sent. Please try again later."
   end
 
-  def newsletter_action_error_location
-    root_url
+  def after_newsletter_action_service_error_path
+    root_path
   end
 end
 ```
 
-The root page is only a fallback. A user sent there loses their place. Each controller SHOULD override the location method to go back to the record the user was working on, e.g. `post_path(@post)`. The override is the controller's own method, so it can read `@post`. The action raises after the controller has loaded it.
+The root page is only a fallback. A user sent there loses their place. Each controller SHOULD override the path method to go back to the record the user was working on, e.g. `post_path(@post)`. The override is the controller's own method, so it can read `@post`. The action raises after the controller has loaded it.
 
 ```ruby
 module Posts
@@ -656,14 +660,14 @@ module Posts
 
     private
 
-    def newsletter_action_error_location
+    def after_newsletter_action_service_error_path
       post_path(@post)
     end
   end
 end
 ```
 
-For API controllers, write a separate concern that renders the fixed response with `:bad_gateway`, e.g. `Api::NewsletterActionErrorHandling` in `app/controllers/concerns/api/newsletter_action_error_handling.rb`. It needs no location method.
+For API controllers, write a separate concern that renders the fixed response with `:bad_gateway`, e.g. `Api::NewsletterActionErrorHandling` in `app/controllers/concerns/api/newsletter_action_error_handling.rb`. It needs no `after_` path method.
 
 See [Testing: Controllers and Routes](../../testing/controllers/#other-services-failing) for the request specs.
 
