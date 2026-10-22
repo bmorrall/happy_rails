@@ -623,7 +623,33 @@ def handle_send_newsletter_timeout_error
 end
 ```
 
-When more than one controller calls actions in the group, put the `rescue_from` and its handler in a concern, as in [Directory Layout: Concerns](../directory-layout/#concerns). Name it after the base class, ending in `ErrorHandling`, e.g. `NewsletterActionErrorHandling` in `app/controllers/concerns/newsletter_action_error_handling.rb`. Include it in each controller that calls the group's actions. Every controller then handles the group's errors the same way, and the alert's text is in one place.
+When more than one controller calls actions in the group, and they all inherit from the same [`BaseController`](#nested-resources), put the `rescue_from` and its handler in the base controller. A post is sent as a public or a private newsletter from `Posts::PublicNewslettersController` and `Posts::PrivateNewslettersController`, and both inherit from `Posts::BaseController`. Each nested controller then gets the handler without an `include`, and the alert's text is in one place.
+
+The handler is the base controller's own method, so it can read `@post`. `set_post` loads the post before the action runs, so redirect to the post in the handler. It needs no `after_` path method unless a nested controller sends the user somewhere else, as in [Rescuing errors](#rescuing-errors).
+
+```ruby
+module Posts
+  class BaseController < ApplicationController
+    before_action :set_post
+
+    rescue_from Posts::NewsletterAction::ServiceError,
+      with: :handle_newsletter_action_service_error
+
+    private
+
+    def set_post
+      # ...
+    end
+
+    def handle_newsletter_action_service_error
+      redirect_to post_path(@post),
+        alert: "Newsletter could not be sent. Please try again later."
+    end
+  end
+end
+```
+
+When the controllers that call the group's actions don't share a base controller, e.g. `PostsController` and `Posts::PrivateNewslettersController`, put the `rescue_from` and its handler in a concern instead, as in [Directory Layout: Concerns](../directory-layout/#concerns). Name it after the base class, ending in `ErrorHandling`, e.g. `NewsletterActionErrorHandling` in `app/controllers/concerns/newsletter_action_error_handling.rb`. Include it in each controller that calls the group's actions. Every controller then handles the group's errors the same way, and the alert's text is in one place.
 
 Like any shared concern, its handler can't read the controller's instance variables. Redirect to the path from a private method instead, as in [Rescuing errors](#rescuing-errors), e.g. `after_newsletter_action_service_error_path`, and return `root_path` from it. Every user can see the root page, so the redirect always works.
 
@@ -652,17 +678,15 @@ end
 The root page is only a fallback. A user sent there loses their place. Each controller SHOULD override the path method to go back to the record the user was working on, e.g. `post_path(@post)`. The override is the controller's own method, so it can read `@post`. The action raises after the controller has loaded it.
 
 ```ruby
-module Posts
-  class PrivateNewslettersController < BaseController
-    include NewsletterActionErrorHandling
+class PostsController < ApplicationController
+  include NewsletterActionErrorHandling
 
-    # ...
+  # ...
 
-    private
+  private
 
-    def after_newsletter_action_service_error_path
-      post_path(@post)
-    end
+  def after_newsletter_action_service_error_path
+    post_path(@post)
   end
 end
 ```

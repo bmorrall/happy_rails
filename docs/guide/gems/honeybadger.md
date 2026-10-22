@@ -130,20 +130,18 @@ end
 Each controller that includes the concern SHOULD override the context method to pass the context of the records the user was working on, e.g. `@post`. A report with no records only says that the service failed, not what for.
 
 ```ruby
-module Posts
-  class PrivateNewslettersController < BaseController
-    include NewsletterActionErrorHandling
+class PostsController < ApplicationController
+  include NewsletterActionErrorHandling
 
-    # ...
+  # ...
 
-    private
+  private
 
-    def newsletter_action_service_error_context
-      { post: @post&.to_honeybadger_context }
-    end
-
-    # ...
+  def newsletter_action_service_error_context
+    { post: @post&.to_honeybadger_context }
   end
+
+  # ...
 end
 ```
 
