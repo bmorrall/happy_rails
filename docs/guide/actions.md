@@ -119,7 +119,7 @@ end
 
 Rescue the other action's error outside the transaction block. Its writes join your transaction. If you rescue its error inside the block and carry on, nothing rolls back, and its half-done writes commit with yours. See [Rolling back](#rolling-back).
 
-Raise the error for the same cause. When the other action raises a `ServiceError`, raise your own `ServiceError`, not your plain `Error`, e.g. `rescue Posts::SendNewsletter::ServiceError` then `raise ServiceError, e.message`. Put that `rescue` before the one for the other action's `Error`. A controller that rescues your `ServiceError` then still sees the service failing, as in [Controllers and Routes: Other services failing](../controllers/#other-services-failing). See [Error handling](#error-handling) for error classes for each cause.
+Raise the error for the same cause. When the other action raises its class for one cause, raise your own class for that cause, not your plain `Error`, e.g. `rescue Posts::SendNewsletter::ServiceError` then `raise ServiceError, e.message`. Put that `rescue` before the one for the other action's `Error`. A controller that rescues your class for the service failing then still sees it, as in [Controllers and Routes: Other services failing](../controllers/#other-services-failing). See [Error handling](#error-handling) for error classes for each cause.
 
 If your action needs to carry on when the other action fails, the other action isn't part of your task. Run it as a separate step from a job instead.
 
@@ -442,7 +442,52 @@ end
 
 The newsletter service rejects a post it can't send, e.g. one with no title. The user can fix that, so a form rescues `RejectedError` and shows it. When the service itself fails, e.g. it returns a 500 or times out, the user can't fix it. A controller that calls the action rescues `ServiceError` with `rescue_from`, as in [Controllers and Routes: Other services failing](../controllers/#other-services-failing).
 
-Raise `ServiceError` for the client's base error class, e.g. `NewsletterClient::Error`, not a list of its errors. Then every failure of the service, e.g. a server error, a timeout or a refused connection, reaches the controller's handler. Rescue the causes the user can fix first, because Ruby uses the first `rescue` that matches. An error the action doesn't wrap is a bug, so it fails as normal.
+Raise the class for the service failing, e.g. `ServiceError`, for the client's base error class, e.g. `NewsletterClient::Error`, not a list of its errors. Then every failure of the service, e.g. a server error, a timeout or a refused connection, reaches the controller's handler. Rescue the causes the user can fix first, because Ruby uses the first `rescue` that matches. An error the action doesn't wrap is a bug, so it fails as normal.
+
+### Shared errors
+
+Several actions can call the same service for related tasks, e.g. `Posts::SendPublicNewsletter` and `Posts::SendPrivateNewsletter` both create a newsletter through `NewsletterClient`. They fail for the same causes, and their callers handle each cause the same way. Writing the same error classes in each action, and a handler for each in the controller, repeats the same code.
+
+You MAY define the error classes once, in a base class for the group. Inherit the base class from `ApplicationAction`, and name it after the group, ending in `Action`, e.g. `Posts::NewsletterAction` in `app/actions/posts/newsletter_action.rb`. The name tells you it isn't a task, so no one calls it. Inherit each action in the group from it, and leave out the action's own error classes.
+
+```ruby
+module Posts
+  class NewsletterAction < ApplicationAction
+    class Error < StandardError; end
+    class RejectedError < Error; end
+    class ServiceError < Error; end
+  end
+end
+```
+
+```ruby
+module Posts
+  class SendPrivateNewsletter < NewsletterAction
+    # ...
+
+    def call
+      response = NewsletterClient.new.create_private_newsletter(post)
+      post.update!(newsletter_id: response.id)
+    rescue NewsletterClient::UnprocessableError => e
+      raise RejectedError, e.message
+    rescue NewsletterClient::Error => e
+      raise ServiceError, e.message
+    end
+  end
+end
+```
+
+Ruby looks up a constant through the superclass, so `Posts::SendPrivateNewsletter::ServiceError` is `Posts::NewsletterAction::ServiceError`. Every action in the group raises the same classes. In a caller, rescue them by the base class's name, e.g. `rescue Posts::NewsletterAction::RejectedError`, so the caller doesn't look like it handles one action alone. A controller then needs one handler for the whole group, as in [Controllers and Routes: Other services failing](../controllers/#other-services-failing).
+
+An action that shares its errors SHOULD NOT define error classes. Put every class the group raises in the base class, so you can see every way the group fails in one place, and every action in it fails the same ways.
+
+When one action really needs a finer cause, it MAY add a subclass of a shared cause, e.g. `class TimeoutError < ServiceError; end` in `Posts::SendPrivateNewsletter`. It still inherits from the shared class, so a caller that rescues `Posts::NewsletterAction::ServiceError` still handles it.
+
+You MUST NOT inherit an error class in the action from the base class's `Error`, e.g. `class NewCauseError < Error; end` or `class Error < BaseAction::Error; end`. A new cause on one action means the group no longer fails for the same causes, and callers that rescue each shared cause miss it. A new `Error` is worse: the base class's other error classes don't inherit from it, so a caller that rescues the action's `Error` misses them. When an action needs a new cause, add its class to the base class.
+
+Share errors only when no caller needs to know which action in the group failed. A caller that rescues `Posts::NewsletterAction::ServiceError` can't tell. When a caller needs to know, give each action its own error classes.
+
+Actions that share errors MUST NOT call each other. They do related tasks with the same service, so work that needs more than one of them is a process. Run them in turn from a form or a job, as in [Calling other actions](#calling-other-actions). An action also couldn't wrap the other's errors, as in [Errors from other actions](#errors-from-other-actions). Its own class is the same class it would rescue, so callers couldn't tell which action failed.
 
 ## Transactions
 

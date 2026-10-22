@@ -190,7 +190,7 @@ end
 
 ## Other services failing
 
-When a controller rescues an action's `ServiceError`, as in [Controllers and Routes: Other services failing](../../guide/controllers/#other-services-failing), stub the service to fail in the request spec with its helper from `spec/support`, e.g. `stub_newsletter_create_failure`, and check the redirect and the alert. Match the whole flash, so the spec fails if the alert ever includes the service's reply. Stub a timeout the same way, with `stub_newsletter_create_timeout`. See [WebMock and VCR: Helpers and matchers](../gems/webmock/#helpers-and-matchers).
+When a controller rescues an action's error for the service failing, e.g. `ServiceError`, as in [Controllers and Routes: Other services failing](../../guide/controllers/#other-services-failing), stub the service to fail in the request spec with its helper from `spec/support`, e.g. `stub_newsletter_create_failure`, and check the redirect and the alert. Match the whole flash, so the spec fails if the alert ever includes the service's reply. Stub a timeout the same way, with `stub_newsletter_create_timeout`. See [WebMock and VCR: Helpers and matchers](../gems/webmock/#helpers-and-matchers).
 
 ```ruby
 it "redirects with an alert when the newsletter service fails" do

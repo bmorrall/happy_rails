@@ -36,6 +36,8 @@ Use a concern to group the code for one feature, when it could be shared with ot
 
 Put a shared concern in the `concerns/` directory of the classes that include it, e.g. `app/models/concerns/`, `app/controllers/concerns/`, `app/forms/concerns/` or `app/actions/concerns/`. Rails loads every `app/*/concerns/` directory as a root, so a concern there has no `Concerns::` namespace, e.g. `ValidatedCallable` in `app/actions/concerns/validated_callable.rb`. If only one class uses the code, write it in a `concerning` block in that class instead. It stays grouped and easy to remove, without a separate file.
 
+A shared concern MUST NOT read the instance variables of the classes that include it, e.g. `@record` in a controller. It can't know which class includes it, or whether that class has set them yet. Call a method instead, e.g. `current_user` in [`PunditPolicies`](../gems/pundit/#forms), or pass the value in. A concern MAY keep its own instance variables, e.g. to memoise a value it works out.
+
 ```ruby
 class Post < ApplicationRecord
   concerning :Publishing do

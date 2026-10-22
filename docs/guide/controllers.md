@@ -555,7 +555,7 @@ end
 
 When a controller calls an [action](../actions/) that calls another service, the service can fail, e.g. it returns a 500 or times out. That isn't part of the app's normal flow. The user didn't cause it, and can't fix it by changing what they submitted. Give the action an error class for this cause, e.g. `Posts::SendNewsletter::ServiceError`, as in [Actions: Error handling](../actions/#error-handling). Rescue it with `rescue_from`, and name the handler after the action and the error, e.g. `handle_send_newsletter_service_error`. Errors the user or a developer caused, e.g. invalid data, still belong in a form, as above.
 
-Always rescue `ServiceError` itself, even when you also rescue its subclasses. It is the catch-all: it covers every way the service can fail, including a cause added later. A subclass can have its own handler, e.g. when an API returns another status for a timeout, as below.
+Always rescue the action's class for the service failing itself, e.g. `ServiceError`, even when you also rescue its subclasses. It is the catch-all: it covers every way the service can fail, including a cause added later. A subclass can have its own handler, e.g. when an API returns another status for a timeout, as below.
 
 In the handler, redirect with an alert. Write the alert as fixed text, and you MUST NOT show the error's message. It might hold the other service's reply, or details about your systems.
 
@@ -585,11 +585,18 @@ module Posts
 end
 ```
 
-An API controller renders the error instead, with a 5xx status, so the client knows its request wasn't the problem. Render `ServiceError` with `:bad_gateway` (502), which says the other service failed.
+When the action [shares its errors](../actions/#shared-errors) with a group of actions, rescue the base class's error class for that cause, e.g. `Posts::NewsletterAction::ServiceError`, and name the handler after the base class. One handler then covers every action in the group.
 
-When the client needs another status for one cause, give the action a subclass of `ServiceError` for it, e.g. `Posts::SendNewsletter::TimeoutError`, and rescue it with its own handler. Use `:gateway_timeout` (504) when the service took too long to reply. Use `:service_unavailable` (503) when the service can't be reached for now, e.g. it is down for maintenance. A 503 tells the client to try again later.
+```ruby
+rescue_from Posts::NewsletterAction::ServiceError,
+  with: :handle_newsletter_action_service_error
+```
 
-Declare the subclass's `rescue_from` after the one for `ServiceError`. Rails checks the handlers from the last one declared to the first, so the subclass's handler has to come last to be found first.
+An API controller renders the error instead, with a 5xx status, so the client knows its request wasn't the problem. Render the action's class for the service failing with `:bad_gateway` (502), which says the other service failed.
+
+When the client needs another status for one cause, give the action a subclass of that class for it, e.g. `Posts::SendNewsletter::TimeoutError`, and rescue it with its own handler. Use `:gateway_timeout` (504) when the service took too long to reply. Use `:service_unavailable` (503) when the service can't be reached for now, e.g. it is down for maintenance. A 503 tells the client to try again later.
+
+Declare the subclass's `rescue_from` after the one for its parent class. Rails checks the handlers from the last one declared to the first, so the subclass's handler has to come last to be found first.
 
 ```ruby
 rescue_from Posts::SendNewsletter::ServiceError,
@@ -611,6 +618,52 @@ def handle_send_newsletter_timeout_error
     status: :gateway_timeout
 end
 ```
+
+When more than one controller calls actions in the group, put the `rescue_from` and its handler in a concern, as in [Directory Layout: Concerns](../directory-layout/#concerns). Name it after the base class, ending in `ErrorHandling`, e.g. `NewsletterActionErrorHandling` in `app/controllers/concerns/newsletter_action_error_handling.rb`. Include it in each controller that calls the group's actions. Every controller then handles the group's errors the same way, and the alert's text is in one place.
+
+Like any shared concern, its handler can't read the controller's instance variables. Redirect to the location from a private method named after the concern, e.g. `newsletter_action_error_location`, and return `root_url` from it. Every user can see the root page, so the redirect always works.
+
+```ruby
+module NewsletterActionErrorHandling
+  extend ActiveSupport::Concern
+
+  included do
+    rescue_from Posts::NewsletterAction::ServiceError,
+      with: :handle_newsletter_action_service_error
+  end
+
+  private
+
+  def handle_newsletter_action_service_error
+    redirect_to newsletter_action_error_location,
+      alert: "Newsletter could not be sent. Please try again later."
+  end
+
+  def newsletter_action_error_location
+    root_url
+  end
+end
+```
+
+The root page is only a fallback. A user sent there loses their place. Each controller SHOULD override the location method to go back to the record the user was working on, e.g. `post_path(@post)`. The override is the controller's own method, so it can read `@post`. The action raises after the controller has loaded it.
+
+```ruby
+module Posts
+  class PrivateNewslettersController < BaseController
+    include NewsletterActionErrorHandling
+
+    # ...
+
+    private
+
+    def newsletter_action_error_location
+      post_path(@post)
+    end
+  end
+end
+```
+
+For API controllers, write a separate concern that renders the fixed response with `:bad_gateway`, e.g. `Api::NewsletterActionErrorHandling` in `app/controllers/concerns/api/newsletter_action_error_handling.rb`. It needs no location method.
 
 See [Testing: Controllers and Routes](../../testing/controllers/#other-services-failing) for the request specs.
 

@@ -41,6 +41,7 @@ Follow these rules for all changes. Area-specific rules are in `.github/instruct
 ## Project layout
 
 - Group the code for one feature in a concern when it could be shared with other classes or removed all at once later. Name the concern after what it does, and put it in the `concerns/` directory of the classes that include it, e.g. `app/models/concerns/`, `app/controllers/concerns/`, `app/forms/concerns/` or `app/actions/concerns/`.
+- A shared concern MUST NOT read the instance variables of the classes that include it, e.g. `@record` in a controller. Call a method instead, e.g. `current_user`, or pass the value in. A concern MAY keep its own instance variables, e.g. to memoise a value it works out.
 - When only one class uses the code, write it in a `concerning` block in that class instead of a separate concern file, e.g. `concerning :Publishing do` in `Post`, with the `published` scope and `publish` method inside it.
 - Put every `include`, callback, error handler and helper a gem adds to a base class in one concern named after the gem's module, and include that concern in the base class, e.g. `PunditAuthorization` in `app/controllers/concerns/pundit_authorization.rb` with `include Pundit::Authorization`, `after_action :verify_authorized` and `rescue_from Pundit::NotAuthorizedError, with: :handle_not_authorized_error`, included in `ApplicationController`.
 - TODO: List where each kind of code belongs.
