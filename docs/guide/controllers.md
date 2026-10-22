@@ -669,6 +669,8 @@ end
 
 For API controllers, write a separate concern that renders the fixed response with `:bad_gateway`, e.g. `Api::NewsletterActionErrorHandling` in `app/controllers/concerns/api/newsletter_action_error_handling.rb`. It needs no `after_` path method.
 
+To report the error from the concern, see [Honeybadger: Error handling concerns](../gems/honeybadger/#error-handling-concerns).
+
 See [Testing: Controllers and Routes](../../testing/controllers/#other-services-failing) for the request specs.
 
 ## Authorization

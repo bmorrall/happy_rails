@@ -97,6 +97,56 @@ def handle_create_comment_service_error(error)
 end
 ```
 
+### Error handling concerns
+
+An [error handling concern](../../controllers/#other-services-failing) can't read the controller's instance variables, so its handler can't pass the records' context itself. Take the context from a private method instead. Name it after the handler, without `handle_` and with `_context` on the end, e.g. `newsletter_action_service_error_context` for `handle_newsletter_action_service_error`, and return an empty hash from it. It works like the handler's `after_` path method.
+
+```ruby
+module NewsletterActionErrorHandling
+  extend ActiveSupport::Concern
+
+  included do
+    rescue_from Posts::NewsletterAction::ServiceError,
+      with: :handle_newsletter_action_service_error
+  end
+
+  private
+
+  def handle_newsletter_action_service_error(error)
+    Honeybadger.notify(error, context: newsletter_action_service_error_context)
+
+    redirect_to after_newsletter_action_service_error_path,
+      alert: "Newsletter could not be sent. Please try again later."
+  end
+
+  def newsletter_action_service_error_context
+    {}
+  end
+
+  # ...
+end
+```
+
+Each controller that includes the concern SHOULD override the context method to pass the context of the records the user was working on, e.g. `@post`. A report with no records only says that the service failed, not what for.
+
+```ruby
+module Posts
+  class PrivateNewslettersController < BaseController
+    include NewsletterActionErrorHandling
+
+    # ...
+
+    private
+
+    def newsletter_action_service_error_context
+      { post: @post&.to_honeybadger_context }
+    end
+
+    # ...
+  end
+end
+```
+
 ### Errors
 
 An error can carry context too. When an error defines `to_honeybadger_context`, Honeybadger adds its hash to the report. The context you pass to `Honeybadger.notify` wins when both use the same key.
