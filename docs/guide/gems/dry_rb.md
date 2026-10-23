@@ -34,6 +34,35 @@ class NewsletterClient
 end
 ```
 
+### Nested hashes and arrays
+
+Declare a nested hash or array with a block on its attribute. You don't need to name it. dry-struct builds the nested struct and names it after the attribute, e.g. `CreateNewsletterRequest::Tracking` for `tracking`, or `Link` for an array of `links`. The nested struct keeps the request's `schema schema.strict`. The caller passes plain hashes for nested values, so it never names the nested class.
+
+```ruby
+class NewsletterClient
+  class CreateNewsletterRequest < Dry::Struct
+    schema schema.strict
+
+    attribute :title, Types::String
+    attribute :tracking do
+      attribute :opens, Types::Bool
+      attribute :clicks, Types::Bool
+    end
+  end
+
+  # ...
+end
+```
+
+```ruby
+request = NewsletterClient::CreateNewsletterRequest.new(
+  title: post.title,
+  tracking: { opens: true, clicks: false }
+)
+```
+
+When you do need to name one, e.g. two attributes share the same shape, define its class inside the request or reply that uses it, not in the service. It then belongs to that request, and moves or goes with it. You MUST NOT define it at the top of the service, or in `app/models/`.
+
 ## Types
 
 Keep the app's types in one `Types` module, in `lib/types.rb`. Every struct then names its types the same way, e.g. `Types::String`, and the app has one place to add its own. Rails autoloads it with `config.autoload_lib`, which new apps call in `config/application.rb`.
