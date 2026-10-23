@@ -187,6 +187,25 @@ class CreatePostForm < ApplicationForm
 end
 ```
 
+When nothing is likely to call the method, e.g. in a form for an API endpoint, which has no select, you SHOULD put the choices in a constant under Constants instead. Use the constant in the validation, e.g. `CATEGORIES` in `Api::V1::CreatePostForm`.
+
+```ruby
+class Api::V1::CreatePostForm < BaseForm
+  ### Constants ###
+
+  CATEGORIES = Post.categories.keys
+
+  # ...
+
+  ### Validations ###
+
+  validates :category,
+    inclusion: { in: CATEGORIES }
+end
+```
+
+A constant is set once, when the class loads. When the choices depend on the form's resource or user, e.g. a scope of the post's comments, keep the `collection_for_<attribute>` method.
+
 Write a form's validations as you would a model's, e.g. add `allow_blank: true` next to `presence: true`. See [Models: Validations](../models/#validations).
 
 Tidy a form attribute with `normalizes` under `### Attributes ###`, as in a model, e.g. `normalizes :title, with: ->(title) { title.strip }`. You MUST NOT use a `before_validation` callback for it. See [Models: Normalising values](../models/#normalising-values). Form objects can use `normalizes` from Rails 8.1. Before that, leave `ActiveModel::Attributes::Normalization` out of `ApplicationForm` and any `BaseForm`, and tidy the value in a `before_validation` callback under `### Callbacks ###`, e.g. `before_validation { self.title = title&.strip }`.
