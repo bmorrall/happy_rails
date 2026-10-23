@@ -274,6 +274,27 @@ class SyncNewslettersJob < ApplicationJob
 end
 ```
 
+### Files for requests and replies
+
+Define a service's requests and replies at the top of the service at first. When they crowd out its methods, a service MAY move each one into its own file, in a folder named after the service, e.g. `app/services/newsletter_client/create_newsletter_request.rb`. Zeitwerk loads `NewsletterClient::CreateNewsletterRequest` from it, so callers don't change. Errors stay in the service's file, as in [Errors](#errors).
+
+```ruby
+# app/services/newsletter_client/create_newsletter_request.rb
+class NewsletterClient
+  CreateNewsletterRequest = Data.define(
+    :title,
+    :body,
+    :preheader,
+    :send_at,
+    :reply_to,
+    :track_opens,
+    :track_clicks
+  )
+end
+```
+
+You MUST NOT move them into `app/models/`. A request or reply takes its shape from the other service's API, not from the app's records. Kept in `app/services/`, everything for one service is in one place, and you delete it all together. In `app/models/`, a reply looks like a model the app can use, but code outside the service MUST NOT name it.
+
 ## Configuration
 
 Read a service's settings, e.g. an API key, from `Rails.application.config.x`. Give each service its own namespace, named after it, e.g. `config.x.newsletter_client`. Rails keeps `config.x` for app settings, so your keys never clash with a setting from Rails or a gem.
@@ -491,6 +512,8 @@ A service MAY raise a subclass of `Error` for a failure a caller handles on its 
 - `NotFoundError` when the other service doesn't have the resource, e.g. `Faraday::ResourceNotFound` for a newsletter deleted on its side. A job can clear the post's `newsletter_id` instead of failing.
 
 Rescue the library's specific errors before its base error, because Ruby uses the first `rescue` that matches.
+
+Define the error classes in the service's file, even when its requests and replies have their own files. The errors then sit next to the code that raises them, and a reader sees every failure the service can raise in one place.
 
 ```ruby
 class NewsletterClient
