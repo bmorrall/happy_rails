@@ -44,27 +44,43 @@ class ApplicationForm
 end
 ```
 
-When the app has no signed-in user, e.g. an API that only other services call, leave `current_user` out. `ApplicationForm` then has no `initialize` or `attr_reader`, and takes the params through `ActiveModel::Model`'s own `initialize`. Every form leaves `current_user` out of its `initialize` and its `super` call. You MUST NOT pass `nil`, or a stand-in user, to keep the signature. A form would then look like it knows who is submitting it, when nobody does.
+### Forms without a signed-in user
+
+An API that authenticates without a user, e.g. with a shared token, has its own base controller in its own namespace, e.g. `Api::V1::BaseController`. See [Authentication](../controllers/#authentication). Give the namespace's forms their own base class in the same namespace, named `BaseForm`, e.g. `Api::V1::BaseForm` in `app/forms/api/v1/base_form.rb`. Its forms inherit from it, e.g. `Api::V1::CreatePostForm < BaseForm`.
+
+You MUST NOT inherit `BaseForm` from `ApplicationForm`. `BaseForm` includes the same modules, and takes only the params, through `ActiveModel::Model`'s own `initialize`. Its forms leave `current_user` out of their `initialize` and their `super` call. `ApplicationForm` stays for forms that a signed-in user submits, so code that needs the user, e.g. [Pundit's policies](../gems/pundit/#forms), never reaches a form without one.
 
 ```ruby
-class ApplicationForm
-  include ActiveModel::Model
-  include ActiveModel::Attributes
-  include ActiveModel::Attributes::Normalization
-  include ActiveModel::Validations::Callbacks
-end
-```
-
-```ruby
-class UpdatePostForm < ApplicationForm
-  def initialize(post, params = {})
-    @post = post
-    super(params)
+module Api
+  module V1
+    class BaseForm
+      include ActiveModel::Model
+      include ActiveModel::Attributes
+      include ActiveModel::Attributes::Normalization
+      include ActiveModel::Validations::Callbacks
+    end
   end
-
-  # ...
 end
 ```
+
+```ruby
+module Api
+  module V1
+    class CreatePostForm < BaseForm
+      def initialize(post, params = {})
+        @post = post
+        super(params)
+      end
+
+      # ...
+    end
+  end
+end
+```
+
+When the whole app has no signed-in user, e.g. a service that only other services call, leave `current_user` out of `ApplicationForm` instead. It then has no `initialize` or `attr_reader`, like `BaseForm`.
+
+You MUST NOT pass `nil`, or a stand-in user, as the current user to keep the signature. A form would then look like it knows who is submitting it, when nobody does.
 
 ## Layout
 
@@ -173,7 +189,7 @@ end
 
 Write a form's validations as you would a model's, e.g. add `allow_blank: true` next to `presence: true`. See [Models: Validations](../models/#validations).
 
-Tidy a form attribute with `normalizes` under `### Attributes ###`, as in a model, e.g. `normalizes :title, with: ->(title) { title.strip }`. You MUST NOT use a `before_validation` callback for it. See [Models: Normalising values](../models/#normalising-values). Form objects can use `normalizes` from Rails 8.1. Before that, leave `ActiveModel::Attributes::Normalization` out of `ApplicationForm`, and tidy the value in a `before_validation` callback under `### Callbacks ###`, e.g. `before_validation { self.title = title&.strip }`.
+Tidy a form attribute with `normalizes` under `### Attributes ###`, as in a model, e.g. `normalizes :title, with: ->(title) { title.strip }`. You MUST NOT use a `before_validation` callback for it. See [Models: Normalising values](../models/#normalising-values). Form objects can use `normalizes` from Rails 8.1. Before that, leave `ActiveModel::Attributes::Normalization` out of `ApplicationForm` and any `BaseForm`, and tidy the value in a `before_validation` callback under `### Callbacks ###`, e.g. `before_validation { self.title = title&.strip }`.
 
 ```ruby
 class CreatePostForm < ApplicationForm
