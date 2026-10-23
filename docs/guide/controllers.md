@@ -589,11 +589,11 @@ module Posts
 end
 ```
 
-When the action [shares its errors](../actions/#shared-errors) with a group of actions, rescue the base class's error class for that cause, e.g. `Posts::NewsletterAction::ServiceError`, and name the handler after the base class. One handler then covers every action in the group.
+When the action [shares its errors](../actions/#shared-errors) with a group of actions, rescue the base class's error class for that cause, e.g. `Posts::NewsletterAction::ServiceError`, and name the handler after the base class. Put the base class's module first, e.g. `handle_posts_newsletter_action_service_error`. The base class is named after its group, not its task, so `NewsletterAction` alone doesn't say which records it works on. One handler then covers every action in the group.
 
 ```ruby
 rescue_from Posts::NewsletterAction::ServiceError,
-  with: :handle_newsletter_action_service_error
+  with: :handle_posts_newsletter_action_service_error
 ```
 
 An API controller renders the error instead, with a 5xx status, so the client knows its request wasn't the problem. Render the action's class for the service failing with `:bad_gateway` (502), which says the other service failed.
@@ -633,7 +633,7 @@ module Posts
     before_action :set_post
 
     rescue_from Posts::NewsletterAction::ServiceError,
-      with: :handle_newsletter_action_service_error
+      with: :handle_posts_newsletter_action_service_error
 
     private
 
@@ -641,7 +641,7 @@ module Posts
       # ...
     end
 
-    def handle_newsletter_action_service_error
+    def handle_posts_newsletter_action_service_error
       redirect_to post_path(@post),
         alert: "Newsletter could not be sent. Please try again later."
     end
@@ -653,7 +653,7 @@ When the controllers that call the group's actions don't share a base controller
 
 You MAY write the concern even when the controllers share a base controller, e.g. to keep the group's handlers in their own file. Include it once, in the base controller, e.g. `include NewsletterActionErrorHandling` in `Posts::BaseController`, and override its `after_` path method there. You MUST NOT include it in each nested controller. Every new nested controller would then need to remember it.
 
-Like any shared concern, its handler can't read the controller's instance variables. Redirect to the path from a private method instead, as in [Rescuing errors](#rescuing-errors), e.g. `after_newsletter_action_service_error_path`, and return `root_path` from it. Every user can see the root page, so the redirect always works.
+Like any shared concern, its handler can't read the controller's instance variables. Redirect to the path from a private method instead, as in [Rescuing errors](#rescuing-errors), e.g. `after_posts_newsletter_action_service_error_path`, and return `root_path` from it. Every user can see the root page, so the redirect always works.
 
 ```ruby
 module NewsletterActionErrorHandling
@@ -661,17 +661,17 @@ module NewsletterActionErrorHandling
 
   included do
     rescue_from Posts::NewsletterAction::ServiceError,
-      with: :handle_newsletter_action_service_error
+      with: :handle_posts_newsletter_action_service_error
   end
 
   private
 
-  def handle_newsletter_action_service_error
-    redirect_to after_newsletter_action_service_error_path,
+  def handle_posts_newsletter_action_service_error
+    redirect_to after_posts_newsletter_action_service_error_path,
       alert: "Newsletter could not be sent. Please try again later."
   end
 
-  def after_newsletter_action_service_error_path
+  def after_posts_newsletter_action_service_error_path
     root_path
   end
 end
@@ -687,7 +687,7 @@ class PostsController < ApplicationController
 
   private
 
-  def after_newsletter_action_service_error_path
+  def after_posts_newsletter_action_service_error_path
     post_path(@post)
   end
 end

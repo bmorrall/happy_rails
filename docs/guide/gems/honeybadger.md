@@ -99,7 +99,7 @@ end
 
 ### Error handling concerns
 
-An [error handling concern](../../controllers/#other-services-failing) can't read the controller's instance variables, so its handler can't pass the records' context itself. Take the context from a private method instead. Name it after the handler, without `handle_` and with `_context` on the end, e.g. `newsletter_action_service_error_context` for `handle_newsletter_action_service_error`, and return an empty hash from it. It works like the handler's `after_` path method.
+An [error handling concern](../../controllers/#other-services-failing) can't read the controller's instance variables, so its handler can't pass the records' context itself. Take the context from a private method instead. Name it after the handler, without `handle_` and with `_context` on the end, e.g. `posts_newsletter_action_service_error_context` for `handle_posts_newsletter_action_service_error`, and return an empty hash from it. It works like the handler's `after_` path method.
 
 ```ruby
 module NewsletterActionErrorHandling
@@ -107,19 +107,19 @@ module NewsletterActionErrorHandling
 
   included do
     rescue_from Posts::NewsletterAction::ServiceError,
-      with: :handle_newsletter_action_service_error
+      with: :handle_posts_newsletter_action_service_error
   end
 
   private
 
-  def handle_newsletter_action_service_error(error)
-    Honeybadger.notify(error, context: newsletter_action_service_error_context)
+  def handle_posts_newsletter_action_service_error(error)
+    Honeybadger.notify(error, context: posts_newsletter_action_service_error_context)
 
-    redirect_to after_newsletter_action_service_error_path,
+    redirect_to after_posts_newsletter_action_service_error_path,
       alert: "Newsletter could not be sent. Please try again later."
   end
 
-  def newsletter_action_service_error_context
+  def posts_newsletter_action_service_error_context
     {}
   end
 
@@ -137,7 +137,7 @@ class PostsController < ApplicationController
 
   private
 
-  def newsletter_action_service_error_context
+  def posts_newsletter_action_service_error_context
     { post: @post&.to_honeybadger_context }
   end
 

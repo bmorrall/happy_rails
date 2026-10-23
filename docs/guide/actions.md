@@ -481,7 +481,7 @@ Ruby looks up a constant through the superclass, so `Posts::SendPrivateNewslette
 
 An action that shares its errors SHOULD NOT define error classes. Put every class the group raises in the base class, so you can see every way the group fails in one place, and every action in it fails the same ways.
 
-The base class MAY also hand its actions the service, in a private method that builds it, yields it to a block, and turns the service's errors into the group's. Name it `with_` and the service, e.g. `with_newsletter_client` for `NewsletterClient`. When the group calls more than one service, give each service its own method. Each action then makes its call in the block, instead of repeating the same `rescue`s. When you add a cause, you map it once, and no action in the group can miss it. When the service is built from a record, e.g. `NewsletterClient.for(integration)`, only the method changes.
+The base class MAY also hand its actions the service, in a private method that builds it, yields it to a block, and turns the service's errors into the group's. Name it `with_` and the service, e.g. `with_newsletter_client` for `NewsletterClient`. When the service is in a module, put the module's name first, e.g. `with_newsletter_client` for `Newsletter::Client`, not `with_client`. The name then says which service it builds. When the group calls more than one service, give each service its own method. Each action then makes its call in the block, instead of repeating the same `rescue`s. When you add a cause, you map it once, and no action in the group can miss it. When the service is built from a record, e.g. `NewsletterClient.for(integration)`, only the method changes.
 
 ```ruby
 module Posts
