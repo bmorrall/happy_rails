@@ -2,7 +2,7 @@
 title: Honeybadger
 parent: Gems
 grand_parent: Testing
-nav_order: 4
+nav_order: 5
 ---
 
 # Honeybadger

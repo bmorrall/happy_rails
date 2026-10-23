@@ -66,6 +66,7 @@ Each [gem](../guide/gems/) has its own file. If your app does not use a gem, del
 | `happy_aasm.instructions.md` | AASM | `app/models/**`, `app/actions/**`, `app/forms/**`, `app/controllers/**`, `app/jobs/**`, `app/policies/**`, `app/decorators/**` |
 | `happy_devise.instructions.md` | Devise | `config/routes.rb`, `app/models/user.rb`, `app/controllers/users/**`, `app/views/devise/**` |
 | `happy_draper.instructions.md` | Draper | `app/decorators/**`, `app/controllers/**`, `app/views/**`, `app/helpers/**` |
+| `happy_dry_rb.instructions.md` | dry-rb | `app/services/**` |
 | `happy_honeybadger.instructions.md` | Honeybadger | `app/models/**`, `app/actions/**`, `app/controllers/**`, `app/jobs/**`, `app/services/**` |
 | `happy_pundit.instructions.md` | Pundit | `app/policies/**`, `app/controllers/**`, `app/views/**`, `app/forms/**` |
 | `happy_simple_form.instructions.md` | Simple Form | `app/models/**`, `app/views/**`, `app/inputs/**`, `app/helpers/**`, `config/initializers/simple_form.rb` |
@@ -93,6 +94,7 @@ The rules for specs are in their own `happy_rspec_*` files, one for each area an
 | `happy_rspec_aasm.instructions.md` | `spec/models/**` |
 | `happy_rspec_devise.instructions.md` | `spec/requests/users/**` |
 | `happy_rspec_draper.instructions.md` | `spec/decorators/**`, `spec/support/**` |
+| `happy_rspec_dry_rb.instructions.md` | `spec/services/**` |
 | `happy_rspec_honeybadger.instructions.md` | `spec/**` |
 | `happy_rspec_pundit.instructions.md` | `spec/policies/**` |
 | `happy_rspec_shoulda_matchers.instructions.md` | `spec/models/**`, `spec/forms/**` |
@@ -119,6 +121,7 @@ Ask your agent to set up Happy Rails to run it, e.g. "Set up this app for Happy 
 | `references/views.md` | `UnknownValuesHelper` |
 | `references/devise.md` | Devise |
 | `references/draper.md` | `NilDecorator`, `ApplicationDecorator` |
+| `references/dry_rb.md` | `Types` |
 | `references/honeybadger.md` | `HoneybadgerCauseContext` |
 | `references/pundit.md` | `ApplicationPolicy`, `PunditAuthorization`, `PunditPolicies`, `spec/support/pundit.rb` |
 | `references/shoulda_matchers.md` | `spec/support/shoulda_matchers.rb` |

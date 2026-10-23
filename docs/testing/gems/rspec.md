@@ -2,7 +2,7 @@
 title: RSpec and FactoryBot
 parent: Gems
 grand_parent: Testing
-nav_order: 6
+nav_order: 7
 ---
 
 # RSpec and FactoryBot

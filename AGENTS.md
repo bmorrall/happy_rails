@@ -27,6 +27,7 @@ Each convention is written twice: once in the guide or testing pages for people,
 | `docs/guide/gems/aasm.md` | `instructions/.github/instructions/happy_aasm.instructions.md` |
 | `docs/guide/gems/devise.md` | `instructions/.github/instructions/happy_devise.instructions.md` |
 | `docs/guide/gems/draper.md` | `instructions/.github/instructions/happy_draper.instructions.md` |
+| `docs/guide/gems/dry_rb.md` | `instructions/.github/instructions/happy_dry_rb.instructions.md` |
 | `docs/guide/gems/honeybadger.md` | `instructions/.github/instructions/happy_honeybadger.instructions.md` |
 | `docs/guide/gems/pundit.md` | `instructions/.github/instructions/happy_pundit.instructions.md` |
 | `docs/guide/gems/simple_form.md` | `instructions/.github/instructions/happy_simple_form.instructions.md` |
@@ -47,6 +48,7 @@ Each convention is written twice: once in the guide or testing pages for people,
 | `docs/testing/gems/aasm.md` | `instructions/.github/instructions/happy_rspec_aasm.instructions.md` |
 | `docs/testing/gems/devise.md` | `instructions/.github/instructions/happy_rspec_devise.instructions.md` |
 | `docs/testing/gems/draper.md` | `instructions/.github/instructions/happy_rspec_draper.instructions.md` |
+| `docs/testing/gems/dry_rb.md` | `instructions/.github/instructions/happy_rspec_dry_rb.instructions.md` |
 | `docs/testing/gems/honeybadger.md` | `instructions/.github/instructions/happy_rspec_honeybadger.instructions.md` |
 | `docs/testing/gems/pundit.md` | `instructions/.github/instructions/happy_rspec_pundit.instructions.md` |
 | `docs/testing/gems/shoulda_matchers.md` | `instructions/.github/instructions/happy_rspec_shoulda_matchers.instructions.md` |
