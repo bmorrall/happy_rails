@@ -481,7 +481,46 @@ Ruby looks up a constant through the superclass, so `Posts::SendPrivateNewslette
 
 An action that shares its errors SHOULD NOT define error classes. Put every class the group raises in the base class, so you can see every way the group fails in one place, and every action in it fails the same ways.
 
-When one action really needs a finer cause, it MAY add a subclass of a shared cause, e.g. `class TimeoutError < ServiceError; end` in `Posts::SendPrivateNewsletter`. It still inherits from the shared class, so a caller that rescues `Posts::NewsletterAction::ServiceError` still handles it.
+The base class MAY also turn the service's errors into the group's, in a private method that takes a block. Name it `with_` and the group's errors, e.g. `with_newsletter_errors`. Each action then wraps its service call in the block, instead of repeating the same `rescue`s. When you add a cause, you map it once, and no action in the group can miss it.
+
+```ruby
+module Posts
+  class NewsletterAction < ApplicationAction
+    class Error < StandardError; end
+    class RejectedError < Error; end
+    class ServiceError < Error; end
+
+    private
+
+    def with_newsletter_errors
+      yield
+    rescue NewsletterClient::UnprocessableError => e
+      raise RejectedError, e.message
+    rescue NewsletterClient::Error => e
+      raise ServiceError, e.message
+    end
+  end
+end
+```
+
+```ruby
+module Posts
+  class SendPrivateNewsletter < NewsletterAction
+    # ...
+
+    def call
+      newsletter = with_newsletter_errors do
+        NewsletterClient.new.create_private_newsletter(title: post.title, body: post.body)
+      end
+      post.update!(newsletter_id: newsletter.id)
+    end
+  end
+end
+```
+
+Wrap only the service call. A save that fails, e.g. `update!`, isn't the service failing, so it passes through as normal. The method raises inside `rescue`, so Ruby keeps the service's error as the `cause`, as in [Error handling](#error-handling).
+
+When one action really needs a finer cause, it MAY add a subclass of a shared cause, e.g. `class TimeoutError < ServiceError; end` in `Posts::SendPrivateNewsletter`. It still inherits from the shared class, so a caller that rescues `Posts::NewsletterAction::ServiceError` still handles it. When the group has a `with_` method, rescue the finer cause inside its block, e.g. `rescue NewsletterClient::TimeoutError => e` then `raise TimeoutError, e.message`. The block's `rescue` runs first, and the method lets the action's own error pass through.
 
 You MUST NOT inherit an error class in the action from the base class's `Error`, e.g. `class NewCauseError < Error; end` or `class Error < BaseAction::Error; end`. A new cause on one action means the group no longer fails for the same causes, and callers that rescue each shared cause miss it. A new `Error` is worse: the base class's other error classes don't inherit from it, so a caller that rescues the action's `Error` misses them. When an action needs a new cause, add its class to the base class.
 
