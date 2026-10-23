@@ -44,6 +44,28 @@ class ApplicationForm
 end
 ```
 
+When the app has no signed-in user, e.g. an API that only other services call, leave `current_user` out. `ApplicationForm` then has no `initialize` or `attr_reader`, and takes the params through `ActiveModel::Model`'s own `initialize`. Every form leaves `current_user` out of its `initialize` and its `super` call. You MUST NOT pass `nil`, or a stand-in user, to keep the signature. A form would then look like it knows who is submitting it, when nobody does.
+
+```ruby
+class ApplicationForm
+  include ActiveModel::Model
+  include ActiveModel::Attributes
+  include ActiveModel::Attributes::Normalization
+  include ActiveModel::Validations::Callbacks
+end
+```
+
+```ruby
+class UpdatePostForm < ApplicationForm
+  def initialize(post, params = {})
+    @post = post
+    super(params)
+  end
+
+  # ...
+end
+```
+
 ## Layout
 
 Group the declarations in a form object under comment headings, in the same style as [models](../models/), in this order:
