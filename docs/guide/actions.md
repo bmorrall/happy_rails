@@ -481,7 +481,7 @@ Ruby looks up a constant through the superclass, so `Posts::SendPrivateNewslette
 
 An action that shares its errors SHOULD NOT define error classes. Put every class the group raises in the base class, so you can see every way the group fails in one place, and every action in it fails the same ways.
 
-The base class MAY also turn the service's errors into the group's, in a private method that takes a block. Name it `with_` and the group's errors, e.g. `with_newsletter_errors`. Each action then wraps its service call in the block, instead of repeating the same `rescue`s. When you add a cause, you map it once, and no action in the group can miss it.
+The base class MAY also turn the service's errors into the group's, in a private method that takes a block. Name it `with_`, then the service, then `_errors`, e.g. `with_newsletter_client_errors` for `NewsletterClient`. The name says whose errors it rescues. When the group calls more than one service, give each service its own method. Each action then wraps its service call in the block, instead of repeating the same `rescue`s. When you add a cause, you map it once, and no action in the group can miss it.
 
 ```ruby
 module Posts
@@ -492,7 +492,7 @@ module Posts
 
     private
 
-    def with_newsletter_errors
+    def with_newsletter_client_errors
       yield
     rescue NewsletterClient::UnprocessableError => e
       raise RejectedError, e.message
@@ -509,7 +509,7 @@ module Posts
     # ...
 
     def call
-      newsletter = with_newsletter_errors do
+      newsletter = with_newsletter_client_errors do
         NewsletterClient.new.create_private_newsletter(title: post.title, body: post.body)
       end
       post.update!(newsletter_id: newsletter.id)
