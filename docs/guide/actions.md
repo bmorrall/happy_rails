@@ -481,7 +481,7 @@ Ruby looks up a constant through the superclass, so `Posts::SendPrivateNewslette
 
 An action that shares its errors SHOULD NOT define error classes. Put every class the group raises in the base class, so you can see every way the group fails in one place, and every action in it fails the same ways.
 
-The base class MAY also turn the service's errors into the group's, in a private method that takes a block. Name it `with_`, then the service, then `_errors`, e.g. `with_newsletter_client_errors` for `NewsletterClient`. The name says whose errors it rescues. When the group calls more than one service, give each service its own method. Each action then wraps its service call in the block, instead of repeating the same `rescue`s. When you add a cause, you map it once, and no action in the group can miss it.
+The base class MAY also hand its actions the service, in a private method that builds it, yields it to a block, and turns the service's errors into the group's. Name it `with_` and the service, e.g. `with_newsletter_client` for `NewsletterClient`. When the group calls more than one service, give each service its own method. Each action then makes its call in the block, instead of repeating the same `rescue`s. When you add a cause, you map it once, and no action in the group can miss it. When the service is built from a record, e.g. `NewsletterClient.for(integration)`, only the method changes.
 
 ```ruby
 module Posts
@@ -492,8 +492,8 @@ module Posts
 
     private
 
-    def with_newsletter_client_errors
-      yield
+    def with_newsletter_client
+      yield NewsletterClient.new
     rescue NewsletterClient::UnprocessableError => e
       raise RejectedError, e.message
     rescue NewsletterClient::Error => e
@@ -509,8 +509,8 @@ module Posts
     # ...
 
     def call
-      newsletter = with_newsletter_client_errors do
-        NewsletterClient.new.create_private_newsletter(title: post.title, body: post.body)
+      newsletter = with_newsletter_client do |client|
+        client.create_private_newsletter(title: post.title, body: post.body)
       end
       post.update!(newsletter_id: newsletter.id)
     end
@@ -518,7 +518,9 @@ module Posts
 end
 ```
 
-Wrap only the service call. A save that fails, e.g. `update!`, isn't the service failing, so it passes through as normal. The method raises inside `rescue`, so Ruby keeps the service's error as the `cause`, as in [Error handling](#error-handling).
+Put only the service call in the block. A save that fails, e.g. `update!`, isn't the service failing, so it passes through as normal. When the action saves between two requests, as in [Services: One request per method](../services/#one-request-per-method), use a block for each request. The method raises inside `rescue`, so Ruby keeps the service's error as the `cause`, as in [Error handling](#error-handling).
+
+When the base class has the method, an action in the group MUST NOT build the service itself, e.g. with `NewsletterClient.new`. Its calls would then skip the group's errors.
 
 The base class MAY also take the record its namespace is named after, e.g. the post for `Posts::NewsletterAction`. An action under `Posts` already takes the post as its first argument, as in [Arguments](#arguments), so every action in the group starts the same way. Define `initialize` and its `attr_reader` in the base class, and leave them out of each action. Its file then holds only the task. Put any validations of that record in the base class too, e.g. `validates :post, presence: true`.
 
