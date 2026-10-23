@@ -16,18 +16,18 @@ A service object has no `call` method. Give each public method a name that says 
 
 ```ruby
 class NewsletterClient
-  def create_newsletter(post)
+  def create_newsletter(title:, body:)
     # ...
   end
 
-  def deliver(post)
+  def deliver(newsletter_id)
     # ...
   end
 end
 ```
 
 ```ruby
-response = NewsletterClient.new.create_newsletter(post)
+response = NewsletterClient.new.create_newsletter(title: post.title, body: post.body)
 ```
 
 ### One request per method
@@ -42,7 +42,7 @@ module Posts
     # ...
 
     def call
-      newsletter = NewsletterClient.new.create_public_newsletter(post)
+      newsletter = NewsletterClient.new.create_public_newsletter(title: post.title, body: post.body)
       post.update!(newsletter_id: newsletter.id)
       NotifySubscribersJob.perform_later(post)
     end
@@ -53,18 +53,18 @@ end
 ```ruby
 # Don't do this
 class NewsletterClient
-  def create_and_deliver(post)
-    newsletter = create_public_newsletter(post)
+  def create_and_deliver(title:, body:)
+    newsletter = create_public_newsletter(title:, body:)
     deliver_newsletter(newsletter.id)
   end
 end
 ```
 
-A request that only serves another request MAY stay in the service, e.g. fetching an access token, or looking up the other service's own ID for one of yours. It only reads, so a retry can repeat it safely, and the app never keeps or uses its reply. A request that changes something in the other service, e.g. reserving a slot before booking it, goes through an action, even when the app doesn't keep its reply. Make a read-only request in a private method, so callers still make one call. When you move the HTTP calls into a [gateway](#gateways), it moves to the gateway.
+A request that only serves another request MAY stay in the service, e.g. fetching an access token, or looking up the other service's own ID for one of yours. It only reads, so a retry can repeat it safely, and the app never keeps or uses its reply. A request that changes something in the other service, e.g. reserving a slot before booking it, goes through an action, even when the app doesn't keep its reply. Make a read-only request in a private method, so callers still make one call.
 
 ```ruby
 class NewsletterClient
-  def create_public_newsletter(post)
+  def create_public_newsletter(title:, body:)
     list_id = find_list_id("Weekly digest")
     # ...
   end
@@ -90,7 +90,7 @@ module Posts
     # ...
 
     def call
-      response = NewsletterClient.new.create_newsletter(post)
+      response = NewsletterClient.new.create_newsletter(title: post.title, body: post.body)
       post.update!(newsletter_id: response.id)
     end
   end
@@ -105,54 +105,139 @@ A job calls an action too. It MAY call a service directly only when the job is t
 
 ## Request bodies
 
-Build the request body in the service. Take records as arguments, e.g. `create_newsletter(post)`, and turn them into the body the other service expects.
+A service sends only the part of the other service's API that the app uses. The API, or its gem, takes every value an endpoint accepts. A service method takes only the values its caller decides, and fills in the rest itself, e.g. from its settings, its options, a lookup or a fixed value. Two methods MAY send to the same endpoint with different values filled in, e.g. `create_public_newsletter` and `create_private_newsletter` both create a newsletter, each with its own visibility.
 
-The body's format belongs to the other service. When its API changes, only the service changes, and every action that calls it gets the new format.
+Take each value the caller decides as a keyword argument, e.g. `create_public_newsletter(title:, body:)`. The action reads the values from its records, and decides what to send, e.g. `title: post.title`.
 
-Build the body as a hash. When it takes more than a line, build it in a private method on the service, named after what it builds, e.g. `newsletter_body(post)`. Kept with the service, it's easy to find, and you delete it with the service. A class your app uses for its own work stays with the rest of your app's code, e.g. in `app/models/` or `app/serializers/`, even when a service sends it.
+```ruby
+module Posts
+  class SendPublicNewsletter < NewsletterAction
+    # ...
+
+    def call
+      newsletter = NewsletterClient.new.create_public_newsletter(title: post.title, body: post.body)
+      post.update!(newsletter_id: newsletter.id)
+    end
+  end
+end
+```
+
+You SHOULD NOT pass a record to a method that makes a request. The service then doesn't depend on your records, and each caller chooses what it sends. A service that takes a record decides for every caller which of the record's values go out.
+
+```ruby
+# Don't do this
+class ExampleClient
+  def create_item(record)
+    connection.post("/items", { name: record.name, owner_name: record.owner.name })
+  end
+end
+```
+
+{: .rant }
+> This makes an action easier to call than the service under it, and that's on purpose. `Posts::SendPublicNewsletter.call(post)` takes the post. `NewsletterClient#create_public_newsletter` makes you pick out the title and body yourself. When you're in a rush, reach for the action. It already knows what to send, where to save the reply, and how to fail. The service is there for the action that needs something it doesn't do yet.
+
+You MUST NOT make the caller pass a value the service can fill in itself, e.g. the API key, or the ID of the "Weekly digest" list. The caller only knows what it wants to send. The service knows what the other service needs.
+
+Build the request body in the service, as a hash. The body's format belongs to the other service. When its API changes, only the service changes, and every action that calls it gets the new format.
+
+When the body takes more than a line, build it in a private method on the service, named after what it builds, e.g. `newsletter_body`. Kept with the service, it's easy to find, and you delete it with the service. A class your app uses for its own work stays with the rest of your app's code, e.g. in `app/models/` or `app/serializers/`, even when a service sends it.
 
 ```ruby
 class NewsletterClient
-  def create_newsletter(post)
+  def create_public_newsletter(title:, body:)
+    response = connection.post("#{api_path}/newsletters", newsletter_body(title:, body:, visibility: "public"))
     # ...
-    connection.post("#{api_path}/newsletters", newsletter_body(post))
+  end
+
+  def create_private_newsletter(title:, body:)
+    response = connection.post("#{api_path}/newsletters", newsletter_body(title:, body:, visibility: "private"))
+    # ...
   end
 
   private
 
-  def newsletter_body(post)
+  def newsletter_body(title:, body:, visibility:)
     {
-      title: post.title,
-      body: post.body,
-      author_name: post.author.name
+      title:,
+      body:,
+      visibility:
     }
   end
 end
 ```
 
-You SHOULD NOT define a `Data` object for the body in a service. A request object describes what a [gateway](#gateways) takes, and the gateway defines it. When you move the HTTP calls into a gateway, the private method builds the gateway's request instead of a hash, and nothing else in the service is renamed.
+You MUST NOT make the caller build the body, e.g. a hash with the other service's field names. The format would then spread to every caller.
 
-You MUST NOT make the caller build the request. Pass a value the service can't read from the record as a keyword argument instead. A [gateway](#gateways) is the one exception: the service builds the request and passes it to the gateway, as a hash or as a `Data` object the gateway defines.
+### Request objects
+
+Some requests take more values than keyword arguments can carry, e.g. a newsletter with a preheader, a send time, a reply-to address and tracking settings, which an editor fills in on a form. A service MAY then define a `Data` object for the request, at the top of the service. Keyword arguments stay the default.
+
+Name the request after the operation it's for, e.g. `NewsletterClient::CreateNewsletterRequest`. Methods that do the same operation with different values filled in share it, e.g. `create_public_newsletter` and `create_private_newsletter` both take a `CreateNewsletterRequest`. An operation that takes other fields gets its own request, e.g. an `UpdateNewsletterRequest`. Use `Data`, not a `Struct`.
+
+The request lists the values a caller can set, and nothing else. `Data` raises an `ArgumentError` when a value is missing, or when the caller passes one it doesn't have. A hash with an extra key then fails in the app, and never reaches the other service. The service turns the request into the body, and fills in the rest, as above.
 
 ```ruby
-# Don't do this
 class NewsletterClient
-  def create_newsletter(request)
+  CreateNewsletterRequest = Data.define(
+    :title,
+    :body,
+    :preheader,
+    :send_at,
+    :reply_to,
+    :track_opens,
+    :track_clicks
+  )
+
+  def create_public_newsletter(request)
+    response = connection.post("#{api_path}/newsletters", newsletter_body(request, visibility: "public"))
     # ...
+  end
+
+  def create_private_newsletter(request)
+    response = connection.post("#{api_path}/newsletters", newsletter_body(request, visibility: "private"))
+    # ...
+  end
+
+  private
+
+  def newsletter_body(request, visibility:)
+    request.to_h.merge(visibility:)
   end
 end
 ```
 
+The caller builds the service's request, and names its class to do so.
+
+```ruby
+module Posts
+  class SendPublicNewsletter < NewsletterAction
+    # ...
+
+    def call
+      request = NewsletterClient::CreateNewsletterRequest.new(
+        title: post.title,
+        body: post.body,
+        **settings
+      )
+      newsletter = NewsletterClient.new.create_public_newsletter(request)
+      post.update!(newsletter_id: newsletter.id)
+    end
+  end
+end
+```
+
+You MUST NOT make the caller build a request for the gem the service calls, e.g. a request class the gem defines. The caller then depends on the gem, and swapping it changes every caller.
+
 ## Replies
 
-Return a reply the caller reads by its fields, e.g. `response.id`. You SHOULD NOT return a hash. A service MAY define a `Data` object for a reply, at the top of the service, named after what it holds, e.g. `NewsletterClient::Newsletter`. Use `Data`, not a `Struct`.
+Return a reply the caller reads by its fields, e.g. `response.id`. You SHOULD NOT return a hash. A service MAY define a `Data` object for a reply, at the top of the service, named after what it holds, e.g. `NewsletterClient::Newsletter`. Several operations can return the same reply, e.g. creating a newsletter and fetching one. Use `Data`, not a `Struct`.
 
 ```ruby
 class NewsletterClient
   Newsletter = Data.define(:id, :status)
 
-  def create_newsletter(post)
-    response = connection.post("#{api_path}/newsletters", newsletter_body(post))
+  def create_newsletter(title:, body:)
+    response = connection.post("#{api_path}/newsletters", newsletter_body(title:, body:))
     Newsletter.new(id: response.body["id"], status: response.body["status"])
   end
 
@@ -160,14 +245,14 @@ class NewsletterClient
 end
 ```
 
-When you move the HTTP calls into a [gateway](#gateways), the reply moves to the gateway, e.g. `NewsletterGateway::Newsletter`. The service MAY then return the gateway's reply as it is. It holds only plain values, so a copy in the service would add nothing.
+You SHOULD NOT return the reply of a gem the service calls, e.g. the `Aws::S3::Types::PutObjectOutput` that `Aws::S3::Client#put_object` returns. Build the service's own reply from it, or return the one value the caller needs. Callers then never depend on the gem.
 
-Code outside the service MUST NOT name the reply's class, e.g. `NewsletterGateway::Newsletter` in an action. It reads the fields instead. The class can then move to the gateway, or change with the other service's API, and only the service changes.
+Code outside the service MUST NOT name the reply's class, e.g. `NewsletterClient::Newsletter` in an action. It reads the fields instead. The class can then change with the other service's API, and only the service changes. A caller has to name a [request's](#request-objects) class to build it, but it never needs the reply's.
 
 ```ruby
 # Don't do this
-response = NewsletterClient.new.create_newsletter(post)
-post.update!(newsletter_id: response.id) if response.is_a?(NewsletterGateway::Newsletter)
+response = NewsletterClient.new.create_newsletter(title: post.title, body: post.body)
+post.update!(newsletter_id: response.id) if response.is_a?(NewsletterClient::Newsletter)
 ```
 
 ### Pages
@@ -310,7 +395,7 @@ class NotifySubscribersJob < ApplicationJob
   def perform(post)
     return unless NewsletterClient.configured?
 
-    NewsletterClient.new.deliver(post)
+    NewsletterClient.new.deliver(post.newsletter_id)
   end
 end
 ```
@@ -320,7 +405,7 @@ You MUST NOT rescue the `KeyError` to find out whether a service is set up. That
 ```ruby
 # Don't do this
 def perform(post)
-  NewsletterClient.new.deliver(post)
+  NewsletterClient.new.deliver(post.newsletter_id)
 rescue KeyError
   nil
 end
@@ -355,7 +440,7 @@ class NewsletterClient
 end
 ```
 
-Put the class method on the service, not a method on the record, e.g. `integration.client`. The service knows which settings it needs, so a new setting changes only the service. A method on the record would also hand a working client to any code that holds the record, e.g. a view, and skip the action. Pass the record to the action, and build the service there, e.g. `NewsletterClient.for(integration).create_newsletter(post)`.
+Put the class method on the service, not a method on the record, e.g. `integration.client`. The service knows which settings it needs, so a new setting changes only the service. A method on the record would also hand a working client to any code that holds the record, e.g. a view, and skip the action. Pass the record to the action, and build the service there, e.g. `NewsletterClient.for(integration).create_newsletter(title: post.title, body: post.body)`.
 
 Encrypt the secrets on the record, e.g. `encrypts :api_key`. See [Models: Secrets](../models/#secrets).
 
@@ -418,7 +503,7 @@ class NewsletterClient
   class UnprocessableError < Error; end
   class TimeoutError < Error; end
 
-  def create_newsletter(post)
+  def create_newsletter(title:, body:)
     # ...
   rescue Faraday::UnprocessableEntityError => e
     raise UnprocessableError.new(e.message, **details_from(e))
@@ -432,101 +517,9 @@ end
 
 ## Gateways
 
-Start with the HTTP calls in the service. When the service gets too big to read, move the code that talks to the other service's API into a gateway in `lib/`, e.g. `NewsletterGateway` in `lib/newsletter_gateway.rb`. The gateway does the mechanical work: the endpoints, headers, requests and replies. The service keeps the domain work: it takes records, builds the requests, and calls the gateway.
+A service SHOULD call the other system through its gem, when it has one, e.g. `PostBackupBucket` calls `Aws::S3::Client`. When the other system has no gem, make the HTTP calls in the service, e.g. with Faraday in `NewsletterClient`. The service only sends the part of the API the app uses, so its HTTP code stays small.
 
-Write the gateway in plain Ruby. It takes and returns plain values, e.g. strings, arrays and hashes, and knows nothing about your records. You MUST NOT use Rails in a gateway, e.g. `Rails.application.config`, `Rails.logger`, credentials or `ENV`. You can then move it to a gem, or copy it to another app, as it is.
-
-A gateway MAY also take and return `Data` objects that it defines itself, e.g. `NewsletterGateway::CreateNewsletterRequest` for a request and `NewsletterGateway::Newsletter` for the reply. Define them at the top of the gateway, so they move with it. Name a request after the gateway method that takes it, e.g. `create_newsletter` takes a `CreateNewsletterRequest`, because each call can send different fields. Name it after the gateway method, not the service method that builds it. Several service methods can call one gateway method, e.g. `create_public_newsletter` and `create_private_newsletter` on `NewsletterClient` both build a `CreateNewsletterRequest`, with a different `visibility`. Name a reply after what it holds, e.g. `Newsletter`, so more than one method can return it. The service MAY return the gateway's reply as it is. See [Replies](#replies). A `Data` object names the fields the API uses, can't be changed, and raises an error when a field is missing, or when the caller asks for one it doesn't have. Use `Data`, not a `Struct`.
-
-The service builds the request from its records, as it would a hash. The gateway turns it into the body it sends, and builds the reply from the response.
-
-```ruby
-# lib/newsletter_gateway.rb
-class NewsletterGateway
-  CreateNewsletterRequest = Data.define(:title, :body, :visibility)
-  Newsletter = Data.define(:id, :status)
-
-  # ...
-
-  def create_newsletter(request)
-    response = connection.post("#{@api_path}/newsletters", request.to_h)
-    Newsletter.new(id: response.body["id"], status: response.body["status"])
-  end
-end
-```
-
-```ruby
-# app/services/newsletter_client.rb
-class NewsletterClient
-  # ...
-
-  def create_public_newsletter(post)
-    request = NewsletterGateway::CreateNewsletterRequest.new(title: post.title, body: post.body, visibility: "public")
-    @gateway.create_newsletter(request)
-  end
-
-  def create_private_newsletter(post)
-    request = NewsletterGateway::CreateNewsletterRequest.new(title: post.title, body: post.body, visibility: "private")
-    @gateway.create_newsletter(request)
-  end
-end
-```
-
-A reply can hold more than the resource, e.g. a page of results with a cursor for the next page, or the request ID the other service gave the call. Return a response object then, named after the method, e.g. `list_newsletters` returns a `ListNewslettersResponse`. It holds the resources and the extra values. Each resource keeps its own object, e.g. `Newsletter`, which stays the same whichever method returns it. Like the service, the gateway reads one page in each call. See [Pages](#pages).
-
-```ruby
-# lib/newsletter_gateway.rb
-class NewsletterGateway
-  Newsletter = Data.define(:id, :status)
-  ListNewslettersResponse = Data.define(:newsletters, :next_cursor)
-
-  # ...
-
-  def list_newsletters(cursor: nil)
-    response = connection.get("#{@api_path}/newsletters", cursor:)
-    newsletters = response.body["newsletters"].map do |item|
-      Newsletter.new(id: item["id"], status: item["status"])
-    end
-    ListNewslettersResponse.new(newsletters:, next_cursor: response.body["next_cursor"])
-  end
-end
-```
-
-Take every setting as a keyword argument to `initialize`, with no default. The service reads the settings from `config.x`, as in [Configuration](#configuration), and passes them to the gateway.
-
-```ruby
-# lib/newsletter_gateway.rb
-class NewsletterGateway
-  def initialize(api_key:, base_url:, api_path:)
-    @api_key = api_key
-    @base_url = base_url
-    @api_path = api_path
-  end
-
-  # ...
-end
-```
-
-```ruby
-# app/services/newsletter_client.rb
-class NewsletterClient
-  def initialize(
-    api_key: Rails.application.config.x.newsletter_client.api_key!,
-    base_url: Rails.application.config.x.newsletter_client.base_url!,
-    api_path: Rails.application.config.x.newsletter_client.api_path!
-  )
-    @gateway = NewsletterGateway.new(api_key:, base_url:, api_path:)
-  end
-
-  # ...
-end
-```
-
-Write one gateway for each outside API. When more than one service uses the same API, they share its gateway.
-
-Give the gateway its own errors, with the details of the failed call, as in [Errors](#errors). The service rescues them like any library's errors, and raises its own errors with the same details. Callers then still rescue only the service's errors, e.g. `NewsletterClient::Error`.
-
-Rails loads `lib/` with `config.autoload_lib`, the default in new apps since Rails 7.1.
+You SHOULD NOT write a gateway: your own client for the whole API, in `lib/`. Write one only when the API has no gem, and either several services share it, or its HTTP code has outgrown the service. See [Patterns: APIs without a Gem](../../patterns/apis-without-a-gem/).
 
 ## Testing
 

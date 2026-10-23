@@ -57,7 +57,7 @@ applyTo: "app/actions/**/*.rb"
 - Use `next` to leave a `transaction` or `with_lock` block early. You MUST NOT use `return` inside the block.
 - When a check before or inside a lock fails, do nothing if the work is already done, e.g. the post is already published. Raise the action's `Error` when the caller needs to know, e.g. to show a form error. Do the same in both checks.
 - When an action locks more than one record, lock them in the same order every time, the parent before its children, e.g. the post before its comments.
-- You MUST NOT call another service inside a transaction, e.g. `NewsletterClient.new.create_newsletter(post)`. Call it first, then save its reply in the transaction, e.g. `post.update!(newsletter_id: response.id)`.
+- You MUST NOT call another service inside a transaction, e.g. `NewsletterClient.new.create_newsletter(title: post.title, body: post.body)`. Call it first, then save its reply in the transaction, e.g. `post.update!(newsletter_id: response.id)`.
 - When an action needs another service's reply, include `NonTransactionalCallable` from `app/actions/concerns/non_transactional_callable.rb`, e.g. `include NonTransactionalCallable` in `Posts::SendNewsletter`. You MUST NOT call such an action inside a transaction.
 - When an action does not need another service's reply, you MUST NOT call the service from the action. Enqueue a job that calls it instead, e.g. `NotifySubscribersJob.perform_later(post)`, with `self.enqueue_after_transaction_commit = true` in the job class.
 - When a call to another service needs to be retried if it fails, run it in a job of its own that does nothing else, e.g. `NotifySubscribersJob`. When a user is waiting for the reply, call the action directly and you MUST NOT retry it automatically.

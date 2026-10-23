@@ -78,7 +78,7 @@ class NotifySubscribersJob < ApplicationJob
   self.enqueue_after_transaction_commit = true
 
   def perform(post)
-    NewsletterClient.new.deliver(post)
+    NewsletterClient.new.deliver(post.newsletter_id)
   end
 end
 ```

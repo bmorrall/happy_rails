@@ -25,26 +25,26 @@ Write an example for each major permutation of each method, e.g. each kind of re
 - **Sent:** the full request body, and every header the service sets. Pass them to the helper module's `have_requested_` matcher. The matcher also checks that the request was made, so you don't need to keep the stub.
 - **Received:** every value the service returns, e.g. with `have_attributes` listing each attribute.
 
+Pass the method plain values, e.g. `title: "Hello World"`. A service for another system takes no records, so its spec needs no factories. Check the values the service fills in itself in the body too, e.g. `visibility: "public"`.
+
 Other specs check only the parts they need. The service spec is the one place that pins down the whole message, so it fails when the service drops a field, sends an extra one, or reads the response wrongly.
 
 WebMock matches a body hash exactly, but it only checks the headers you list. List every header the service sets.
 
 ```ruby
 RSpec.describe NewsletterClient do
-  describe "#create_newsletter" do
-    it "creates a newsletter for the post" do
-      author = build_stubbed(:user, name: "Ada Lovelace")
-      post = build_stubbed(:post, title: "Hello World", body: "My first post.", author:)
+  describe "#create_public_newsletter" do
+    it "creates a public newsletter" do
       stub_newsletter_create(id: "newsletter-1")
 
-      response = described_class.new(api_key: "test-key").create_newsletter(post)
+      response = described_class.new(api_key: "test-key").create_public_newsletter(title: "Hello World", body: "My first post.")
 
       expect(WebMock).to have_requested_newsletter_create(
         headers: { "Authorization" => "Bearer test-key", "Content-Type" => "application/json" },
         body: {
           title: "Hello World",
           body: "My first post.",
-          author_name: "Ada Lovelace"
+          visibility: "public"
         }
       )
       expect(response).to have_attributes(id: "newsletter-1")
@@ -87,24 +87,19 @@ With Honeybadger, also check each error's `to_honeybadger_context`. See [Honeyba
 describe "#create_newsletter" do
   # ...
 
-  it "raises an UnprocessableError when the newsletter service rejects the post" do
-    post = build_stubbed(:post)
+  it "raises an UnprocessableError when the newsletter service rejects the newsletter" do
     stub_newsletter_create_failure(status: 422)
 
-    expect { described_class.new(api_key: "test-key").create_newsletter(post) }
+    expect { described_class.new(api_key: "test-key").create_newsletter(title: "Hello World", body: "") }
       .to raise_error(described_class::UnprocessableError)
   end
 
   it "raises a TimeoutError when the newsletter service times out" do
-    post = build_stubbed(:post)
     stub_newsletter_create_timeout
 
-    expect { described_class.new(api_key: "test-key").create_newsletter(post) }
+    expect { described_class.new(api_key: "test-key").create_newsletter(title: "Hello World", body: "My first post.") }
       .to raise_error(described_class::TimeoutError)
   end
 end
 ```
 
-## Gateways
-
-You MUST NOT stub a service's gateway in its spec, e.g. with `instance_double(NewsletterGateway)`. Stub the requests with the service's helpers, as in [Service specs](#service-specs). The spec then still checks the full message the service sends, through the gateway. See [Services: Gateways](../../guide/services/#gateways).

@@ -47,7 +47,7 @@ The area files are:
 | `happy_validators.instructions.md` | `app/validators/**`, `app/models/**`, `app/forms/**` |
 | `happy_forms.instructions.md` | `app/forms/**` |
 | `happy_actions.instructions.md` | `app/actions/**` |
-| `happy_services.instructions.md` | `app/services/**`, `app/forms/**`, `app/controllers/**`, `app/jobs/**`, `lib/**` |
+| `happy_services.instructions.md` | `app/services/**`, `app/forms/**`, `app/controllers/**`, `app/jobs/**` |
 | `happy_jobs.instructions.md` | `app/jobs/**`, `lib/tasks/**` |
 | `happy_controllers.instructions.md` | `app/controllers/**`, `config/routes.rb` |
 | `happy_views.instructions.md` | `app/views/**`, `app/helpers/**`, `app/javascript/**` |

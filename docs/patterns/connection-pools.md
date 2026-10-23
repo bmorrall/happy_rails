@@ -63,11 +63,11 @@ class NewsletterClient
     @api_path = api_path
   end
 
-  def create_newsletter(post)
+  def create_newsletter(title:, body:)
     pool.with do |connection|
       connection.post(
         "#{api_path}/newsletters",
-        payload_for(post),
+        newsletter_body(title:, body:),
         "Authorization" => "Bearer #{api_key}"
       )
     end

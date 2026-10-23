@@ -31,7 +31,7 @@ applyTo: "app/models/**/*.rb"
 - Store an enum's values as strings, e.g. `enum :status, { draft: "draft", published: "published" }`. You SHOULD NOT map an enum to integers, e.g. `enum :status, { draft: 0, published: 1 }`, unless the app already stores integers for it.
 - When an enum maps to integers, give every value its integer in a hash, e.g. `enum :status, { draft: 0, published: 1 }`. You MUST NOT list the values in an array, e.g. `enum :status, [:draft, :published]`.
 - Encrypt a column that stores a secret, e.g. an API key or an access token, with `encrypts` under `### Attributes ###`, e.g. `encrypts :api_key` on `NewsletterServiceIntegration`. You MUST NOT store a secret in a plain column.
-- You MUST NOT build or call a service object in a model, e.g. `def client = NewsletterClient.for(self)` or `def sync_newsletter! = NewsletterClient.new.update_list(self)` on a model. Build and call the service in an action that takes the record as an argument, e.g. `NewsletterClient.new.create_newsletter(post)` in `Posts::SendNewsletter#call`.
+- You MUST NOT build or call a service object in a model, e.g. `def client = NewsletterClient.for(self)` or `def sync_newsletter! = NewsletterClient.new.update_list(self)` on a model. Build and call the service in an action that takes the record as an argument, e.g. `NewsletterClient.new.create_newsletter(title: post.title, body: post.body)` in `Posts::SendNewsletter#call`.
 - TODO: How to write validations and associations.
 - TODO: Where scopes and query logic go.
 - TODO: Where business logic goes.

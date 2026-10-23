@@ -37,11 +37,10 @@ Refer to the class under test through `described_class`, including its constants
 ```ruby
 RSpec.describe NewsletterClient do
   describe "#create_newsletter" do
-    it "raises an UnprocessableError when the newsletter service rejects the post" do
-      post = build_stubbed(:post)
+    it "raises an UnprocessableError when the newsletter service rejects the newsletter" do
       stub_newsletter_create_failure(status: 422)
 
-      expect { described_class.new(api_key: "test-key").create_newsletter(post) }
+      expect { described_class.new(api_key: "test-key").create_newsletter(title: "Hello World", body: "") }
         .to raise_error(described_class::UnprocessableError)
     end
   end
@@ -50,9 +49,9 @@ end
 
 ### Helper names
 
-Name a helper method that builds a value for an example to pass in or match against with `a_`, the thing, then the kind of value it returns, e.g. `a_newsletter_post_hash`. The `a_` prefix makes it read like RSpec's own argument matchers, e.g. `a_string_matching` and `an_instance_of`. The suffix says what kind of value comes back, so the helper isn't mistaken for a record, a matcher or a method on the code under test.
+Name a helper method that builds a value for an example to pass in or match against with `a_`, the thing, then the kind of value it returns, e.g. `a_newsletter_body_hash`. The `a_` prefix makes it read like RSpec's own argument matchers, e.g. `a_string_matching` and `an_instance_of`. The suffix says what kind of value comes back, so the helper isn't mistaken for a record, a matcher or a method on the code under test.
 
-Name a helper that builds a hash `a_<thing>_hash`, e.g. `a_newsletter_post_hash` for the body `NewsletterClient` sends, or `a_post_payload_hash` for the JSON body a spec posts to `POST /api/v1/posts`. You MUST NOT name it after the thing alone, e.g. `newsletter_post` or `post_payload`, or start it with `build_`. Name every helper in the spec that returns a hash this way, including one that only builds input and is never matched on, so the names in a file stay consistent.
+Name a helper that builds a hash `a_<thing>_hash`, e.g. `a_newsletter_body_hash` for the body `NewsletterClient` sends, or `a_post_payload_hash` for the JSON body a spec posts to `POST /api/v1/posts`. You MUST NOT name it after the thing alone, e.g. `newsletter_body` or `post_payload`, or start it with `build_`. Name every helper in the spec that returns a hash this way, including one that only builds input and is never matched on, so the names in a file stay consistent.
 
 Name a helper that builds an object `a_` then the object's type, e.g. `a_newsletter_client_error` for a `NewsletterClient::Error`. You MUST NOT start it with `build_`, which reads like FactoryBot's `build`.
 
@@ -62,22 +61,21 @@ Define `a_` helpers at the bottom of the spec file, inside the top-level `descri
 
 ```ruby
 RSpec.describe NewsletterClient do
-  describe "#create_newsletter" do
-    it "creates a newsletter for the post" do
-      post = build_stubbed(:post, title: "Hello World", body: "My first post.")
+  describe "#create_public_newsletter" do
+    it "creates a public newsletter" do
       stub_newsletter_create
 
-      described_class.new(api_key: "test-key").create_newsletter(post)
+      described_class.new(api_key: "test-key").create_public_newsletter(title: "Hello World", body: "My first post.")
 
-      expect(WebMock).to have_requested_newsletter_create(body: a_newsletter_post_hash(post))
+      expect(WebMock).to have_requested_newsletter_create(body: a_newsletter_body_hash(title: "Hello World", body: "My first post."))
     end
   end
 
-  def a_newsletter_post_hash(post)
+  def a_newsletter_body_hash(title:, body:)
     {
-      title: post.title,
-      body: post.body,
-      author_name: post.author.name
+      title:,
+      body:,
+      visibility: "public"
     }
   end
 end

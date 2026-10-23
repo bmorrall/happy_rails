@@ -30,7 +30,7 @@ module Posts
     end
 
     def call
-      response = NewsletterClient.new.create_newsletter(post)
+      response = NewsletterClient.new.create_newsletter(title: post.title, body: post.body)
       post.update!(newsletter_id: response.id)
     end
 
@@ -68,7 +68,7 @@ module Posts
     end
 
     def call
-      NewsletterClient.new.create_newsletter(post, id: newsletter_id)
+      NewsletterClient.new.create_newsletter(id: newsletter_id, title: post.title, body: post.body)
     end
 
     private
@@ -111,7 +111,8 @@ module NewsletterDeliveries
     end
 
     def call
-      response = NewsletterClient.new.create_newsletter(delivery.post, reference: delivery.reference)
+      post = delivery.post
+      response = NewsletterClient.new.create_newsletter(reference: delivery.reference, title: post.title, body: post.body)
       delivery.update!(external_id: response.id, status: :sent)
     end
 

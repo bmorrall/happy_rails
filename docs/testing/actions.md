@@ -185,8 +185,8 @@ You SHOULD stub the client's methods in each example. Each example then shows wh
 
 ```ruby
 it "saves the newsletter ID" do
-  post = instance_double(Post, update!: true)
-  allow(newsletter_client).to receive(:create_newsletter).with(post)
+  post = instance_double(Post, title: "Hello World", body: "My first post.", update!: true)
+  allow(newsletter_client).to receive(:create_newsletter).with(title: "Hello World", body: "My first post.")
     .and_return(NewsletterClient::Newsletter.new(id: "nl_123", status: "sent"))
 
   described_class.call(post)
@@ -199,8 +199,8 @@ To check the action's errors, stub the service to raise each error the action ha
 
 ```ruby
 it "raises a ServiceError when the newsletter service fails" do
-  post = instance_double(Post)
-  allow(newsletter_client).to receive(:create_newsletter).with(post)
+  post = instance_double(Post, title: "Hello World", body: "My first post.")
+  allow(newsletter_client).to receive(:create_newsletter).with(title: "Hello World", body: "My first post.")
     .and_raise(NewsletterClient::Error.new("Server error", status: 500))
 
   expect { described_class.call(post) }.to raise_error(described_class::ServiceError, "Server error")
@@ -233,9 +233,9 @@ RSpec.describe Posts::SendNewsletter do
   describe ".call" do
     it "raises a ServiceError when the newsletter service fails" do
       integration = instance_double(NewsletterServiceIntegration)
-      post = instance_double(Post)
+      post = instance_double(Post, title: "Hello World", body: "My first post.")
       newsletter_client = stub_newsletter_client_for(integration)
-      allow(newsletter_client).to receive(:create_newsletter).with(post)
+      allow(newsletter_client).to receive(:create_newsletter).with(title: "Hello World", body: "My first post.")
         .and_raise(NewsletterClient::Error.new("Server error", status: 500))
 
       expect { described_class.call(post, integration:) }.to raise_error(described_class::ServiceError)

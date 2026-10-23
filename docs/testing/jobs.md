@@ -21,7 +21,7 @@ class NotifySubscribersJob < ApplicationJob
   # ...
 
   def perform(post)
-    NewsletterClient.new.deliver(post)
+    NewsletterClient.new.deliver(post.newsletter_id)
   end
 end
 ```

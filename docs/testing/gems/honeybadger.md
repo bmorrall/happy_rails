@@ -22,11 +22,10 @@ For the code itself, see [Honeybadger](../../../guide/gems/honeybadger/).
 When a service's error defines `to_honeybadger_context`, check it in the service spec's example for each error. Match the whole hash with `eq`, in the block you pass to `raise_error`. The report is the one place you see the request and response when the service fails, so a key that goes missing or holds the wrong value has to fail a spec. See [Services: Errors](../../services/#errors).
 
 ```ruby
-it "raises an UnprocessableError when the newsletter service rejects the post" do
-  post = build_stubbed(:post)
+it "raises an UnprocessableError when the newsletter service rejects the newsletter" do
   stub_newsletter_create_failure(status: 422)
 
-  expect { described_class.new(api_key: "test-key").create_newsletter(post) }
+  expect { described_class.new(api_key: "test-key").create_newsletter(title: "Hello World", body: "") }
     .to raise_error(described_class::UnprocessableError) do |error|
       expect(error.to_honeybadger_context).to eq(
         request_method: :post,
@@ -44,8 +43,8 @@ Stub the service to raise an error built with the details a real failure carries
 
 ```ruby
 it "raises a ServiceError when the newsletter service fails" do
-  post = instance_double(Post)
-  allow(newsletter_client).to receive(:create_newsletter).with(post)
+  post = instance_double(Post, title: "Hello World", body: "My first post.")
+  allow(newsletter_client).to receive(:create_newsletter).with(title: "Hello World", body: "My first post.")
     .and_raise(NewsletterClient::Error.new("Server error", status: 500))
 
   expect { described_class.call(post) }.to raise_error(described_class::ServiceError) do |error|

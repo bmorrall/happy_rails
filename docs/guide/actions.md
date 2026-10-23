@@ -429,7 +429,7 @@ module Posts
     # ...
 
     def call
-      response = NewsletterClient.new.create_newsletter(post)
+      response = NewsletterClient.new.create_newsletter(title: post.title, body: post.body)
       post.update!(newsletter_id: response.id)
     rescue NewsletterClient::UnprocessableError => e
       raise RejectedError, e.message
@@ -466,7 +466,7 @@ module Posts
     # ...
 
     def call
-      response = NewsletterClient.new.create_private_newsletter(post)
+      response = NewsletterClient.new.create_private_newsletter(title: post.title, body: post.body)
       post.update!(newsletter_id: response.id)
     rescue NewsletterClient::UnprocessableError => e
       raise RejectedError, e.message
@@ -556,7 +556,7 @@ You MUST NOT call another service inside a transaction. The transaction keeps it
 
 ```ruby
 def call
-  response = NewsletterClient.new.create_newsletter(post)
+  response = NewsletterClient.new.create_newsletter(title: post.title, body: post.body)
 
   ActiveRecord::Base.transaction do
     post.update!(newsletter_id: response.id)
