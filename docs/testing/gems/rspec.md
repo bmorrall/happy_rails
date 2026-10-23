@@ -705,6 +705,18 @@ RSpec.describe "Posts" do
 end
 ```
 
+When the action renders a page with `flash.now`, check the message in the response body, with a matcher for the element that shows it, e.g. `have_css` with `text:`. `flash.now` is only for the page the action renders, so what matters is that the page shows it. You MUST NOT check it with a flash matcher, e.g. `have_flash_alert`. It checks the flash, not the page, so it passes when the layout never shows the message.
+
+```ruby
+it "warns that the post is archived" do
+  get edit_post_path(archived)
+
+  expect(response).to have_http_status(:ok)
+
+  expect(response.body).to have_css("[role='alert']", text: "This post is archived.")
+end
+```
+
 Don't check a status with a generic matcher or a number:
 
 ```ruby
