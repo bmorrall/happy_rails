@@ -342,6 +342,34 @@ allow(post).to receive(:approved_comments).and_return(comments)
 allow(post).to receive_message_chain(:comments, :approved).and_return(comments)
 ```
 
+### Random values
+
+You SHOULD give each attribute in a factory a random value from [Faker](https://github.com/faker-ruby/faker), e.g. `name { Faker::Name.name }`, not a fixed one, e.g. `name { "Jane Tester" }`. Random values test the code with data you didn't think of, e.g. a name with an apostrophe or a long title. They also catch a spec that checks a default, as in [Values you check](#values-you-check). The value changes from run to run, so the spec fails.
+
+When a column has to be unique, e.g. `email`, put a number in the value. Faker can give two records the same value, but the number never repeats, so they never clash. The number also makes records easy to tell apart when you read them, e.g. `user1@` and `user2@`.
+
+You SHOULD take the number from a `counter` sequence in a `transient` block:
+
+- A `sequence` counts up by one for each record the factory builds: 1, 2, 3.
+- A `transient` attribute is one the factory can read, but doesn't set on the record. `User` doesn't need a `counter` column.
+
+Build each unique value from `counter`, e.g. `user1@` in the first user's email. Use one counter for the whole factory, not a sequence for each attribute. When a spec sets an attribute itself, e.g. `create(:user, email: "jane@example.com")`, that attribute's sequence doesn't count up, so separate sequences drift apart. With one counter, every value on a record has the same number, so you can tell which record a value belongs to, e.g. in a failure message.
+
+You MAY use Faker's `unique` instead, e.g. `Faker::Internet.unique.email`. It also never repeats a value, but its values don't show which record is which.
+
+```ruby
+FactoryBot.define do
+  factory :user do
+    transient do
+      sequence(:counter)
+    end
+
+    email { Faker::Internet.email(name: "user#{counter}") }
+    name { Faker::Name.name }
+  end
+end
+```
+
 ## Traits
 
 > **TODO:** Describe how you handle this.
@@ -353,7 +381,11 @@ Give the user factory one trait for each role on the whole app, named after the 
 ```ruby
 FactoryBot.define do
   factory :user do
-    sequence(:email) { |n| "user#{n}@example.com" }
+    transient do
+      sequence(:counter)
+    end
+
+    email { Faker::Internet.email(name: "user#{counter}") }
     password { "password" }
 
     trait :app_admin do
@@ -379,7 +411,7 @@ Set every value an example checks in the spec, where the reader can see it, e.g.
 
 A default is set in another file, so the reader can't see where the value comes from. A change to the default breaks specs that aren't about it. And the code can pass by chance, e.g. when it hardcodes the same value as the default.
 
-The spec below passes only because the user factory names every user "Jane Tester":
+The spec below doesn't set the author's name, so it checks whatever name the user factory gives the author:
 
 ```ruby
 # Don't do this
