@@ -386,6 +386,21 @@ FactoryBot.define do
 end
 ```
 
+When a unique value has a set format, e.g. a magazine's ISSN, build it from the counter with `format`. Pad the number to the format's length, so every value has the right shape. Magazine 3 is then "Fantasy Monthly 3", with the ISSN `0000-0003`.
+
+```ruby
+FactoryBot.define do
+  factory :magazine do
+    transient do
+      sequence(:counter)
+    end
+
+    name { "#{Faker::Book.genre} Monthly #{counter}" }
+    issn { format("0000-%04d", counter) }
+  end
+end
+```
+
 ## Traits
 
 > **TODO:** Describe how you handle this.
