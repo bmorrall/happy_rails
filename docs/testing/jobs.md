@@ -266,7 +266,7 @@ RSpec.feature "Draft Cleanup" do
     sign_in author
 
     # AND I have a draft I haven't changed for a year
-    create(:post, author: author, title: "Old Idea", updated_at: 1.year.ago)
+    draft = create(:post, author: author, updated_at: 1.year.ago)
 
     # WHEN the draft cleanup runs
     perform_enqueued_jobs do
@@ -277,7 +277,7 @@ RSpec.feature "Draft Cleanup" do
     visit posts_path
 
     # THEN I don't see the abandoned draft
-    expect(page).not_to have_link("Old Idea")
+    expect(page).not_to have_link(draft.title)
   end
 end
 ```

@@ -285,13 +285,13 @@ RSpec.describe "Posts" do
       end
 
       it "does not list another author's draft" do
-        create(:post, title: "Their draft", published_at: nil)
+        their_draft = create(:post, published_at: nil)
 
         get posts_path
 
         expect(response).to have_http_status(:ok)
 
-        expect(response.body).not_to have_link("Their draft")
+        expect(response.body).not_to have_link(their_draft.title)
       end
     end
   end
@@ -523,6 +523,51 @@ Check against the value you set, e.g. `"Jane Tester"`. You MUST NOT check agains
 expect(post.decorate.author_name).to eq(post.author.name)
 ```
 
+### Checks with not_to
+
+A `not_to` check is the other way round. You SHOULD take the value it looks for from the records the spec set up, e.g. `post.title` or `post.slug`, not a value you wrote in. A `not_to` check passes whatever value it looks for, as long as that value isn't there. When the value you wrote in doesn't match the setup, e.g. a title the factory never gave the post, the check passes even if the code is wrong. A value read from the record always matches the setup, even after the setup changes.
+
+```ruby
+# Don't do this
+it "does not list another author's draft" do
+  create(:post, published_at: nil)
+
+  get posts_path
+
+  expect(response.body).not_to have_link("Their draft")
+end
+```
+
+```ruby
+it "does not list another author's draft" do
+  their_draft = create(:post, published_at: nil)
+
+  get posts_path
+
+  expect(response.body).not_to have_link(their_draft.title)
+end
+```
+
+When you check that the code leaves a value alone, check it against the record's value from before the code ran. Use `not_to change`, e.g. `not_to change { draft.reload.title }`. You MUST NOT check it with `not_to` and a value you wrote in, e.g. `not_to eq("New title")`. That check passes when the code changes the value to anything else, e.g. a blank title or the wrong post's title.
+
+```ruby
+# Don't do this
+it "does not update the post" do
+  patch post_path(draft), params: { post: { title: "New title" } }
+  expect(draft.reload.title).not_to eq("New title")
+end
+```
+
+```ruby
+it "does not update the post" do
+  expect {
+    patch post_path(draft), params: { post: { title: "New title" } }
+  }.not_to change { draft.reload.title }
+end
+```
+
+RSpec doesn't support `to` after `not_to change`, e.g. `not_to change { draft.reload.title }.to("New title")`. It raises an error.
+
 ## Generated values
 
 When the code generates a value, e.g. a token or a key, match it as closely as the spec can. A loose match still passes when the code builds the value wrongly.
@@ -682,7 +727,7 @@ RSpec.describe "Posts" do
     context "as a user", "with a post written by another user" do
       let(:user) { create(:user) }
 
-      let(:draft) { create(:post) }
+      let!(:draft) { create(:post) }
 
       before do
         create(:post, author: user)
@@ -690,8 +735,9 @@ RSpec.describe "Posts" do
       end
 
       it "does not update the post" do
-        patch post_path(draft), params: { post: { title: "New title" } }
-        expect(draft.reload.title).not_to eq("New title")
+        expect {
+          patch post_path(draft), params: { post: { title: "New title" } }
+        }.not_to change { draft.reload.title }
       end
     end
   end
@@ -740,8 +786,9 @@ RSpec.describe "Posts" do
       it "does not update a post in another magazine" do
         draft = create(:post)
 
-        patch post_path(draft), params: { post: { title: "New title" } }
-        expect(draft.reload.title).not_to eq("New title")
+        expect {
+          patch post_path(draft), params: { post: { title: "New title" } }
+        }.not_to change { draft.reload.title }
       end
     end
   end
