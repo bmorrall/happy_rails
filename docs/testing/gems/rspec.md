@@ -373,6 +373,39 @@ end
 
 You MUST NOT add a trait for a role on a record, e.g. the Author of a post. Build a plain user, then give it the role on the record, e.g. `create(:post, author: user)`. Then the spec shows how the user gets access to that record. For a persona with more than one role, build the user with the trait for the whole-app role, then give it the role on the record.
 
+## Values you check
+
+Set every value an example checks in the spec, where the reader can see it, e.g. in the example or in its context's `let`. You MUST NOT check against a default from a factory or a stub helper. That includes the records a factory builds for you, e.g. the author of `build_stubbed(:post)`, and the reply a stub helper sends when you don't pass one, e.g. the ID from `stub_newsletter_create`. Leave the values the example doesn't check to the defaults.
+
+A default is set in another file, so the reader can't see where the value comes from. A change to the default breaks specs that aren't about it. And the code can pass by chance, e.g. when it hardcodes the same value as the default.
+
+The spec below passes only because the user factory names every user "Jane Tester":
+
+```ruby
+# Don't do this
+it "returns the author's name" do
+  post = build_stubbed(:post)
+
+  expect(post.decorate.author_name).to eq("Jane Tester")
+end
+```
+
+```ruby
+it "returns the author's name" do
+  author = build_stubbed(:user, name: "Jane Tester")
+  post = build_stubbed(:post, author:)
+
+  expect(post.decorate.author_name).to eq("Jane Tester")
+end
+```
+
+Check against the value you set, e.g. `"Jane Tester"`. You MUST NOT check against a value you read back from a record, e.g. `post.author.name`. The read gives the same answer as the code under test, so the check passes whatever the value is. Read from the record only when the spec can't set the value, e.g. a record's `id`.
+
+```ruby
+# Don't do this
+expect(post.decorate.author_name).to eq(post.author.name)
+```
+
 ## Generated values
 
 When the code generates a value, e.g. a token or a key, match it as closely as the spec can. A loose match still passes when the code builds the value wrongly.
