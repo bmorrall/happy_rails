@@ -51,7 +51,7 @@ RSpec.configure do |config|
 end
 ```
 
-When a spec checks a value from the response, pass it to the helper, e.g. `stub_newsletter_create(id: "newsletter-1")`. See [RSpec: Values you check](../rspec/#values-you-check).
+When a spec checks a value from the response, pass it to the helper, e.g. `stub_newsletter_create(id: "newsletter-1")`. You SHOULD give each of the helper's arguments a default, so specs that don't check them can leave them out. See [RSpec: Values you check](../rspec/#values-you-check).
 
 Call the helper inside the example. Avoid calling it in a `let` or a `before` block. Keep the stub it returns in a local variable, and check it with `have_been_requested`. The example then shows the stub and the check together, and the variable says which request you expect.
 

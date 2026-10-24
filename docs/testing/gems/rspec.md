@@ -425,6 +425,10 @@ You MUST NOT add a trait for a role on a record, e.g. the Author of a post. Buil
 
 Set every value an example checks in the spec, where the reader can see it, e.g. in the example or in its context's `let`. You MUST NOT check against a default from a factory or a stub helper. That includes the records a factory builds for you, e.g. the author of `build_stubbed(:post)`, and the reply a stub helper sends when you don't pass one, e.g. the ID from `stub_newsletter_create`. Leave the values the example doesn't check to the defaults.
 
+You SHOULD give factories and stub helpers a default for every value they need, e.g. `id: "newsletter-1"` in `stub_newsletter_create`. A spec then passes only the values it's about, and `create(:post)` or `stub_newsletter_create` works with no arguments. Require an argument only when the helper can't pick a default, e.g. the integration in `stub_newsletter_client_for(integration)`, which the stub is built from.
+
+Pass a value the spec checks even when it's the same as the default, e.g. `stub_newsletter_create(id: "newsletter-1")`.
+
 A default is set in another file, so the reader can't see where the value comes from. A change to the default breaks specs that aren't about it. And the code can pass by chance, e.g. when it hardcodes the same value as the default.
 
 The spec below doesn't set the author's name, so it checks whatever name the user factory gives the author:
