@@ -126,6 +126,22 @@ You MUST NOT check them all in one line.
 expect(response.body).to have_select("Status", with_options: ["Draft", "Published"])
 ```
 
+### Faker
+
+Set up Faker for every spec, in `spec/support/faker.rb`. Factories use it for [random values](#random-values).
+
+Give Faker the same seed as RSpec. Faker has its own random generator, so without this, `rspec --seed 1234` runs the specs in the same order but with different values. With the seed set, a spec that failed on a random value fails again when you run it with the same seed.
+
+Clear Faker's `unique` values after each example. `unique` remembers every value it has handed out. Over a long run, a generator with few values, e.g. first names, runs out and raises `Faker::UniqueGenerator::RetryLimitExceeded`. The database is cleaned after each example too, so a value from an earlier example can't clash.
+
+```ruby
+# spec/support/faker.rb
+RSpec.configure do |config|
+  config.before(:suite) { Faker::Config.random = Random.new(config.seed) }
+  config.after { Faker::UniqueGenerator.clear }
+end
+```
+
 ## Spec types
 
 ### Form specs
