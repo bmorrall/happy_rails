@@ -68,6 +68,56 @@ Avoid passing a block to `travel_to`. Call it on its own line, so the whole exam
 
 `travel_to` stops the clock on a whole second. Databases store times at different precisions, but every one stores a whole second exactly, so the time you read back matches. You MUST NOT pass `with_usec: true`. The database might then round the microseconds, and the match fails on one database but not another.
 
+#### The current time
+
+You MAY declare `let(:current_time) { Time.zone.now.change(usec: 0) }` as the first line of the top-level `describe` block. Examples then use one name for the time, and build times from it, e.g. `current_time - 13.months`. Drop the microseconds: `travel_to` stops the clock on a whole second, so `Time.zone.now` in the code has none, and an `eq` against a time that keeps them fails.
+
+When the spec's fixtures only work at one time, set `current_time` to that time instead, e.g. `let(:current_time) { Time.zone.local(2026, 3, 14, 9, 30) }` for a recorded reply from the newsletter service with a token that expires. A fixed time doesn't need the `change`.
+
+An example that reads `current_time` runs with the clock stopped. Otherwise the code reads the time a moment after the `let` does, and the two can land on different seconds. Call `travel_to current_time` on the example's first line. Examples that don't read the time leave the clock running.
+
+When some examples depend on the date, put them in a context named for the time, e.g. `context "on a leap day"`. Override `current_time` with a fixed time that tests it, and stop the clock in the context's `before`. This is the one `let` you MAY override in a context, as an exception to [Contexts](#contexts). The context's name tells the reader which time its examples run at.
+
+```ruby
+RSpec.describe PurgeAbandonedDraftsJob do
+  let(:current_time) { Time.zone.now.change(usec: 0) }
+
+  describe ".perform_now" do
+    it "deletes drafts no one has changed for a year" do
+      travel_to current_time
+
+      post = create(:post, updated_at: current_time - 13.months)
+
+      described_class.perform_now
+
+      expect(Post.exists?(post.id)).to be(false)
+    end
+
+    context "on a leap day" do
+      let(:current_time) { Time.zone.local(2028, 2, 29, 12) }
+
+      before { travel_to current_time }
+
+      it "deletes a draft changed before noon on February 28 last year" do
+        post = create(:post, updated_at: Time.zone.local(2027, 2, 28, 11))
+
+        described_class.perform_now
+
+        expect(Post.exists?(post.id)).to be(false)
+      end
+
+      it "keeps a draft changed after noon on February 28 last year" do
+        post = create(:post, updated_at: Time.zone.local(2027, 2, 28, 13))
+
+        described_class.perform_now
+
+        expect(Post.exists?(post.id)).to be(true)
+      end
+    end
+  end
+end
+```
+
 ### Record identifiers
 
 Include `ActionView::RecordIdentifier` for every spec, in `spec/support/record_identifier.rb`. Every spec can then call `dom_id` on its own, e.g. `dom_id(comment)`, to find the element a view gives that id.
@@ -202,7 +252,7 @@ RSpec.describe PostDecorator do
 end
 ```
 
-Only write a `context` when several examples share setup that the other examples in the `describe` don't. A `context` MAY hold every example in its `describe` when its name gives the state they run in, e.g. `context "with a published post"`. You MUST NOT write a `context` for one example, and you MUST NOT set up a default with `let` for a `context` to override.
+Only write a `context` when several examples share setup that the other examples in the `describe` don't. A `context` MAY hold every example in its `describe` when its name gives the state they run in, e.g. `context "with a published post"`. You MUST NOT write a `context` for one example, and you MUST NOT set up a default with `let` for a `context` to override, other than `current_time`, see [The current time](#the-current-time).
 
 The contexts that request specs require are the exception: a context for each persona, for each way the request can be authenticated, and for a Turbo Stream. Write them even when they hold one example. Define the user and the records each persona needs in its own context, as described in [Personas](#personas).
 
@@ -261,7 +311,7 @@ context "as a user" do
 end
 ```
 
-Declare a `let` in the `context` it's for. You MUST NOT declare a `let` in a `describe` block. A `describe` names the method or route under test, not the setup its examples run with. There are two exceptions: a stubbed service double in an action spec, see [Actions](../../actions/), and the stand-in record in a validator spec, see [Validators](../../validators/). This rule doesn't cover `subject`, e.g. `subject(:post)` in a model spec, see [Models](../../models/#spec-layout).
+Declare a `let` in the `context` it's for. You MUST NOT declare a `let` in a `describe` block. A `describe` names the method or route under test, not the setup its examples run with. There are three exceptions: `let(:current_time)` at the top of the spec, see [The current time](#the-current-time), a stubbed service double in an action spec, see [Actions](../../actions/), and the stand-in record in a validator spec, see [Validators](../../validators/). This rule doesn't cover `subject`, e.g. `subject(:post)` in a model spec, see [Models](../../models/#spec-layout).
 
 You SHOULD use `let!` for a record that an example checks with `expect { }.to change` or `not_to change`. A lazy `let` that's first read inside the block creates its record there, so the change could come from the factory, not from the code under test. E.g. with a lazy `let(:draft)`, `delete post_path(draft)` creates the post and deletes it inside the block, so `Post.count` doesn't change.
 
