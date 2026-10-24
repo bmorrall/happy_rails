@@ -709,6 +709,10 @@ You MUST NOT raise `ActiveRecord::Rollback` in an action. In a nested block, Rai
 
 Rescue errors to raise them again as the action's `Error` outside the transaction block, as in [Error handling](#error-handling). By then the transaction has already rolled back.
 
+You MUST NOT rescue a database error inside a `transaction` or `with_lock` block and carry on, e.g. `ActiveRecord::StatementInvalid` or its subclass `ActiveRecord::RecordNotUnique`. In PostgreSQL, a failed statement aborts the transaction, and every later statement in it fails until it rolls back. Let the error leave the block, so the whole transaction rolls back.
+
+You MAY rescue other errors inside the block, when the action can recover from them, e.g. `Post::UnreadableDataError` from a stored report that no longer parses. Nothing failed in the database, so the transaction carries on as normal. Writes made in the block before the error still commit, so rescue inside the block only when they need to stay saved. Rescue another action's errors outside the block, as in [Errors from other actions](#errors-from-other-actions), because its half-done writes would commit with yours.
+
 ### Records that survive a rollback
 
 Some actions save a fact about what happened, e.g. whether a check passed or failed. That fact needs to stay saved even when other work fails. Start the name of these actions with `Record`, e.g. `Posts::RecordLinkCheck`, which saves `link_check_status` on the post. The name tells the caller that this write stays saved when the rest rolls back.
