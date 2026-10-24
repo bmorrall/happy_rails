@@ -147,9 +147,10 @@ When the action works out the job's arguments, check the arguments it passes, e.
 RSpec.describe Posts::EnqueueStatsRefresh do
   describe ".call" do
     it "enqueues a refresh with the post's newsletter ID" do
-      post = instance_double(Post, newsletter_id?: true, newsletter_id: "newsletter-1")
+      newsletter_id = "newsletter-1"
+      post = instance_double(Post, newsletter_id?: true, newsletter_id:)
 
-      expect(RefreshNewsletterStatsJob).to receive(:perform_later).with("newsletter-1")
+      expect(RefreshNewsletterStatsJob).to receive(:perform_later).with(newsletter_id)
 
       described_class.call(post)
     end

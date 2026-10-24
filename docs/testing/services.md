@@ -35,7 +35,8 @@ WebMock matches a body hash exactly, but it only checks the headers you list. Li
 RSpec.describe NewsletterClient do
   describe "#create_public_newsletter" do
     it "creates a public newsletter" do
-      stub_newsletter_create(id: "newsletter-1")
+      newsletter_id = "newsletter-1"
+      stub_newsletter_create(id: newsletter_id)
 
       response = described_class.new(api_key: "test-key").create_public_newsletter(title: "Hello World", body: "My first post.")
 
@@ -47,7 +48,7 @@ RSpec.describe NewsletterClient do
           visibility: "public"
         }
       )
-      expect(response).to have_attributes(id: "newsletter-1")
+      expect(response).to have_attributes(id: newsletter_id)
     end
   end
 end

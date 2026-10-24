@@ -522,6 +522,34 @@ Check against the value you set, e.g. `"Jane Tester"`. You MUST NOT check agains
 expect(post.decorate.author_name).to eq(post.author.name)
 ```
 
+### Shared identifiers
+
+When a spec uses an identifier in more than one place, e.g. a newsletter ID it passes to a stub helper and then checks, you SHOULD declare it once and use the name everywhere. Declare it in a local variable in the example, e.g. `newsletter_id = "newsletter-1"`. When the examples in a context all use it, declare it in a `let` in that context instead, e.g. `let(:newsletter_id) { "newsletter-1" }`. You MUST NOT add a context only to hold the `let`. Examples without one each declare their own. You SHOULD NOT write the same literal twice. A typo in one copy makes a `to` check fail for the wrong reason and a `not_to` check pass for the wrong reason. The name also tells the reader what the value is.
+
+You SHOULD NOT read an identifier out of a fixture in a spec, e.g. `JSON.parse(file_fixture("newsletter_create.json").read)["id"]`. The reader has to open the fixture to see the value, and the spec breaks when someone edits the fixture. Declare the identifier in the spec, and pass it to the stub helper, which puts it into the reply.
+
+```ruby
+# Don't do this
+it "returns the newsletter's ID" do
+  stub_newsletter_create
+
+  response = described_class.new(api_key: "test-key").create_public_newsletter(title: "Hello World", body: "My first post.")
+
+  expect(response.id).to eq(JSON.parse(file_fixture("newsletter_create.json").read)["id"])
+end
+```
+
+```ruby
+it "returns the newsletter's ID" do
+  newsletter_id = "newsletter-1"
+  stub_newsletter_create(id: newsletter_id)
+
+  response = described_class.new(api_key: "test-key").create_public_newsletter(title: "Hello World", body: "My first post.")
+
+  expect(response.id).to eq(newsletter_id)
+end
+```
+
 ### Checks with not_to
 
 A `not_to` check is the other way round. You SHOULD take the value it looks for from the records the spec set up, e.g. `post.title` or `post.slug`, not a value you wrote in. A `not_to` check passes whatever value it looks for, as long as that value isn't there. When the value you wrote in doesn't match the setup, e.g. a title the factory never gave the post, the check passes even if the code is wrong. A value read from the record always matches the setup, even after the setup changes.
