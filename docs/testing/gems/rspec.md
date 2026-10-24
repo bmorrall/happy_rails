@@ -74,18 +74,19 @@ You MAY declare `let(:current_time) { Time.zone.now.change(usec: 0) }` as the fi
 
 When the spec's fixtures only work at one time, set `current_time` to that time instead, e.g. `let(:current_time) { Time.zone.local(2026, 3, 14, 9, 30) }` for a recorded reply from the newsletter service with a token that expires. A fixed time doesn't need the `change`.
 
-An example that reads `current_time` runs with the clock stopped. Otherwise the code reads the time a moment after the `let` does, and the two can land on different seconds. Call `travel_to current_time` on the example's first line. Examples that don't read the time leave the clock running.
+Stop the clock at `current_time` in a `before` on the next line, `before { travel_to current_time }`. Every example in the spec then runs with the clock stopped. Otherwise the code reads the time a moment after the `let` does, and the two can land on different seconds. The `before` runs ahead of every `let!` and `before` below it, so the records they create get the stopped time too. A `travel_to` on the example's first line runs after them.
 
-When some examples depend on the date, put them in a context named for the time, e.g. `context "on a leap day"`. Override `current_time` with a fixed time that tests it, and stop the clock in the context's `before`. This is the one `let` you MAY override in a context, as an exception to [Contexts](#contexts). The context's name tells the reader which time its examples run at.
+With the clock stopped, time only moves when the spec moves it, e.g. `travel 31.minutes` for a token that expires after 30 minutes. The spec then shows how much time passes. Records an example creates get the same `created_at`, so set it when the spec checks the order, as in [Values you check](#values-you-check).
+
+When some examples depend on the date, put them in a context named for the time, e.g. `context "on a leap day"`. Override `current_time` with a fixed time that tests it. The `before` at the top reads the overridden time, so the context doesn't need its own `travel_to`. This is the one `let` you MAY override in a context, as an exception to [Contexts](#contexts). The context's name tells the reader which time its examples run at.
 
 ```ruby
 RSpec.describe PurgeAbandonedDraftsJob do
   let(:current_time) { Time.zone.now.change(usec: 0) }
+  before { travel_to current_time }
 
   describe ".perform_now" do
     it "deletes drafts no one has changed for a year" do
-      travel_to current_time
-
       post = create(:post, updated_at: current_time - 13.months)
 
       described_class.perform_now
@@ -95,8 +96,6 @@ RSpec.describe PurgeAbandonedDraftsJob do
 
     context "on a leap day" do
       let(:current_time) { Time.zone.local(2028, 2, 29, 12) }
-
-      before { travel_to current_time }
 
       it "deletes a draft changed before noon on February 28 last year" do
         post = create(:post, updated_at: Time.zone.local(2027, 2, 28, 11))
