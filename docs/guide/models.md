@@ -516,6 +516,38 @@ class NewsletterServiceIntegration < ApplicationRecord
 end
 ```
 
+### Stored data
+
+A model can turn a stored value into an object, e.g. a `jsonb` column into a struct. The value was valid when it was saved, but a later change to the struct can make it fail, e.g. a new required attribute. Old rows then raise an error when they are read.
+
+Rescue the struct's error in the model, and raise the model's own error instead, e.g. `Post::UnreadableDataError`. Ruby keeps the struct's error as the `cause`. Callers then rescue one class, and don't need to know how the model reads its data.
+
+```ruby
+class Post < ApplicationRecord
+  ### Constants ###
+
+  class UnreadableDataError < StandardError; end
+
+  # ...
+
+  ### Public Methods ###
+
+  concerning :LinkChecks do
+    def parsed_link_check_report
+      return if link_check_report.blank?
+
+      LinkCheckReport.new(link_check_report.deep_symbolize_keys)
+    rescue Dry::Struct::Error => e
+      raise UnreadableDataError, e.message
+    end
+  end
+end
+```
+
+You MUST NOT report the error from the model, e.g. with `Honeybadger.notify`. The model is read everywhere: a page, a job, the console or a spec. A report there is hidden in what looks like a read, as with a callback that reaches outside the record. See [Callbacks](#callbacks).
+
+You MUST NOT return `nil` in place of the error either. The model can't tell whether its caller can carry on without the data. The post's page can show the post without its report, but a job that acts on the report can't. Let each caller decide. See [Stored Data That No Longer Parses](../../patterns/stored-data-that-no-longer-parses/) for how a caller handles the error, and how to clean up old data when the struct changes.
+
 > **TODO:** Describe how you handle the rest of this.
 
 ## Testing
