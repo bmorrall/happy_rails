@@ -10,7 +10,7 @@ How to find a record that might still be in an older database, and bring it over
 
 When an app replaces an older system, some records stay in the old database until someone needs them. The publishing app replaced an older system, and a user who hasn't been back since is only in its database, as a `LegacyUser`. When the app looks a user up by email, e.g. to add a Co-author, it looks in its own `users` table first. If the user isn't there, it looks in the legacy database, and copies the user over.
 
-Several callers need this lookup, so the code is shared. It creates a record, so it can't go in a [service](../../guide/services/#kinds-of-services), which never saves records. It can't return the record either, because [actions return nothing](../../guide/actions/#return-values). These patterns work within both rules.
+Several callers need this lookup, so the code is shared. It creates a record, so it can't go in a [service](../../guide/services/#kinds-of-services), which never saves the app's models. It can't return the record either, because [actions return nothing](../../guide/actions/#return-values). These patterns work within both rules.
 
 The legacy records connect to their own database through an abstract base class.
 

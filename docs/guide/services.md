@@ -490,7 +490,9 @@ end
 
 Write a service only to wrap another system or a library. A calculation on a record stays on its model, e.g. a post's word count. A task that changes data is an [action](../actions/).
 
-You MUST NOT save records in a service, of either kind. The service returns what it made, and the action that called it saves the result, e.g. `Posts::SendNewsletter` saves the newsletter's ID on the post.
+You MUST NOT save or change the app's models in a service, of either kind, including a record passed to it. The service returns what it made, and the action that called it saves the result, e.g. `Posts::SendNewsletter` saves the newsletter's ID on the post. The action then decides what changes, and keeps the changes in its own transaction.
+
+A service MAY write to the store it wraps, e.g. `PostBackupBucket` uploads posts to S3. This holds even when the store keeps its data in the app's database, e.g. an event store backed by Active Record. Those rows belong to the library, not to a model in `app/models/`.
 
 When a view needs a value from a service for the app's own work, a helper calls the service, e.g. `markdown_tag` calls `MarkdownRenderer`. Templates and decorators call the helper. See [Views and Frontend: Helpers](../views/#helpers). [Calling a service](#calling-a-service) covers services for other systems.
 
