@@ -357,6 +357,24 @@ class MarkdownRenderer
 end
 ```
 
+### Files in the repo
+
+Some services read a file saved in the repo, e.g. `StyleGuide` reads the style guide's word list from `vendor/style_guide/words.csv`. The file's path is the same in every environment, so it isn't a setting. Keep it out of `config.x`.
+
+Take the path as a keyword argument to `initialize`, with the file as its default. Callers then write `StyleGuide.new`, as they do for a service with settings. You SHOULD NOT pass the path from app code. Pass one only when the caller needs a different file. A spec can pass a small file of its own instead, so its examples don't change when the word list does.
+
+```ruby
+class StyleGuide
+  def initialize(words_path: Rails.root.join("vendor/style_guide/words.csv"))
+    @words_path = words_path
+  end
+
+  def corrections(text)
+    # ...
+  end
+end
+```
+
 ### Timeouts
 
 Give a service a timeout when a request can call it, and set it in `config.x` like its other settings, e.g. `config.x.newsletter_client.timeout_seconds`. Pass it to the HTTP library, e.g. Faraday's `timeout`. Without it, Faraday waits for a reply as long as the other service takes. When the service keeps a connection pool, the timeouts are connection settings, so pass them to the pool, not to `initialize`. See [Patterns: Connection Pools](../../patterns/connection-pools/).

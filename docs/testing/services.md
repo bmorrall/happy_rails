@@ -58,6 +58,24 @@ end
 
 Pass a service its settings in specs, instead of stubbing `Rails.application.config.x`. The service takes each setting as a keyword argument, so the spec shows the values it uses, and no other spec sees them, e.g. `described_class.new(api_key: "test-key")` above. Pass only the settings the example needs, and leave the rest to their defaults, so the service's requests still match the stub helpers, e.g. the `base_url`.
 
+### Files in the repo
+
+When a service reads a file saved in the repo, pass it a small file from `spec/fixtures/files` instead, e.g. a word list with only the words the example checks. The spec then shows the data it uses, and doesn't break when someone edits the real file. See [Services: Files in the repo](../../guide/services/#files-in-the-repo).
+
+```ruby
+RSpec.describe StyleGuide do
+  describe "#corrections" do
+    it "lists each word that breaks the style guide" do
+      style_guide = described_class.new(words_path: file_fixture("style_guide_words.csv"))
+
+      corrections = style_guide.corrections("Send us an e-mail.")
+
+      expect(corrections).to contain_exactly(have_attributes(word: "e-mail", correction: "email"))
+    end
+  end
+end
+```
+
 ### Settings from a record
 
 When the service takes a [connection pool](../../patterns/connection-pools/), pass a test pool as the first argument, e.g. `described_class.new(test_pool, api_key: "test-key")`. Only specs and the service's own class methods pass a pool to `new`.
