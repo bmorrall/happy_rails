@@ -359,7 +359,9 @@ end
 
 ### Timeouts
 
-Give every service a timeout, and set it in `config.x` like its other settings, e.g. `config.x.newsletter_client.timeout_seconds`. Pass it to the HTTP library, e.g. Faraday's `timeout`. Without it, Faraday waits for a reply as long as the other service takes. When the service keeps a connection pool, the timeouts are connection settings, so pass them to the pool, not to `initialize`. See [Patterns: Connection Pools](../../patterns/connection-pools/).
+Give a service a timeout when a request can call it, and set it in `config.x` like its other settings, e.g. `config.x.newsletter_client.timeout_seconds`. Pass it to the HTTP library, e.g. Faraday's `timeout`. Without it, Faraday waits for a reply as long as the other service takes. When the service keeps a connection pool, the timeouts are connection settings, so pass them to the pool, not to `initialize`. See [Patterns: Connection Pools](../../patterns/connection-pools/).
+
+A service that only jobs call MAY leave out its timeout, e.g. a service that only `SyncNewslettersJob` uses. No request timeout limits a job, so a slow reply holds up only the job. Add the timeout when a request starts calling the service.
 
 A service MAY take more than one timeout, when one step needs its own limit, e.g. `open_timeout_seconds` for opening the connection, and `read_timeout_seconds` for the reply. Name each one after what it limits, and end it with its unit.
 
