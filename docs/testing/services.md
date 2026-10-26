@@ -12,11 +12,11 @@ For the code itself, see [Services](../../guide/services/).
 
 ## Service specs
 
-Stub the requests a service makes with the service's stub helpers from `spec/support`. They are the same helpers that request, feature and job specs use, e.g. `stub_newsletter_create`. See [WebMock and VCR: Helpers and matchers](../gems/webmock/#helpers-and-matchers).
+Stub the requests a service makes with the service's stub helpers from `spec/support`. They are the same helpers that request, feature and job specs use, e.g. `stub_newsletter_create`. See [Other Services: Helpers](../other-services/#helpers).
 
 The service spec is the one place that checks the service against those stubs. When it passes, every other spec that uses the helpers can trust them. A stub written by hand in a service spec could drift from the helper, and the other specs would no longer test what the service really does.
 
-When a spec needs a response that has no helper yet, add the helper to the service's module, not a `stub_request` to the spec. The next spec that needs it, e.g. a request spec for the same failure, can then use it too. For a service with an SDK that has its own stubs, e.g. `stub_responses` in the AWS SDK, use the SDK's helpers in the same way. See [WebMock and VCR: SDK stubs](../gems/webmock/#sdk-stubs).
+When a spec needs a response that has no helper yet, add the helper to the service's module, not a `stub_request` to the spec. The next spec that needs it, e.g. a request spec for the same failure, can then use it too. For a service with an SDK that has its own stubs, e.g. `stub_responses` in the AWS SDK, use the SDK's helpers in the same way. See [Other Services: SDK stubs](../other-services/#sdk-stubs).
 
 ### Full messages
 
@@ -80,7 +80,7 @@ end
 
 When the service takes a [connection pool](../../patterns/connection-pools/), pass a test pool as the first argument, e.g. `described_class.new(test_pool, api_key: "test-key")`. Only specs and the service's own class methods pass a pool to `new`.
 
-When a [fake client](../fake-clients/) sits behind the gem's connect method, build the service with its own builder instead, e.g. `described_class.default` for `PostNotifier`. The pool might be the code that turns the gem's errors into the service's own, and a test pool would skip it. See [Fake Clients: Connections](../fake-clients/#connections).
+When a [fake client](../other-services/#fake-clients) sits behind the gem's connect method, build the service with its own builder instead, e.g. `described_class.default` for `PostNotifier`. The pool might be the code that turns the gem's errors into the service's own, and a test pool would skip it. See [Other Services: Connections for a fake](../other-services/#connections-for-a-fake).
 
 ## Kinds of services
 

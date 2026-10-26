@@ -14,7 +14,7 @@ Test a job the way you test a controller with a request spec. Run it with `perfo
 
 Name the `describe` block `".perform_now"`, after the method the spec calls, not `"#perform"`.
 
-Stub only the HTTP requests the job makes to other services, and check that it made them. Use the service's stub helpers from `spec/support`, and check the stub each one returns. When a service's SDK has its own stubs, e.g. `stub_responses` in the AWS SDK, use them instead. See [WebMock and VCR](../gems/webmock/).
+Stub only the HTTP requests the job makes to other services, and check that it made them. Use the service's stub helpers from `spec/support`, and check the stub each one returns. When a service's SDK has its own stubs, e.g. `stub_responses` in the AWS SDK, use them instead. See [Other Services](../other-services/).
 
 ```ruby
 class NotifySubscribersJob < ApplicationJob

@@ -2,7 +2,7 @@
 title: WebMock and VCR
 parent: Gems
 grand_parent: Testing
-nav_order: 12
+nav_order: 13
 ---
 
 # WebMock and VCR
@@ -11,21 +11,11 @@ Stubbed HTTP requests in specs with [WebMock](https://github.com/bblimke/webmock
 
 ## Stubbing requests
 
-WebMock blocks every real HTTP request in specs. In request, feature, job and service specs, stub each request the code makes to another service with `stub_request`, and check that the code made it. Stub the request, not the service class that makes it, so the spec runs the service's code too. Action specs are unit specs, so they stub the service instead. See [Testing: Actions](../../actions/).
+WebMock blocks every real HTTP request in specs. Stub each request the code makes to another service with `stub_request`, inside the service's helpers, as [Other Services](../../other-services/) describes. You MUST NOT call `stub_request` in the specs themselves.
 
-To test the other service failing, stub the request to fail. Use `.to_return(status: 500)` when the service returns an error, and `.to_timeout` when it takes too long to reply.
+### Helpers
 
-```ruby
-stub_request(:post, "https://newsletter.example.com/posts").to_timeout
-```
-
-You MUST NOT call `stub_request` in the specs themselves. Wrap it in a helper for the service, as below. When a spec needs a stub or a check that has no helper yet, add the helper first.
-
-### Helpers and matchers
-
-A stub repeats the service's URL, and often its response body, in every spec that uses it. Put the stubs for each service in a helper module in `spec/support`, with one method for each response the specs need: the reply the service sends when it works, an error and a timeout. Start each method's name with `stub_`, then the service and the request, e.g. `stub_newsletter_create`. Return the WebMock stub from each method.
-
-Then a spec says what the service does, not how its API works. When the API changes, you fix one file, not every spec.
+Return the WebMock stub from each helper. Inside a helper, stub a reply with `.to_return`, an error with `.to_return(status: 500)`, and a timeout with `.to_timeout`.
 
 ```ruby
 # spec/support/newsletter_service.rb
@@ -51,9 +41,7 @@ RSpec.configure do |config|
 end
 ```
 
-When a spec checks a value from the response, pass it to the helper, e.g. `stub_newsletter_create(id: "newsletter-1")`. You SHOULD give each of the helper's arguments a default, so specs that don't check them can leave them out. See [RSpec: Values you check](../rspec/#values-you-check).
-
-Call the helper inside the example. Avoid calling it in a `let` or a `before` block. Keep the stub it returns in a local variable, and check it with `have_been_requested`. The example then shows the stub and the check together, and the variable says which request you expect.
+In the spec, keep the stub the helper returns in a local variable, and check it with `have_been_requested`. The variable says which request you expect.
 
 ```ruby
 it "sends the post to the newsletter service" do
@@ -66,7 +54,9 @@ it "sends the post to the newsletter service" do
 end
 ```
 
-When a spec also checks what the request sent, e.g. the post's title, add a matcher to the same module. Write it as a method that returns WebMock's own `have_requested` matcher, and use it on `WebMock`. Start its name with `have_requested_`, then the same service and request as the stub, e.g. `have_requested_newsletter_create`. Pass its keywords to WebMock's `with`, e.g. `body:` and `headers:`. Call `with` only when there are keywords. It raises an error when called with no options, so `expect(WebMock).to have_requested_newsletter_create` would break. When the matcher fails, WebMock lists the requests that were made.
+### Matchers
+
+For a `have_requested_` matcher, write a method that returns WebMock's own `have_requested` matcher, and use it on `WebMock`. Pass its keywords to WebMock's `with`, e.g. `body:` and `headers:`. Call `with` only when there are keywords. It raises an error when called with no options, so `expect(WebMock).to have_requested_newsletter_create` would break. When the matcher fails, WebMock lists the requests that were made.
 
 ```ruby
 # spec/support/newsletter_service.rb
@@ -80,7 +70,7 @@ module NewsletterServiceHelpers
 end
 ```
 
-Check only the parts of the request the spec is about, with `hash_including`. The service's own spec checks the whole request. See [Testing: Services](../../services/#full-messages).
+Outside the service's own spec, check only the parts of the request the spec is about, with WebMock's `hash_including`. See [Other Services: Matchers](../../other-services/#matchers).
 
 ```ruby
 it "sends the post's title to the newsletter service" do
@@ -92,43 +82,6 @@ it "sends the post's title to the newsletter service" do
   expect(WebMock).to have_requested_newsletter_create(body: hash_including(title: "Hello World"))
 end
 ```
-
-### SDK stubs
-
-Some services come with an SDK that has its own stubs, e.g. `stub_responses` in the AWS SDK. Use them instead of WebMock. They replace only the SDK's HTTP layer, so your service's code still runs, and you don't write signed requests or response bodies by hand. Outside action specs, you MUST NOT stub the service class itself.
-
-Turn the stubs on for every spec, and set the responses for a spec in `Aws.config`. Remove them after each spec, so they don't leak into the next one.
-
-```ruby
-# spec/support/aws.rb
-Aws.config.update(stub_responses: true)
-
-RSpec.configure do |config|
-  config.after { Aws.config.delete(:s3) }
-end
-```
-
-To check the request, stub the response with a block that keeps its params.
-
-```ruby
-it "saves a copy of the post to S3" do
-  post = create(:post, published_at: Time.zone.now)
-  uploads = []
-  Aws.config[:s3] = {
-    stub_responses: { put_object: ->(context) { uploads << context.params; {} } }
-  }
-
-  described_class.perform_now(post)
-
-  expect(uploads).to contain_exactly(hash_including(key: "posts/#{post.id}.json"))
-end
-```
-
-To test the service failing, stub the response with the error's code, e.g. `Aws.config[:s3] = { stub_responses: { put_object: "ServiceUnavailable" } }`. The client then raises `Aws::S3::Errors::ServiceUnavailable`.
-
-Put SDK stubs behind helpers too, as in [Helpers and matchers](#helpers-and-matchers), e.g. `stub_post_backup_upload`.
-
-When neither WebMock nor the SDK can reach the client, use a fake client. See [Fake Clients](../../fake-clients/).
 
 ## Recording requests
 

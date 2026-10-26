@@ -190,7 +190,7 @@ end
 
 ## Other services failing
 
-When a controller rescues an action's error for the service failing, e.g. `ServiceError`, as in [Controllers and Routes: Other services failing](../../guide/controllers/#other-services-failing), stub the service to fail in the request spec with its helper from `spec/support`, e.g. `stub_newsletter_create_failure`, and check the redirect and the alert. Match the whole flash, so the spec fails if the alert ever includes the service's reply. Stub a timeout the same way, with `stub_newsletter_create_timeout`. See [WebMock and VCR: Helpers and matchers](../gems/webmock/#helpers-and-matchers).
+When a controller rescues an action's error for the service failing, e.g. `ServiceError`, as in [Controllers and Routes: Other services failing](../../guide/controllers/#other-services-failing), stub the service to fail in the request spec with its helper from `spec/support`, e.g. `stub_newsletter_create_failure`, and check the redirect and the alert. Match the whole flash, so the spec fails if the alert ever includes the service's reply. Stub a timeout the same way, with `stub_newsletter_create_timeout`. See [Other Services: Helpers](../other-services/#helpers).
 
 The handler also reports the error, so the example is tagged `:honeybadger` and checks the report. See [Honeybadger: Reporting errors](../gems/honeybadger/#reporting-errors).
 
@@ -379,7 +379,7 @@ RSpec.describe "Posts::Publications" do
 end
 ```
 
-When the action calls another service during the request, stub only the HTTP request, and check that the action made it. Use the service's stub helpers from `spec/support`, and check the stub each one returns, e.g. `newsletter_request = stub_newsletter_create` then `expect(newsletter_request).to have_been_requested`. When a service's SDK has its own stubs, e.g. `stub_responses` in the AWS SDK, use them instead. See [WebMock and VCR](../gems/webmock/).
+When the action calls another service during the request, stub only the HTTP request, and check that the action made it. Use the service's stub helpers from `spec/support`, and check the stub each one returns, e.g. `newsletter_request = stub_newsletter_create` then `expect(newsletter_request).to have_been_requested`. When a service's SDK has its own stubs, e.g. `stub_responses` in the AWS SDK, use them instead. See [Other Services](../other-services/).
 
 See [RSpec: Request specs](../gems/rspec/#request-specs) for how to write the contexts inside each block.
 

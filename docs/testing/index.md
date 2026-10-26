@@ -12,6 +12,6 @@ How I test my Rails apps with RSpec, one area at a time.
 
 Each page here is the testing counterpart of a page in [the guide](../guide/), e.g. [Testing: Actions](actions/) for [Actions](../guide/actions/). The guide covers the app's code, and these pages cover its specs. Each page has its own `happy_rspec_*.instructions.md` file. If your app does not use RSpec, skip these pages and delete those files.
 
-[Fake Clients](fake-clients/) has no guide page. It covers specs for services that neither WebMock nor an SDK can stub, e.g. over MQTT.
+[Other Services](other-services/) has no guide page. It covers stubbing the requests and messages your app sends to other services, over HTTP, an SDK or a socket.
 
 For the spec setup, factories, personas and matchers that every spec uses, see [RSpec and FactoryBot](gems/rspec/).

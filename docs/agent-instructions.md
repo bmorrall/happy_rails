@@ -68,6 +68,7 @@ Each [gem](../guide/gems/) has its own file. If your app does not use a gem, del
 | `happy_draper.instructions.md` | Draper | `app/decorators/**`, `app/controllers/**`, `app/views/**`, `app/helpers/**` |
 | `happy_dry_rb.instructions.md` | dry-rb | `app/services/**` |
 | `happy_honeybadger.instructions.md` | Honeybadger | `app/models/**`, `app/actions/**`, `app/forms/**`, `app/controllers/**`, `app/jobs/**`, `app/services/**` |
+| `happy_mqtt.instructions.md` | MQTT | `app/services/**` |
 | `happy_pundit.instructions.md` | Pundit | `app/policies/**`, `app/controllers/**`, `app/views/**`, `app/forms/**` |
 | `happy_simple_form.instructions.md` | Simple Form | `app/models/**`, `app/views/**`, `app/inputs/**`, `app/helpers/**`, `config/initializers/simple_form.rb` |
 | `happy_turbo.instructions.md` | Turbo | `app/models/**`, `app/actions/**` |
@@ -90,13 +91,14 @@ The rules for specs are in their own `happy_rspec_*` files, one for each area an
 | `happy_rspec_controllers.instructions.md` | `spec/requests/**`, `spec/features/**` |
 | `happy_rspec_views.instructions.md` | `spec/helpers/**`, `spec/requests/**` |
 | `happy_rspec_mailers.instructions.md` | `spec/mailers/**` |
-| `happy_rspec_fake_clients.instructions.md` | `spec/**` |
+| `happy_rspec_other_services.instructions.md` | `spec/**` |
 | `happy_rspec_style.instructions.md` | `spec/**` |
 | `happy_rspec_aasm.instructions.md` | `spec/models/**` |
 | `happy_rspec_devise.instructions.md` | `spec/requests/users/**` |
 | `happy_rspec_draper.instructions.md` | `spec/decorators/**`, `spec/support/**` |
 | `happy_rspec_dry_rb.instructions.md` | `spec/services/**` |
 | `happy_rspec_honeybadger.instructions.md` | `spec/**` |
+| `happy_rspec_mqtt.instructions.md` | `spec/**` |
 | `happy_rspec_pundit.instructions.md` | `spec/policies/**` |
 | `happy_rspec_shoulda_matchers.instructions.md` | `spec/models/**`, `spec/forms/**` |
 | `happy_rspec_simple_form.instructions.md` | `spec/requests/**`, `spec/features/**`, `spec/support/**` |

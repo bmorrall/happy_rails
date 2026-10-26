@@ -29,6 +29,7 @@ Each convention is written twice: once in the guide or testing pages for people,
 | `docs/guide/gems/draper.md` | `instructions/.github/instructions/happy_draper.instructions.md` |
 | `docs/guide/gems/dry_rb.md` | `instructions/.github/instructions/happy_dry_rb.instructions.md` |
 | `docs/guide/gems/honeybadger.md` | `instructions/.github/instructions/happy_honeybadger.instructions.md` |
+| `docs/guide/gems/mqtt.md` | `instructions/.github/instructions/happy_mqtt.instructions.md` |
 | `docs/guide/gems/pundit.md` | `instructions/.github/instructions/happy_pundit.instructions.md` |
 | `docs/guide/gems/simple_form.md` | `instructions/.github/instructions/happy_simple_form.instructions.md` |
 | `docs/guide/gems/turbo.md` | `instructions/.github/instructions/happy_turbo.instructions.md` |
@@ -44,13 +45,14 @@ Each convention is written twice: once in the guide or testing pages for people,
 | `docs/testing/controllers.md` | `instructions/.github/instructions/happy_rspec_controllers.instructions.md` |
 | `docs/testing/views.md` | `instructions/.github/instructions/happy_rspec_views.instructions.md` |
 | `docs/testing/mailers.md` | `instructions/.github/instructions/happy_rspec_mailers.instructions.md` |
-| `docs/testing/fake-clients.md` | `instructions/.github/instructions/happy_rspec_fake_clients.instructions.md` |
+| `docs/testing/other-services.md` | `instructions/.github/instructions/happy_rspec_other_services.instructions.md` |
 | `docs/testing/code-style.md` | `instructions/.github/instructions/happy_rspec_style.instructions.md` |
 | `docs/testing/gems/aasm.md` | `instructions/.github/instructions/happy_rspec_aasm.instructions.md` |
 | `docs/testing/gems/devise.md` | `instructions/.github/instructions/happy_rspec_devise.instructions.md` |
 | `docs/testing/gems/draper.md` | `instructions/.github/instructions/happy_rspec_draper.instructions.md` |
 | `docs/testing/gems/dry_rb.md` | `instructions/.github/instructions/happy_rspec_dry_rb.instructions.md` |
 | `docs/testing/gems/honeybadger.md` | `instructions/.github/instructions/happy_rspec_honeybadger.instructions.md` |
+| `docs/testing/gems/mqtt.md` | `instructions/.github/instructions/happy_rspec_mqtt.instructions.md` |
 | `docs/testing/gems/pundit.md` | `instructions/.github/instructions/happy_rspec_pundit.instructions.md` |
 | `docs/testing/gems/shoulda_matchers.md` | `instructions/.github/instructions/happy_rspec_shoulda_matchers.instructions.md` |
 | `docs/testing/gems/simple_form.md` | `instructions/.github/instructions/happy_rspec_simple_form.instructions.md` |
