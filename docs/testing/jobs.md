@@ -213,7 +213,7 @@ end
 
 ## Feature specs
 
-Run every job in at least one feature spec. The job spec checks the job on its own. The feature spec checks that the app enqueues it at the right time, with the right arguments, and that the persona gets the result.
+Run every job in at least one feature spec. The job spec checks the job on its own. The feature spec checks that the app enqueues it at the right time, with the right arguments, and that the persona or client gets the result.
 
 Include `ActiveJob::TestHelper` in feature specs, in `spec/support/active_job.rb`. Then wrap the step that enqueues the job in `perform_enqueued_jobs`, so the job runs before the next step.
 
@@ -278,6 +278,33 @@ RSpec.feature "Draft Cleanup" do
 
     # THEN I don't see the abandoned draft
     expect(page).not_to have_link(draft.title)
+  end
+end
+```
+
+When no persona sees the result, e.g. in an app with no users, start the scenario name with the client that does, as for an API, e.g. `scenario "API client no longer gets abandoned drafts"`. Write the steps as that client, and check what it gets back from the API, or the request the job makes to another service. See [RSpec: API endpoints](../gems/rspec/#api-endpoints).
+
+```ruby
+RSpec.feature "Draft Cleanup" do
+  scenario "API client no longer gets abandoned drafts" do
+    # GIVEN I have an access token
+    client = ActionDispatch::Integration::Session.new(Rails.application)
+    headers = { "Authorization" => "Bearer #{Rails.application.credentials.api_token}" }
+
+    # AND there is a draft no one has changed for a year
+    draft = create(:post, updated_at: 1.year.ago)
+
+    # WHEN the draft cleanup runs
+    perform_enqueued_jobs do
+      PurgeAbandonedDraftsJob.perform_now
+    end
+
+    # AND I fetch the posts
+    client.get api_v1_posts_path, headers: headers
+
+    # THEN I don't get the abandoned draft
+    expect(client.response).to have_http_status(:ok)
+    expect(client.response.parsed_body).not_to include(a_hash_including("id" => draft.id))
   end
 end
 ```
