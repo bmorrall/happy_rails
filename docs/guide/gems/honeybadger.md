@@ -17,6 +17,8 @@ Error reporting with [Honeybadger](https://github.com/honeybadger-io/honeybadger
 
 Honeybadger reports every error the app doesn't rescue, so let those errors raise. You only report an error yourself when the app rescues it, e.g. in a `rescue_from` handler or a job's `rescue`. Once the app rescues an error, Honeybadger never sees it.
 
+Report errors only from controllers, forms, actions and jobs. You MUST NOT call `Honeybadger.notify` anywhere else, e.g. in a model or a service. A model or a service is called from many places, and only its caller knows whether the error needs a report. Let the error raise, and report it where it is handled.
+
 Report a rescued error with `Honeybadger.notify`, not `Rails.error.report`. Then the code says where the report goes. Pass the error itself, not a message, so the report keeps its backtrace and its `cause`.
 
 ```ruby
@@ -45,7 +47,7 @@ Reporting an error that the app handles as an expected outcome is optional, e.g.
 
 ```ruby
 rescue Posts::SendNewsletter::RejectedError => e
-  Honeybadger.notify(e, context: { post: post.to_honeybadger_context }, tags: ["low_priority"])
+  Honeybadger.notify(e, context: { post: post&.to_honeybadger_context }, tags: ["low_priority"])
   errors.add(:base, "Newsletter was rejected. Check the post and try again.")
   false
 ```

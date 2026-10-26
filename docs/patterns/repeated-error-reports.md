@@ -21,7 +21,7 @@ class NotifySubscribersJob < ApplicationJob
   retry_on NewsletterClient::Error,
     attempts: 5 do |job, error|
     post = job.arguments.first
-    Honeybadger.notify(error, context: { post: post.to_honeybadger_context })
+    Honeybadger.notify(error, context: { post: post&.to_honeybadger_context })
     post.update!(newsletter_status: :failed)
   end
 
@@ -76,7 +76,7 @@ By default, the action throttles by the error's class: one `Posts::SendNewslette
 ```ruby
 ReportThrottledError.call(
   error,
-  context: { post: post.to_honeybadger_context },
+  context: { post: post&.to_honeybadger_context },
   fingerprint: "post-#{post.id}"
 )
 ```

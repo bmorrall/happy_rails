@@ -192,8 +192,10 @@ end
 
 When a controller rescues an action's error for the service failing, e.g. `ServiceError`, as in [Controllers and Routes: Other services failing](../../guide/controllers/#other-services-failing), stub the service to fail in the request spec with its helper from `spec/support`, e.g. `stub_newsletter_create_failure`, and check the redirect and the alert. Match the whole flash, so the spec fails if the alert ever includes the service's reply. Stub a timeout the same way, with `stub_newsletter_create_timeout`. See [WebMock and VCR: Helpers and matchers](../gems/webmock/#helpers-and-matchers).
 
+The handler also reports the error, so the example is tagged `:honeybadger` and checks the report. See [Honeybadger: Reporting errors](../gems/honeybadger/#reporting-errors).
+
 ```ruby
-it "redirects with an alert when the newsletter service fails" do
+it "redirects with an alert when the newsletter service fails", :honeybadger do
   published_post = create(:post)
   stub_newsletter_create_failure
 
@@ -201,6 +203,10 @@ it "redirects with an alert when the newsletter service fails" do
 
   expect(response).to redirect_to(post_path(published_post))
   expect(flash).to have_flash_alert("Newsletter could not be sent. Please try again later.")
+  expect(Honeybadger).to have_received(:notify).with(
+    an_instance_of(Posts::SendNewsletter::ServiceError),
+    context: { post: published_post.to_honeybadger_context }
+  )
 end
 ```
 

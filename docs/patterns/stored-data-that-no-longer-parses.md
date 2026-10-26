@@ -100,7 +100,7 @@ class PostsController < ApplicationController
   def read_link_check_report
     @post.parsed_link_check_report
   rescue Post::UnreadableDataError => e
-    Honeybadger.notify(e, context: { post: @post.to_honeybadger_context })
+    Honeybadger.notify(e, context: { post: @post&.to_honeybadger_context })
     nil
   end
 end

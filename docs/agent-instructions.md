@@ -67,7 +67,7 @@ Each [gem](../guide/gems/) has its own file. If your app does not use a gem, del
 | `happy_devise.instructions.md` | Devise | `config/routes.rb`, `app/models/user.rb`, `app/controllers/users/**`, `app/views/devise/**` |
 | `happy_draper.instructions.md` | Draper | `app/decorators/**`, `app/controllers/**`, `app/views/**`, `app/helpers/**` |
 | `happy_dry_rb.instructions.md` | dry-rb | `app/services/**` |
-| `happy_honeybadger.instructions.md` | Honeybadger | `app/models/**`, `app/actions/**`, `app/controllers/**`, `app/jobs/**`, `app/services/**` |
+| `happy_honeybadger.instructions.md` | Honeybadger | `app/models/**`, `app/actions/**`, `app/forms/**`, `app/controllers/**`, `app/jobs/**`, `app/services/**` |
 | `happy_pundit.instructions.md` | Pundit | `app/policies/**`, `app/controllers/**`, `app/views/**`, `app/forms/**` |
 | `happy_simple_form.instructions.md` | Simple Form | `app/models/**`, `app/views/**`, `app/inputs/**`, `app/helpers/**`, `config/initializers/simple_form.rb` |
 | `happy_turbo.instructions.md` | Turbo | `app/models/**`, `app/actions/**` |
