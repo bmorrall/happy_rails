@@ -4,6 +4,7 @@ applyTo: "spec/**/*.rb"
 
 # RSpec and FactoryBot
 
+- Check the details in unit specs, e.g. model, service and action specs: the values the code works out, the errors it raises, and what each error holds. In integration specs, e.g. request, feature and job specs, check only the outline: whether the code succeeded or failed, and what it did as a whole. Leave each detail to the unit spec for the code that works it out, e.g. check a report's context with `published_post.to_honeybadger_context` in a request spec, and the hash it returns in the model spec.
 - Only sign in a user, e.g. with `sign_in`, in request and feature specs. In other specs, pass the user in as an argument, e.g. `Posts::PublishPost.call(post, publisher: user)`.
 - When you add or change an action, cover in request and feature specs what each persona can do, and on which records. Include a persona who can act on some records but not this one, e.g. a user who did not create the record.
 - In request and feature specs, you MUST NOT cover a persona whose role plays no part in the action. The User persona covers it, and so does the policy spec.

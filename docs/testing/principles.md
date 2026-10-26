@@ -10,6 +10,12 @@ How the ideas behind the guide shape my specs.
 
 For the code itself, see [Principles](../../guide/principles/).
 
+## Unit and integration specs
+
+Unit specs check the details, and integration specs check the outline. A unit spec, e.g. a model, service or action spec, checks each thing its code does: the values it works out, the errors it raises, and what each error holds. An integration spec, e.g. a request, feature or job spec, checks that the pieces work together: whether the code succeeded or failed, and what it did as a whole.
+
+Leave each detail to the unit spec for the code that works it out. A change to that detail then fails one spec, not every spec that passes through the code. For example, a request spec checks which records an error report includes, with each record's `to_honeybadger_context`. The model spec checks what that hash holds. See [Honeybadger: Reporting errors](../gems/honeybadger/#reporting-errors).
+
 ## The signed-in user
 
 Only sign in a user, e.g. with `sign_in`, in request and feature specs. They test the code that handles a request, which is the only code that knows who is signed in. In other specs, pass the user in as an argument, as the app code does.

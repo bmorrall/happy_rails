@@ -32,7 +32,7 @@ end
 
 The hook only checks that the code reported something. In each tagged example, check each call itself with `have_received`: the error and the context it passes. You MUST NOT stub `Honeybadger.notify` in the spec, e.g. `allow(Honeybadger).to receive(:notify)`. The hook already does it.
 
-Unit specs check the details, and integration specs check the outline. An integration spec, e.g. a request or job spec, checks that the code reported the error, and which records the report includes. Check each record's context there with the record's own `to_honeybadger_context`, e.g. `context: { post: published_post.to_honeybadger_context }`. You SHOULD NOT write the hash out. Each hash is written out in one unit spec: a record's in its model spec, as in [Context](#context), and an error's in the spec for the service or action that builds it, as in [Errors](#errors).
+Unit specs check the details, and integration specs check the outline, as in [Principles: Unit and integration specs](../../principles/#unit-and-integration-specs). An integration spec, e.g. a request or job spec, checks that the code reported the error, and which records the report includes. Check each record's context there with the record's own `to_honeybadger_context`, e.g. `context: { post: published_post.to_honeybadger_context }`. You SHOULD NOT write the hash out. Each hash is written out in one unit spec: a record's in its model spec, as in [Context](#context), and an error's in the spec for the service or action that builds it, as in [Errors](#errors).
 
 ```ruby
 it "reports the error to Honeybadger when the newsletter service fails", :honeybadger do
