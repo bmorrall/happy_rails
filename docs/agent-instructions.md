@@ -90,6 +90,7 @@ The rules for specs are in their own `happy_rspec_*` files, one for each area an
 | `happy_rspec_controllers.instructions.md` | `spec/requests/**`, `spec/features/**` |
 | `happy_rspec_views.instructions.md` | `spec/helpers/**`, `spec/requests/**` |
 | `happy_rspec_mailers.instructions.md` | `spec/mailers/**` |
+| `happy_rspec_fake_clients.instructions.md` | `spec/**` |
 | `happy_rspec_style.instructions.md` | `spec/**` |
 | `happy_rspec_aasm.instructions.md` | `spec/models/**` |
 | `happy_rspec_devise.instructions.md` | `spec/requests/users/**` |

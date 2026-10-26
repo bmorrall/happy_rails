@@ -44,6 +44,7 @@ Each convention is written twice: once in the guide or testing pages for people,
 | `docs/testing/controllers.md` | `instructions/.github/instructions/happy_rspec_controllers.instructions.md` |
 | `docs/testing/views.md` | `instructions/.github/instructions/happy_rspec_views.instructions.md` |
 | `docs/testing/mailers.md` | `instructions/.github/instructions/happy_rspec_mailers.instructions.md` |
+| `docs/testing/fake-clients.md` | `instructions/.github/instructions/happy_rspec_fake_clients.instructions.md` |
 | `docs/testing/code-style.md` | `instructions/.github/instructions/happy_rspec_style.instructions.md` |
 | `docs/testing/gems/aasm.md` | `instructions/.github/instructions/happy_rspec_aasm.instructions.md` |
 | `docs/testing/gems/devise.md` | `instructions/.github/instructions/happy_rspec_devise.instructions.md` |

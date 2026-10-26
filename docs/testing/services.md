@@ -80,6 +80,8 @@ end
 
 When the service takes a [connection pool](../../patterns/connection-pools/), pass a test pool as the first argument, e.g. `described_class.new(test_pool, api_key: "test-key")`. Only specs and the service's own class methods pass a pool to `new`.
 
+When a [fake client](../fake-clients/) sits behind the gem's connect method, build the service with its own builder instead, e.g. `described_class.default` for `PostNotifier`. The pool might be the code that turns the gem's errors into the service's own, and a test pool would skip it. See [Fake Clients: Connections](../fake-clients/#connections).
+
 ## Kinds of services
 
 Test a service for the app's own work by calling it with real values, and checking what it returns, e.g. the HTML that `MarkdownRenderer#render_html` makes from Markdown. It makes no requests, so there's nothing to stub. You MUST NOT stub the library it wraps, e.g. Commonmarker. The spec then fails when a new version of the library changes the output. See [Services: Kinds of services](../../guide/services/#kinds-of-services).
