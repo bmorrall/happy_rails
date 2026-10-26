@@ -131,6 +131,8 @@ end
 
 Each controller that includes the concern SHOULD override the context method to pass the context of the records the user was working on, e.g. `@post`. A report with no records only says that the service failed, not what for.
 
+In the override, call `super` and merge the records into its hash, e.g. `super.merge(post: @post&.to_honeybadger_context)`. Any context the concern or a parent controller adds then stays in the report.
+
 ```ruby
 class PostsController < ApplicationController
   include NewsletterActionErrorHandling
@@ -140,7 +142,7 @@ class PostsController < ApplicationController
   private
 
   def posts_newsletter_action_service_error_context
-    { post: @post&.to_honeybadger_context }
+    super.merge(post: @post&.to_honeybadger_context)
   end
 
   # ...
