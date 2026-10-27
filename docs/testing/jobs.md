@@ -215,17 +215,37 @@ end
 
 Run every job in at least one feature spec. The job spec checks the job on its own. The feature spec checks that the app enqueues it at the right time, with the right arguments, and that the persona or client gets the result.
 
-Include `ActiveJob::TestHelper` in feature specs, in `spec/support/active_job.rb`. Then wrap the step that enqueues the job in `perform_enqueued_jobs`, so the job runs before the next step.
+Include `ActiveJob::TestHelper` in feature specs, in `spec/support/active_job.rb`. Add a `perform_all_enqueued_jobs` helper there too. Then call it in its own `WHEN` step, after the step that enqueues the job.
 
-Put the check for the success message inside the block too, after the click. In a browser, `click_button` can return before the request has finished. Capybara waits for the message to appear, so the block doesn't end before the job is enqueued.
+You MUST NOT pass `perform_enqueued_jobs` a block in a feature spec. In the app, the request returns before the job runs, so the persona sees the next page without the job's changes. A block runs the job during the request, so the next page already has them. The spec then passes even when the persona would never see the change.
 
-The block also runs any jobs that a job enqueues, as long as they are enqueued before the block ends. A job that enqueues a follow-up job is then covered too.
+Check for the success message before you call `perform_all_enqueued_jobs`. In a browser, `click_button` can return before the request has finished. Capybara waits for the message to appear, so the job is in the queue when you run it.
+
+After the jobs run, check what the persona sees, and the requests the jobs make to other services. The page only changes when a job updates it, e.g. with a Turbo broadcast. When the scenario checks a change a job makes to a page that it doesn't update, visit the page again, as the persona would reload it.
+
+`perform_enqueued_jobs` only runs the jobs that are in the queue when you call it. A job that enqueues a follow-up job leaves it in the queue. `perform_all_enqueued_jobs` keeps running the queue until it is empty, so the scenario doesn't need to know which jobs enqueue others. It fails when the queue is empty to start with, so the step can't pass when the app didn't enqueue the job.
+
+It also fails when jobs are still in the queue after 10 rounds, e.g. a job with `retry_on` that keeps failing and enqueues itself again. A scenario with a longer chain of jobs can raise the limit with `max_rounds:`. You SHOULD NOT raise it to get past the error. That hides a job that keeps enqueueing itself.
 
 ```ruby
 # spec/support/active_job.rb
+module ActiveJobFeatureSpecHelpers
+  def perform_all_enqueued_jobs(max_rounds: 10)
+    expect(enqueued_jobs).not_to be_empty, "expected jobs to be enqueued, but the queue is empty"
+
+    max_rounds.times do
+      perform_enqueued_jobs
+      return if enqueued_jobs.empty?
+    end
+
+    raise "jobs are still enqueued after #{max_rounds} rounds: #{enqueued_jobs.map { |job| job[:job] }.uniq.join(", ")}"
+  end
+end
+
 RSpec.configure do |config|
   # ...
   config.include ActiveJob::TestHelper, type: :feature
+  config.include ActiveJobFeatureSpecHelpers, type: :feature
 end
 ```
 
@@ -243,20 +263,21 @@ RSpec.feature "Post Publishing" do
 
     # WHEN I publish the post
     visit post_path(post)
-    perform_enqueued_jobs do
-      click_button "Publish"
+    click_button "Publish"
 
-      # THEN I see that it was published
-      expect(page).to have_css(".notice", text: "Post was published.")
-    end
+    # THEN I see that it was published
+    expect(page).to have_css(".notice", text: "Post was published.")
 
-    # AND the post is sent to the subscribers
+    # WHEN the background jobs run
+    perform_all_enqueued_jobs
+
+    # THEN the post is sent to the subscribers
     expect(newsletter_request).to have_been_requested
   end
 end
 ```
 
-A scheduled or maintenance job still needs a feature spec, even though no persona enqueues it. Name the feature after the task, and start the scenario name with the persona who sees the result. Set up the records in the `GIVEN` steps, run the job with `perform_now` in a `WHEN` step, then check what the persona sees. Wrap `perform_now` in `perform_enqueued_jobs` too, so any jobs the task enqueues also run.
+A scheduled or maintenance job still needs a feature spec, even though no persona enqueues it. Name the feature after the task, and start the scenario name with the persona who sees the result. Set up the records in the `GIVEN` steps, run the job with `perform_now` in a `WHEN` step, then check what the persona sees. When the job enqueues other jobs, call `perform_all_enqueued_jobs` after it, in its own step.
 
 ```ruby
 RSpec.feature "Draft Cleanup" do
@@ -269,9 +290,7 @@ RSpec.feature "Draft Cleanup" do
     draft = create(:post, author: author, updated_at: 1.year.ago)
 
     # WHEN the draft cleanup runs
-    perform_enqueued_jobs do
-      PurgeAbandonedDraftsJob.perform_now
-    end
+    PurgeAbandonedDraftsJob.perform_now
 
     # AND I visit the posts page
     visit posts_path
@@ -295,9 +314,7 @@ RSpec.feature "Draft Cleanup" do
     draft = create(:post, updated_at: 1.year.ago)
 
     # WHEN the draft cleanup runs
-    perform_enqueued_jobs do
-      PurgeAbandonedDraftsJob.perform_now
-    end
+    PurgeAbandonedDraftsJob.perform_now
 
     # AND I fetch the posts
     client.get api_v1_posts_path, headers: headers
