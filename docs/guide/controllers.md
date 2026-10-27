@@ -596,6 +596,20 @@ rescue_from Posts::NewsletterAction::ServiceError,
   with: :handle_posts_newsletter_action_service_error
 ```
 
+When the module's name starts with the base class's name without `Action`, the full name says it twice, e.g. `handle_newsletter_subscribers_newsletter_action_service_error` for `NewsletterSubscribers::NewsletterAction`. Name the handler after the module alone instead, e.g. `handle_newsletter_subscribers_service_error`. The module's name still says which service failed. Use the full name in every other case, e.g. for `Posts::NewsletterAction`, because `handle_posts_service_error` doesn't say which service failed.
+
+```ruby
+rescue_from NewsletterSubscribers::NewsletterAction::ServiceError,
+  with: :handle_newsletter_subscribers_service_error
+```
+
+Check each base class on its own. Another base class in the same module keeps its full name unless its own name starts the module's name, so the handlers' names don't clash. `NewsletterSubscribers::ImportAction` starts with "Import", not "Newsletter", so its handler is `handle_newsletter_subscribers_import_action_service_error`.
+
+| Base class | Handler |
+| --- | --- |
+| `NewsletterSubscribers::NewsletterAction` | `handle_newsletter_subscribers_service_error` |
+| `NewsletterSubscribers::ImportAction` | `handle_newsletter_subscribers_import_action_service_error` |
+
 An API controller renders the error instead, with a 5xx status, so the client knows its request wasn't the problem. Render the action's class for the service failing with `:bad_gateway` (502), which says the other service failed.
 
 When the client needs another status for one cause, give the action a subclass of that class for it, e.g. `Posts::SendNewsletter::TimeoutError`, and rescue it with its own handler. Use `:gateway_timeout` (504) when the service took too long to reply. Use `:service_unavailable` (503) when the service can't be reached for now, e.g. it is down for maintenance. A 503 tells the client to try again later.
@@ -649,14 +663,14 @@ module Posts
 end
 ```
 
-When the controllers that call the group's actions don't share a base controller, e.g. `PostsController` and `Posts::PrivateNewslettersController`, put the `rescue_from` and its handler in a concern instead, as in [Directory Layout: Concerns](../directory-layout/#concerns). Name it after the base class, ending in `ErrorHandling`, e.g. `NewsletterActionErrorHandling` in `app/controllers/concerns/newsletter_action_error_handling.rb`. Include it in each controller that calls the group's actions. Every controller then handles the group's errors the same way, and the alert's text is in one place.
+When the controllers that call the group's actions don't share a base controller, e.g. `PostsController` and `Posts::PrivateNewslettersController`, put the `rescue_from` and its handler in a concern instead, as in [Directory Layout: Concerns](../directory-layout/#concerns). Name it the same way as its handler, ending in `ErrorHandling`, e.g. `PostsNewsletterActionErrorHandling` in `app/controllers/concerns/posts_newsletter_action_error_handling.rb` for `handle_posts_newsletter_action_service_error`, or `NewsletterSubscribersErrorHandling` for `handle_newsletter_subscribers_service_error`. Include it in each controller that calls the group's actions. Every controller then handles the group's errors the same way, and the alert's text is in one place.
 
-You MAY write the concern even when the controllers share a base controller, e.g. to keep the group's handlers in their own file. Include it once, in the base controller, e.g. `include NewsletterActionErrorHandling` in `Posts::BaseController`, and override its `after_` path method there. You MUST NOT include it in each nested controller. Every new nested controller would then need to remember it.
+You MAY write the concern even when the controllers share a base controller, e.g. to keep the group's handlers in their own file. Include it once, in the base controller, e.g. `include PostsNewsletterActionErrorHandling` in `Posts::BaseController`, and override its `after_` path method there. You MUST NOT include it in each nested controller. Every new nested controller would then need to remember it.
 
 Like any shared concern, its handler can't read the controller's instance variables. Redirect to the path from a private method instead, as in [Rescuing errors](#rescuing-errors), e.g. `after_posts_newsletter_action_service_error_path`, and return `root_path` from it. Every user can see the root page, so the redirect always works.
 
 ```ruby
-module NewsletterActionErrorHandling
+module PostsNewsletterActionErrorHandling
   extend ActiveSupport::Concern
 
   included do
@@ -681,7 +695,7 @@ The root page is only a fallback. A user sent there loses their place. Each cont
 
 ```ruby
 class PostsController < ApplicationController
-  include NewsletterActionErrorHandling
+  include PostsNewsletterActionErrorHandling
 
   # ...
 
@@ -693,7 +707,7 @@ class PostsController < ApplicationController
 end
 ```
 
-For API controllers, write a separate concern that renders the fixed response with `:bad_gateway`, e.g. `Api::NewsletterActionErrorHandling` in `app/controllers/concerns/api/newsletter_action_error_handling.rb`. It needs no `after_` path method.
+For API controllers, write a separate concern that renders the fixed response with `:bad_gateway`, e.g. `Api::PostsNewsletterActionErrorHandling` in `app/controllers/concerns/api/posts_newsletter_action_error_handling.rb`. It needs no `after_` path method.
 
 To report the error from the concern, see [Honeybadger: Error handling concerns](../gems/honeybadger/#error-handling-concerns).
 

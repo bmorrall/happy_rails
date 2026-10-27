@@ -104,7 +104,7 @@ end
 An [error handling concern](../../controllers/#other-services-failing) can't read the controller's instance variables, so its handler can't pass the records' context itself. Take the context from a private method instead. Name it after the handler, without `handle_` and with `_context` on the end, e.g. `posts_newsletter_action_service_error_context` for `handle_posts_newsletter_action_service_error`, and return an empty hash from it. It works like the handler's `after_` path method.
 
 ```ruby
-module NewsletterActionErrorHandling
+module PostsNewsletterActionErrorHandling
   extend ActiveSupport::Concern
 
   included do
@@ -135,7 +135,7 @@ In the override, call `super` and merge the records into its hash, e.g. `super.m
 
 ```ruby
 class PostsController < ApplicationController
-  include NewsletterActionErrorHandling
+  include PostsNewsletterActionErrorHandling
 
   # ...
 
