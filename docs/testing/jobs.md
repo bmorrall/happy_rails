@@ -223,22 +223,30 @@ Check for the success message before you call `perform_all_enqueued_jobs`. In a 
 
 After the jobs run, check what the persona sees, and the requests the jobs make to other services. The page only changes when a job updates it, e.g. with a Turbo broadcast. When the scenario checks a change a job makes to a page that it doesn't update, visit the page again, as the persona would reload it.
 
-`perform_enqueued_jobs` only runs the jobs that are in the queue when you call it. A job that enqueues a follow-up job leaves it in the queue. `perform_all_enqueued_jobs` keeps running the queue until it is empty, so the scenario doesn't need to know which jobs enqueue others. It fails when the queue is empty to start with, so the step can't pass when the app didn't enqueue the job.
+`perform_enqueued_jobs` only runs the jobs that are in the queue when you call it. A job that enqueues a follow-up job leaves it in the queue. `perform_all_enqueued_jobs` keeps running the queue until no jobs are due, so the scenario doesn't need to know which jobs enqueue others. It fails when no jobs are due to start with, so the step can't pass when the app didn't enqueue the job.
 
-It also fails when jobs are still in the queue after 10 rounds, e.g. a job with `retry_on` that keeps failing and enqueues itself again. A scenario with a longer chain of jobs can raise the limit with `max_rounds:`. You SHOULD NOT raise it to get past the error. That hides a job that keeps enqueueing itself.
+It only runs the jobs that are due now. A job scheduled for later stays in the queue, e.g. `PublishScheduledPostJob` for a post's `publish_at`, or a `retry_on` retry that waits. The persona doesn't see a job's work before it runs, so the scenario doesn't either.
+
+It also fails when jobs are still due after 10 rounds, e.g. a job that keeps enqueueing itself to run at once. A scenario with a longer chain of jobs can raise the limit with `max_rounds:`. You SHOULD NOT raise it to get past the error. That hides a job that keeps enqueueing itself.
 
 ```ruby
 # spec/support/active_job.rb
 module ActiveJobFeatureSpecHelpers
   def perform_all_enqueued_jobs(max_rounds: 10)
-    expect(enqueued_jobs).not_to be_empty, "expected jobs to be enqueued, but the queue is empty"
+    expect(due_enqueued_jobs).not_to be_empty, "expected jobs to be due, but none are"
 
     max_rounds.times do
-      perform_enqueued_jobs
-      return if enqueued_jobs.empty?
+      perform_enqueued_jobs(at: Time.zone.now)
+      return if due_enqueued_jobs.empty?
     end
 
-    raise "jobs are still enqueued after #{max_rounds} rounds: #{enqueued_jobs.map { |job| job[:job] }.uniq.join(", ")}"
+    raise "jobs are still due after #{max_rounds} rounds: #{due_enqueued_jobs.map { |job| job[:job] }.uniq.join(", ")}"
+  end
+
+  private
+
+  def due_enqueued_jobs
+    enqueued_jobs.select { |job| job[:at].nil? || job[:at] <= Time.zone.now.to_f }
   end
 end
 
@@ -269,6 +277,40 @@ RSpec.feature "Post Publishing" do
     expect(page).to have_css(".notice", text: "Post was published.")
 
     # WHEN the background jobs run
+    perform_all_enqueued_jobs
+
+    # THEN the post is sent to the subscribers
+    expect(newsletter_request).to have_been_requested
+  end
+end
+```
+
+To run a job scheduled for later, move the clock to its time with `travel_to` in its own `WHEN` step, then call `perform_all_enqueued_jobs`. The step says that time has passed, as the persona would wait for it.
+
+```ruby
+RSpec.feature "Post Scheduling" do
+  scenario "Publishing Manager schedules a post" do
+    travel_to Time.zone.local(2026, 11, 2, 9, 0)
+
+    # GIVEN I am signed in as a Publishing Manager
+    sign_in create(:user, :publishing_manager)
+
+    # AND there is a draft post
+    post = create(:post, title: "Hello World")
+
+    # AND the newsletter service accepts the post
+    newsletter_request = stub_newsletter_create
+
+    # WHEN I schedule the post for the next morning
+    visit post_path(post)
+    fill_in "Publish at", with: Time.zone.local(2026, 11, 3, 9, 0)
+    click_button "Schedule"
+
+    # THEN I see that it was scheduled
+    expect(page).to have_css(".notice", text: "Post was scheduled.")
+
+    # WHEN it is the post's publish time
+    travel_to Time.zone.local(2026, 11, 3, 9, 0)
     perform_all_enqueued_jobs
 
     # THEN the post is sent to the subscribers
