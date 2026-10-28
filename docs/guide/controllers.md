@@ -543,6 +543,29 @@ A handler that only one controller uses doesn't need a path method. Redirect in 
 
 Use `rescue_from` only for errors that aren't part of the app's normal flow, e.g. a record that isn't found, or a request the user isn't allowed to make. When an error is an outcome the app expects, handle it where the work is done, in a form or a job. Either one can recover from the error, or add the error. A form adds it to its errors and returns `false`, so the controller takes its normal failure path. A job adds it to the record it works on, e.g. it marks a subscription as failed when its payment fails. The action then shows every outcome the user can expect as a normal path, and its request spec covers each one.
 
+An API renders its own response for each error a client can get, e.g. a record that isn't found. Rescue the error in the top-most controller that every API controller inherits from, e.g. `Api::V1::BaseController`, and render the same JSON shape as the API's other errors, e.g. `{ error: "Not found." }`. You MUST NOT leave an API's errors to Rails' default response. Rails picks its error page from the request's format, so a client that doesn't ask for JSON gets the HTML 404 page. The JSON Rails renders has its own shape, not the API's, so a client can't handle every error the same way.
+
+```ruby
+module Api
+  module V1
+    class BaseController < ActionController::API
+      rescue_from ActiveRecord::RecordNotFound,
+        with: :handle_record_not_found
+
+      # ...
+
+      private
+
+      def handle_record_not_found
+        render json: { error: "Not found." }, status: :not_found
+      end
+    end
+  end
+end
+```
+
+See [Testing: Controllers and Routes](../../testing/controllers/#rescuing-errors) for the request specs.
+
 ```ruby
 class NotifySubscribersJob < ApplicationJob
   # ...

@@ -238,7 +238,57 @@ RSpec.describe "Api::V1::Posts" do
 end
 ```
 
-## Other services failing
+## Rescuing errors
+
+Write at least one example in each request spec where the record isn't found, e.g. a post ID that doesn't exist. It covers every controller that finds a record from a param, e.g. `:id` or `:post_id`. A missing record gets the same response from any persona, so put it in any context that reaches the lookup. A Guest is usually sent to sign in first, so pick a signed-in persona.
+
+Check what the client gets: `have_http_status(:not_found)`, or what the app's handler does, e.g. the redirect and the alert. For an API, also match the body its handler renders, as for any other JSON body. See [JSON](#json) and [Controllers and Routes: Rescuing errors](../../guide/controllers/#rescuing-errors). You MUST NOT check for an error that Rails or the app rescues, e.g. `raise_error(ActiveRecord::RecordNotFound)`. The client never sees the error, so the check passes whatever the response is.
+
+Set `config.action_dispatch.show_exceptions = :rescuable` in `config/environments/test.rb`. Rails then turns each error it has a status for into that response, as it does in production, e.g. a 404 for `ActiveRecord::RecordNotFound`. Other errors still raise, so a bug still fails the spec. New apps since Rails 7.1 already have it. An older app might have `false` or `:none`, which raises every error instead.
+
+```ruby
+# config/environments/test.rb
+Rails.application.configure do
+  # ...
+  config.action_dispatch.show_exceptions = :rescuable
+end
+```
+
+```ruby
+RSpec.describe "Posts" do
+  describe "GET /posts/:id", :aggregate_failures do
+    context "as a user" do
+      let(:user) { create(:user) }
+
+      before { sign_in user }
+
+      it "responds with not found for a missing post" do
+        get post_path("missing")
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+  end
+end
+```
+
+```ruby
+RSpec.describe "Api::V1::Posts" do
+  describe "GET /api/v1/posts/:id", :aggregate_failures do
+    context "with an access token" do
+      let(:headers) { { "Authorization" => "Bearer #{Rails.application.credentials.api_token}" } }
+
+      it "responds with not found for a missing post" do
+        get api_v1_post_path("missing"), headers: headers
+
+        expect(response).to have_http_status(:not_found)
+        expect(response.parsed_body).to match("error" => "Not found.")
+      end
+    end
+  end
+end
+```
+
+### Other services failing
 
 When a controller rescues an action's error for the service failing, e.g. `ServiceError`, as in [Controllers and Routes: Other services failing](../../guide/controllers/#other-services-failing), stub the service to fail in the request spec with its helper from `spec/support`, e.g. `stub_newsletter_create_failure`, and check the redirect and the alert. Match the whole flash, so the spec fails if the alert ever includes the service's reply. Stub a timeout the same way, with `stub_newsletter_create_timeout`. See [Other Services: Helpers](../other-services/#helpers).
 
