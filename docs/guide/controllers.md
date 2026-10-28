@@ -351,12 +351,42 @@ class PostsController < ApplicationController
 
   # GET /posts/:id
   # GET /posts/:id.json
+  # GET /posts/:id.pdf
   def show
+    respond_to do |format|
+      format.html
+      format.json
+      format.pdf do
+        pdf = PostPdf.new.render(@post)
+        send_data pdf, filename: "#{@post.slug}.pdf"
+      end
+    end
   end
 end
 ```
 
-See [Testing: Controllers and Routes](../../testing/controllers/#response-formats) for the request specs.
+An API's default format is JSON, so its route comments have no extension.
+
+```ruby
+module Api
+  module V1
+    class PostsController < BaseController
+      # POST /api/v1/posts
+      def create
+        @post = Post.new(post_params)
+
+        if @post.save
+          render :show, status: :created, location: api_v1_post_url(@post)
+        else
+          # ...
+        end
+      end
+    end
+  end
+end
+```
+
+See [Testing: Controllers and Routes](../../testing/controllers/#response-formats) for the request specs, and [Testing: RSpec](../../testing/gems/rspec/#responses) for checking a header the action sets, e.g. the PDF's filename or the new post's `Location`.
 
 ### Turbo Streams
 

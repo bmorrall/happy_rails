@@ -146,6 +146,9 @@ RSpec.describe "Api::V1::Posts" do
         post api_v1_posts_path, params: { post: { title: "Hello World" } }, headers: headers, as: :json
 
         expect(response).to have_http_status(:created)
+
+        expect(response.headers["Location"]).to eq(api_v1_post_url(Post.last))
+
         expect(response.parsed_body).to match(
           "id" => an_instance_of(Integer),
           "title" => "Hello World"

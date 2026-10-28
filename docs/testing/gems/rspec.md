@@ -974,6 +974,20 @@ follow_redirect!
 expect(response.body).to have_css("h1", text: "New title")
 ```
 
+Check each header the controller sets itself, e.g. the `Content-Disposition` from `send_data pdf, filename: "#{post.slug}.pdf"` in `GET /posts/:id.pdf`, or the `Location` from `render :show, status: :created, location: api_v1_post_url(@post)` in `POST /api/v1/posts`. Both are in [Controllers: Response formats](../../../guide/controllers/#response-formats). You MAY check other headers, but you don't have to. You MUST NOT check the `Location` of a redirect, e.g. from `redirect_to post_path(post)`. The `redirect_to` matcher already checks it. Put the header checks below the status, or below the redirect and the flash, and above the checks on the body. Leave a blank line above and below them.
+
+```ruby
+draft = create(:post, author: user, slug: "hello-world")
+
+get post_path(draft, format: :pdf)
+
+expect(response).to have_http_status(:ok)
+
+expect(response.headers["Content-Disposition"]).to eq("attachment; filename=\"hello-world.pdf\"; filename*=UTF-8''hello-world.pdf")
+
+expect(response.body).to start_with("%PDF")
+```
+
 In the example below, `PATCH /posts/:id` checks the redirect, and `GET /posts/:id` checks the page.
 
 ```ruby
