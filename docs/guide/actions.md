@@ -239,6 +239,20 @@ def increment_published_posts_count
 end
 ```
 
+`build_` covers any object a method makes new each time it's called, not only a record, e.g. `build_newsletter_client` for a method that returns `NewsletterClient.new`. Each call gives a new object, and the name says so. A memoised method gives back the same object every time, so it reads as a value. Name it like a variable, e.g. `newsletter_client` for `@newsletter_client ||= NewsletterClient.new`.
+
+```ruby
+# New each call
+def build_newsletter_client
+  NewsletterClient.new
+end
+
+# Memoised
+def newsletter_client
+  @newsletter_client ||= NewsletterClient.new
+end
+```
+
 ## Arguments
 
 Pass an action the records it works on, not their IDs, e.g. `Posts::ArchivePost.call(post)`, not `Posts::ArchivePost.call(post.id)`. The caller finds the records, e.g. a controller loads the post, or a job gets it as an argument. The action never looks a record up, so it doesn't have to decide which records the caller is allowed to reach.
