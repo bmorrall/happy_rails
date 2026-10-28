@@ -549,6 +549,17 @@ In request and feature specs, a page often shows values the example didn't set, 
 
 A format helper turns a record's value into the text the page shows, and raises when there's no value. Use `format_text` for a string, and `format_date` or `format_datetime` for a time. You MUST NOT read the value without one, e.g. `have_link(comment.post.magazine.name)`. Capybara ignores a `nil` locator or `text:`, so the check would pass whatever the page shows.
 
+Read the attribute the value is saved in, e.g. `post.summary`. You MUST NOT read it through a method that picks or builds the value, e.g. `post.excerpt`, which falls back to the body when there's no summary. That method is code the page might call too, so the check passes whatever the page shows: when a page has to show only the summary but shows the body, the spec still passes. Reading the attribute makes the format helper raise when the factory didn't set it, so you add a trait that sets it.
+
+```ruby
+# Don't do this
+expect(response.body).to have_css("p", text: format_text(published_post.excerpt))
+```
+
+```ruby
+expect(response.body).to have_css("p", text: format_text(published_post.summary))
+```
+
 Write each format in the helper, the same way the app formats it, e.g. `I18n.l(value, format: :long)`. You MUST NOT call the app's own helpers, e.g. `date_tag`. The spec would then pass with a wrong format.
 
 ```ruby
