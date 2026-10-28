@@ -536,7 +536,9 @@ it "returns the author's name" do
 end
 ```
 
-Check against the value you set, e.g. `"Jane Tester"`. You MUST NOT check against a value you read back from a record, e.g. `post.author.name`. The read gives the same answer as the code under test, so the check passes whatever the value is. Read from the record only when the spec can't set the value, e.g. a record's `id`, or through a format helper in a request or feature spec, as in [Values the example didn't set](#values-the-example-didnt-set).
+Check against the value you set, e.g. `"Jane Tester"`. You SHOULD NOT check against a value you read back from a record, e.g. `post.author.name`. The read gives the same answer as the code under test, so the check passes whatever the value is. Read from the record when the spec can't set the value, e.g. a record's `id`, or when a request or feature spec checks a value the example didn't set, as in [Values the example didn't set](#values-the-example-didnt-set).
+
+When you read back, read the attribute the value is saved in, e.g. `post.summary`. You MUST NOT read it through a method that picks or builds the value, e.g. `post.excerpt`, which falls back to the body when there's no summary. That method is code under test too, so the check passes whatever the value is.
 
 ```ruby
 # Don't do this
@@ -549,7 +551,7 @@ In request and feature specs, a page often shows values the example didn't set, 
 
 A format helper turns a record's value into the text the page shows, and raises when there's no value. Use `format_text` for a string, and `format_date` or `format_datetime` for a time. You MUST NOT read the value without one, e.g. `have_link(comment.post.magazine.name)`. Capybara ignores a `nil` locator or `text:`, so the check would pass whatever the page shows.
 
-Read the attribute the value is saved in, e.g. `post.summary`. You MUST NOT read it through a method that picks or builds the value, e.g. `post.excerpt`, which falls back to the body when there's no summary. That method is code the page might call too, so the check passes whatever the page shows: when a page has to show only the summary but shows the body, the spec still passes. Reading the attribute makes the format helper raise when the factory didn't set it, so you add a trait that sets it.
+Read the attribute, not a method, as in [Values you check](#values-you-check). When a page has to show only the summary but shows the body, a check on `post.excerpt` still passes. A check on `post.summary` fails, and its format helper raises when the factory didn't set a summary, so you add a trait that sets it.
 
 ```ruby
 # Don't do this
@@ -558,6 +560,16 @@ expect(response.body).to have_css("p", text: format_text(published_post.excerpt)
 
 ```ruby
 expect(response.body).to have_css("p", text: format_text(published_post.summary))
+```
+
+A JSON body check in a request spec MAY read the attribute without a format helper, e.g. `"name" => published_post.magazine.name`. `match` checks a `nil` as `null`, so it doesn't pass whatever the body holds.
+
+```ruby
+expect(response.parsed_body).to match(
+  "id" => published_post.id,
+  "title" => "Hello World",
+  "magazine" => { "name" => published_post.magazine.name }
+)
 ```
 
 Write each format in the helper, the same way the app formats it, e.g. `I18n.l(value, format: :long)`. You MUST NOT call the app's own helpers, e.g. `date_tag`. The spec would then pass with a wrong format.

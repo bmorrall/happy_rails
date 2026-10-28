@@ -116,7 +116,7 @@ Read the body with `response.parsed_body`. You MUST NOT parse it yourself, e.g. 
 
 Check the whole body with `match`, as for [API endpoints](../gems/rspec/#api-endpoints). Use RSpec's composable matchers for values the spec can't know in advance, e.g. `an_instance_of(Integer)` for a new ID. Check the body in the happy path, and in each example where the body changes, e.g. the error a failed request returns.
 
-You MUST NOT check the body against JSON the app builds, e.g. `eq(published_post.to_json)` or the output of the serializer. The spec then uses the same code as the action, so it passes when that code drops a field or changes its type. Write out the fields the client gets, with the values you set.
+You MUST NOT check the body against JSON the app builds, e.g. `eq(published_post.to_json)` or the output of the serializer. The spec then uses the same code as the action, so it passes when that code drops a field or changes its type. Write out the fields the client gets, with the values you set. For a value the example didn't set, e.g. a parent's name, read the record's attribute, as in [RSpec: Values the example didn't set](../gems/rspec/#values-the-example-didnt-set).
 
 ```ruby
 RSpec.describe "Posts" do
