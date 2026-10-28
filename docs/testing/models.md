@@ -89,6 +89,26 @@ RSpec.describe Post do
 end
 ```
 
+Write an example for each path through a public method, e.g. each side of an `if`, or the fallback when a value is blank. Set each value the example checks. A method that picks between attributes, e.g. `#excerpt`, which returns the summary or the start of the body, is then tested here. Request specs check the attribute a page shows, and leave the method's paths to the model spec. A decorator method works the same way, with its paths in the decorator spec, as in [Draper](../gems/draper/). See [RSpec: Values you check](../gems/rspec/#values-you-check).
+
+```ruby
+RSpec.describe Post do
+  describe "#excerpt" do
+    it "returns the summary" do
+      post = described_class.new(summary: "A short summary", body: "Hello **World**")
+
+      expect(post.excerpt).to eq("A short summary")
+    end
+
+    it "returns the body as plain text when there's no summary" do
+      post = described_class.new(summary: nil, body: "Hello **World**")
+
+      expect(post.excerpt).to eq("Hello World")
+    end
+  end
+end
+```
+
 ## Validations and associations
 
 Test validations and associations with Shoulda Matchers. See [Shoulda Matchers: Validations](../gems/shoulda_matchers/#validations) and [Shoulda Matchers: Associations](../gems/shoulda_matchers/#associations).

@@ -538,7 +538,7 @@ end
 
 Check against the value you set, e.g. `"Jane Tester"`. You SHOULD NOT check against a value you read back from a record, e.g. `post.author.name`. The read gives the same answer as the code under test, so the check passes whatever the value is. Read from the record when the spec can't set the value, e.g. a record's `id`, or when a request or feature spec checks a value the example didn't set, as in [Values the example didn't set](#values-the-example-didnt-set).
 
-When you read back, read the attribute the value is saved in, e.g. `post.summary`. You MUST NOT read it through a method that picks or builds the value, e.g. `post.excerpt`, which falls back to the body when there's no summary. That method is code under test too, so the check passes whatever the value is.
+When you read back, read the attribute the value is saved in, e.g. `post.summary`. You MUST NOT read it through a method that picks or builds the value, e.g. `post.excerpt`, which falls back to the body when there's no summary, or a decorator method, e.g. `post.decorate.published_on`. That method is code under test too, so the check passes whatever the value is. Its own spec covers its paths, the model spec for a model method and the decorator spec for a decorator method.
 
 ```ruby
 # Don't do this
