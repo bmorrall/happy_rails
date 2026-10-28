@@ -456,7 +456,7 @@ end
 
 Give a factory a trait for each state a page shows differently. Name it after the state the app uses, e.g. `:published` or `:archived`. When a job or an action adds values to the record, add a trait for the record after that work, named after what happened, e.g. `:sent_to_subscribers`.
 
-The trait only gets the record into its state. Set what the record needs to be valid in that state, e.g. the status. Pass every value the example checks in the spec, e.g. `create(:post, :published, published_at: Time.zone.local(2026, 10, 1, 9, 0))`. See [Values you check](#values-you-check).
+Set the values the state needs, so the record is valid and looks like a real one in that state, e.g. the status, and a `rejection_reason` for a rejected post. A request or feature spec can then check those values without setting them, through a format helper. See [Values the example didn't set](#values-the-example-didnt-set).
 
 ```ruby
 FactoryBot.define do
@@ -465,6 +465,11 @@ FactoryBot.define do
 
     trait :published do
       status { :published }
+    end
+
+    trait :rejected do
+      status { :rejected }
+      rejection_reason { Faker::Lorem.sentence }
     end
   end
 end
@@ -531,11 +536,63 @@ it "returns the author's name" do
 end
 ```
 
-Check against the value you set, e.g. `"Jane Tester"`. You MUST NOT check against a value you read back from a record, e.g. `post.author.name`. The read gives the same answer as the code under test, so the check passes whatever the value is. Read from the record only when the spec can't set the value, e.g. a record's `id`.
+Check against the value you set, e.g. `"Jane Tester"`. You MUST NOT check against a value you read back from a record, e.g. `post.author.name`. The read gives the same answer as the code under test, so the check passes whatever the value is. Read from the record only when the spec can't set the value, e.g. a record's `id`, or through a format helper in a request or feature spec, as in [Values the example didn't set](#values-the-example-didnt-set).
 
 ```ruby
 # Don't do this
 expect(post.decorate.author_name).to eq(post.author.name)
+```
+
+### Values the example didn't set
+
+In request and feature specs, a page often shows values the example didn't set, e.g. the name of a parent several levels up, or a value a [trait](#traits) sets. You MAY check these by reading them from the record through a format helper, e.g. `format_text(comment.post.magazine.name)`. Then the example doesn't have to build every parent just to see its name on the page. The values the example is about still need to be set in the spec, as above. Unit specs, e.g. decorator and helper specs, set every value they check.
+
+A format helper turns a record's value into the text the page shows, and raises when there's no value. Use `format_text` for a string, and `format_date` or `format_datetime` for a time. You MUST NOT read the value without one, e.g. `have_link(comment.post.magazine.name)`. Capybara ignores a `nil` locator or `text:`, so the check would pass whatever the page shows.
+
+Write each format in the helper, the same way the app formats it, e.g. `I18n.l(value, format: :long)`. You MUST NOT call the app's own helpers, e.g. `date_tag`. The spec would then pass with a wrong format.
+
+```ruby
+# spec/support/format_spec_helpers.rb
+module FormatSpecHelpers
+  def format_text(value)
+    value.presence || raise(ArgumentError, "expected a value to check, got #{value.inspect}")
+  end
+
+  def format_date(value)
+    I18n.l(value.to_date, format: :long)
+  end
+
+  def format_datetime(value)
+    I18n.l(value, format: :long)
+  end
+end
+
+RSpec.configure do |config|
+  config.include FormatSpecHelpers, type: :request
+  config.include FormatSpecHelpers, type: :feature
+end
+```
+
+```ruby
+RSpec.describe "Comments" do
+  describe "GET /comments/:id", :aggregate_failures do
+    context "as a user" do
+      let(:user) { create(:user) }
+
+      before { sign_in user }
+
+      it "links to the post's magazine" do
+        comment = create(:comment)
+
+        get comment_path(comment)
+
+        expect(response).to have_http_status(:ok)
+
+        expect(response.body).to have_link(format_text(comment.post.magazine.name))
+      end
+    end
+  end
+end
 ```
 
 ### Shared identifiers

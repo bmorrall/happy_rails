@@ -469,7 +469,7 @@ end
 
 The POST and PATCH examples check that the record changed. The GET examples check that a page shows it. Between them, the GET examples SHOULD check each value a page shows at least once, e.g. on `GET /posts/:id`. Aim for every value to be covered somewhere, not for every combination of state and persona. Set the values in the example, and check each one with an element matcher. A value no page shows needs no GET example.
 
-Some values only show once the record is in a state, e.g. the published date after an action publishes a post, or values a job or an action adds, e.g. after a post is sent to subscribers. Build the record in that state with the factory's trait, e.g. `create(:post, :published)`, and check those values. See [RSpec: Traits](../gems/rspec/#traits).
+Some values only show once the record is in a state, e.g. the published date after an action publishes a post, or values a job or an action adds, e.g. after a post is sent to subscribers. Build the record in that state with the factory's trait, e.g. `create(:post, :published)`, and check those values. You don't need to set them in the example. Read them from the record through a format helper, e.g. `format_date(published_post.published_at)`. See [RSpec: Traits](../gems/rspec/#traits) and [RSpec: Values the example didn't set](../gems/rspec/#values-the-example-didnt-set).
 
 You MUST NOT make the PATCH or POST request in the GET example to get the record into its state. The request already has its own example, and the trait shows the state the page is about.
 
@@ -492,13 +492,13 @@ RSpec.describe "Posts" do
       end
 
       it "shows when a published post was published" do
-        published_post = create(:post, :published, published_at: Time.zone.local(2026, 10, 1, 9, 0))
+        published_post = create(:post, :published)
 
         get post_path(published_post)
 
         expect(response).to have_http_status(:ok)
 
-        expect(response.body).to have_css("p", text: "Published October 01, 2026")
+        expect(response.body).to have_css("p", text: "Published #{format_date(published_post.published_at)}")
       end
     end
   end
