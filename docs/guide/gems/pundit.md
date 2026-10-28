@@ -583,6 +583,22 @@ class UpdatePostForm < ApplicationForm
 end
 ```
 
+When the form's view shows a field for an [access dependent param](#access-dependent-params), give the form a method that asks the policy, named after the check with a `can_` prefix, e.g. `can_update_featured?` for `update_featured?`. Put it under a `### Policy ###` heading, after the form's other groups. The view then guards the field with the form's method, and never builds the policy itself. See [Views: Fields the user can't set](../../views/#fields-the-user-cant-set).
+
+```ruby
+class UpdatePostForm < ApplicationForm
+  # ...
+
+  ### Policy ###
+
+  def can_update_featured?
+    policy(post).update_featured?
+  end
+end
+```
+
+Group the `can_` checks under `### Policy ###` in every class that asks a policy for the view, e.g. a form or a [decorator](../draper/#permissions). Put the group after the class's other groups. A reader then finds every permission the class offers in one place.
+
 ## Testing
 
 See [Testing: Pundit](../../../testing/gems/pundit/).

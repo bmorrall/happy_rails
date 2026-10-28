@@ -92,6 +92,7 @@ Group the declarations in a form object under comment headings, in the same styl
 4. Validations
 5. Callbacks
 6. Public Methods, e.g. `submit`
+7. Policy, e.g. `can_update_featured?`, with [Pundit](../gems/pundit/#forms)
 
 Put the setup at the top, without a heading: `self.model_name`, any `delegate` lines, then `initialize`. A reader then sees first what the form needs to be built. Put `submit` under Public Methods, after the declarations it uses, as in a model. Private methods go last, after `private`.
 

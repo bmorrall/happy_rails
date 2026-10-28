@@ -252,6 +252,26 @@ Avoid `form_for` and `form_tag`, which `form_with` replaces. Avoid `form_with` w
 <% end %>
 ```
 
+### Fields the user can't set
+
+A form MUST NOT offer a field the user can't set. The controller raises on an attribute the user isn't permitted to send, so the whole form fails with a 400. See [Controllers: Unpermitted parameters](../controllers/#unpermitted-parameters).
+
+Guard each such field with a permission check. Leave the field out, or render it disabled, whichever suits the field. A disabled field still shows the value, and the browser doesn't send it. With Pundit, ask the form object through the form builder's `object`, e.g. `form.object.can_update_featured?`. The partial then works with whichever form object it's given, not one instance variable. Both `form_with` and Simple Form's builder have `object`. See [Pundit: Forms](../gems/pundit/#forms).
+
+```erb
+<%# app/views/posts/edit.html.erb %>
+<%= form_with model: @update_post_form do |form| %>
+  <%# ... %>
+
+  <% if form.object.can_update_featured? %>
+    <%= form.label :featured %>
+    <%= form.check_box :featured %>
+  <% end %>
+
+  <%= form.submit %>
+<% end %>
+```
+
 ## Hotwire: Turbo and Stimulus
 
 > **TODO:** Describe how you handle this.

@@ -12,7 +12,7 @@ applyTo: "app/forms/**/*.rb"
 - You MUST NOT inherit a `BaseForm` from `ApplicationForm`. Keep `ApplicationForm` for forms a signed-in user submits.
 - When the whole app has no signed-in user, e.g. a service that only other services call, leave `current_user` out of `ApplicationForm` instead, with no `initialize` or `attr_reader`.
 - You MUST NOT pass `nil` or a stand-in user as the current user to a form.
-- Group form object declarations under comment headings in this order: `### Constants ###`, `### Attributes ###`, `### Collections ###`, `### Validations ###`, `### Callbacks ###`, `### Public Methods ###`.
+- Group form object declarations under comment headings in this order: `### Constants ###`, `### Attributes ###`, `### Collections ###`, `### Validations ###`, `### Callbacks ###`, `### Public Methods ###`, `### Policy ###`.
 - Put a form's setup at the top, without a heading, in this order: `self.model_name`, any `delegate` lines, then `initialize`. Put `submit` under `### Public Methods ###`, and private methods last, after `private`, e.g. `attr_reader :post`.
 - Put constants only the form uses under `### Constants ###`, e.g. `TOKEN_BYTES = 32` in `SharePostForm`. When the form validates the same value as a model, reuse the model's constant, e.g. `length: { maximum: Post::TITLE_MAX_LENGTH, allow_blank: true }` in `CreatePostForm`. You SHOULD NOT copy it into the form.
 - Under `### Collections ###`, write a `collection_for_<attribute>` method for each attribute with a fixed set of choices, and use it in the attribute's validation, e.g. `collection_for_category` returning `Post.categories.keys`, and `validates :category, inclusion: { in: ->(form) { form.collection_for_category } }`.
