@@ -988,6 +988,16 @@ expect(response.headers["Content-Disposition"]).to eq("attachment; filename=\"he
 expect(response.body).to start_with("%PDF")
 ```
 
+When an action responds with `head :no_content`, check the status and what the action changed. You SHOULD NOT check the body, e.g. `expect(response.body).to be_empty`. Rails drops the body of every `204` response, so the check can't fail.
+
+```ruby
+expect {
+  delete api_v1_post_path(published_post), headers: headers
+}.to change(Post, :count).by(-1)
+
+expect(response).to have_http_status(:no_content)
+```
+
 In the example below, `PATCH /posts/:id` checks the redirect, and `GET /posts/:id` checks the page.
 
 ```ruby

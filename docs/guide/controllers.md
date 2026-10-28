@@ -381,6 +381,12 @@ module Api
           # ...
         end
       end
+
+      # DELETE /api/v1/posts/:id
+      def destroy
+        @post.destroy!
+        head :no_content
+      end
     end
   end
 end
