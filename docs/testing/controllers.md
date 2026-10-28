@@ -205,6 +205,34 @@ RSpec.describe "Posts" do
 end
 ```
 
+### Unpermitted parameters
+
+When the app raises on unpermitted params, as in [Controllers and Routes: Unpermitted parameters](../../guide/controllers/#unpermitted-parameters), write an example for each attribute the app leaves out on purpose. Send it from a persona who can change the record but not that attribute, e.g. an Author who can change a post's title but can't feature it. Do the same for an action that leaves out an attribute another action accepts, e.g. the slug that `create` accepts and `update` doesn't. Check for `have_http_status(:bad_request)`, and that the record didn't change. For an API, also match the body its handler renders, as in [Rescuing errors](#rescuing-errors).
+
+You SHOULD NOT write one for every persona that can't set the attribute. A persona who can't change the record at all, e.g. a User with someone else's post, is already turned away, and its context covers that.
+
+```ruby
+RSpec.describe "Posts" do
+  describe "PATCH /posts/:id", :aggregate_failures do
+    context "as a user", "with a post as the author" do
+      let(:user) { create(:user) }
+
+      let(:draft) { create(:post, author: user) }
+
+      before { sign_in user }
+
+      it "responds with bad request for featured" do
+        expect {
+          patch post_path(draft), params: { post: { featured: true } }
+        }.not_to change { draft.reload.featured }
+
+        expect(response).to have_http_status(:bad_request)
+      end
+    end
+  end
+end
+```
+
 ## Authentication
 
 Every action's `describe` block in the request spec has at least one scenario for an unauthenticated user. This catches an action that was left open by mistake, e.g. a `skip_before_action` that covers more actions than it means to.

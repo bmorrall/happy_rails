@@ -6,3 +6,4 @@ Rules: `.github/instructions/happy_controllers.instructions.md`, `.github/instru
 - Only accept credentials over HTTPS, e.g. `config.force_ssl = true` in `config/environments/production.rb`.
 - Make every controller require an authorisation check by default. Set this up once in `ApplicationController`. With Pundit, `references/pundit.md` does this.
 - Turn errors Rails has a status for into that response in tests, as in production: set `config.action_dispatch.show_exceptions = :rescuable` in `config/environments/test.rb`, replacing `false` or `:none`.
+- Raise on unpermitted params in every environment, and respond to them with a 400: set `config.action_controller.action_on_unpermitted_parameters = :raise` and `config.action_dispatch.rescue_responses["ActionController::UnpermittedParameters"] = :bad_request` in `config/application.rb`.

@@ -400,6 +400,8 @@ Nest a resource's params under its singular name: `post` for `PostsController`, 
 
 Read the params in a private method named after the resource, e.g. `post_params`. Use `params.require` with the singular name, then `permit` each attribute the action accepts. You MUST NOT use `permit!` or pass through a whole hash. A new column then can't be set from a request until you add it to the list.
 
+You MUST NOT call `permit` on `params` itself, e.g. `params.permit(:page)`. The top level also holds keys Rails adds, e.g. `controller`, `action` and `format`, so it would raise on [unpermitted parameters](#unpermitted-parameters). Read a single value with `params[:page]`.
+
 ```ruby
 class PostsController < ApplicationController
   # POST /posts
@@ -456,6 +458,20 @@ class PostsController < ApplicationController
     params.require(:post).permit(:title, :body)
   end
 end
+```
+
+### Unpermitted parameters
+
+You SHOULD raise an error when a request sends a param the action doesn't permit, in every environment. This covers the attributes a Pundit policy permits too. By default, Rails drops the param and saves the rest. A client that sets a value then finds out later that it wasn't used. With the error, the response tells them straight away.
+
+Set `config.action_controller.action_on_unpermitted_parameters = :raise` in `config/application.rb`. Rails has no status for `ActionController::UnpermittedParameters`, so it would respond with a 500. Map it to `:bad_request` (400) in the same file. A page then gets Rails' 400 page. An API renders its own error, as in [Rescuing errors](#rescuing-errors).
+
+A form only sends the fields it renders. On a page, the error means the form has a field the controller doesn't permit, so the form's specs fail.
+
+```ruby
+# config/application.rb
+config.action_controller.action_on_unpermitted_parameters = :raise
+config.action_dispatch.rescue_responses["ActionController::UnpermittedParameters"] = :bad_request
 ```
 
 ## Authentication
@@ -543,7 +559,7 @@ A handler that only one controller uses doesn't need a path method. Redirect in 
 
 Use `rescue_from` only for errors that aren't part of the app's normal flow, e.g. a record that isn't found, or a request the user isn't allowed to make. When an error is an outcome the app expects, handle it where the work is done, in a form or a job. Either one can recover from the error, or add the error. A form adds it to its errors and returns `false`, so the controller takes its normal failure path. A job adds it to the record it works on, e.g. it marks a subscription as failed when its payment fails. The action then shows every outcome the user can expect as a normal path, and its request spec covers each one.
 
-An API renders its own response for each error a client can get, e.g. a record that isn't found. Rescue the error in the top-most controller that every API controller inherits from, e.g. `Api::V1::BaseController`, and render the same JSON shape as the API's other errors, e.g. `{ error: "Not found." }`. You MUST NOT leave an API's errors to Rails' default response. Rails picks its error page from the request's format, so a client that doesn't ask for JSON gets the HTML 404 page. The JSON Rails renders has its own shape, not the API's, so a client can't handle every error the same way.
+An API renders its own response for each error a client can get, e.g. a record that isn't found, or a param the action doesn't permit. Rescue the error in the top-most controller that every API controller inherits from, e.g. `Api::V1::BaseController`, and render the same JSON shape as the API's other errors, e.g. `{ error: "Not found." }`. You MUST NOT leave an API's errors to Rails' default response. Rails picks its error page from the request's format, so a client that doesn't ask for JSON gets the HTML 404 page. The JSON Rails renders has its own shape, not the API's, so a client can't handle every error the same way.
 
 ```ruby
 module Api
@@ -551,6 +567,8 @@ module Api
     class BaseController < ActionController::API
       rescue_from ActiveRecord::RecordNotFound,
         with: :handle_record_not_found
+      rescue_from ActionController::UnpermittedParameters,
+        with: :handle_unpermitted_parameters
 
       # ...
 
@@ -558,6 +576,10 @@ module Api
 
       def handle_record_not_found
         render json: { error: "Not found." }, status: :not_found
+      end
+
+      def handle_unpermitted_parameters(error)
+        render json: { error: "Unpermitted parameters: #{error.params.join(", ")}." }, status: :bad_request
       end
     end
   end
