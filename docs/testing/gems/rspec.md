@@ -1074,6 +1074,8 @@ RSpec.describe "Posts" do
         }.not_to change { draft.reload.title }
 
         expect(response).to have_http_status(:unprocessable_content)
+
+        expect(response.body).to have_field_error("Title can't be blank")
       end
     end
   end
@@ -1122,6 +1124,52 @@ RSpec.configure do |config|
 end
 ```
 
+### Validation errors
+
+When an action shows a form again because the input isn't valid, check the status, that nothing changed, and that the form shows the error, e.g. `expect(response.body).to have_field_error("Title can't be blank")`. The status alone passes when the form comes back without its errors. Check the error the example's params cause. The model and form specs check each validation.
+
+Check a form's errors with a helper from `spec/support/form_spec_helpers.rb`: `have_field_error` for an error on a field, and `have_form_error` for an error on `:base`, e.g. `"Post could not be rejected."` when `RejectPostForm` rescues the action's error. You SHOULD NOT write the error's selector in a spec, e.g. `have_css(".invalid-feedback", text: "Title can't be blank")`. The selector depends on how the app's forms show errors. When that markup changes, you change the helper, not every spec.
+
+```ruby
+# spec/support/form_spec_helpers.rb
+module FormSpecHelpers
+  def have_field_error(message)
+    have_css(".invalid-feedback", text: message)
+  end
+
+  def have_form_error(message)
+    have_css("form .alert-danger", text: message)
+  end
+end
+
+RSpec.configure do |config|
+  config.include FormSpecHelpers, type: :request
+  config.include FormSpecHelpers, type: :feature
+end
+```
+
+```ruby
+it "shows the form again with a blank title" do
+  expect {
+    post posts_path, params: { post: { title: "" } }
+  }.not_to change(Post, :count)
+
+  expect(response).to have_http_status(:unprocessable_content)
+
+  expect(response.body).to have_field_error("Title can't be blank")
+end
+```
+
+```ruby
+it "shows the form again when the post can't be rejected" do
+  # ...
+
+  expect(response).to have_http_status(:unprocessable_content)
+
+  expect(response.body).to have_form_error("Post could not be rejected.")
+end
+```
+
 ### Several checks per request
 
 Request specs are slow, because each one goes through routing, the controller and the views. Make one request in each example, and check as much as you can about it there: the records it changed, the status or redirect, the flash and the body. You MUST NOT repeat the same request in several examples, each with one check.
@@ -1153,6 +1201,8 @@ RSpec.describe "Posts" do
         }.not_to change(Post, :count)
 
         expect(response).to have_http_status(:unprocessable_content)
+
+        expect(response.body).to have_field_error("Title can't be blank")
       end
     end
   end
