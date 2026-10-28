@@ -213,6 +213,32 @@ module Posts
 end
 ```
 
+### Private methods
+
+Name a private method that builds, creates or changes a record after the action it takes, starting with a verb. You MUST NOT name it like a variable, e.g. `publication`. A name like that reads as a value, so you can't tell from `call` that the step writes to the database. A verb says what the step does, and which steps need to run inside the transaction or the lock.
+
+Use `build_` for a method that builds a record without saving it, e.g. `build_publication`, `create_` for one that saves a new record, e.g. `create_publication`, and `update_` for one that changes a saved record, e.g. `update_post`. Use another verb when it says more, e.g. `increment_published_posts_count` for a method that calls `increment!`.
+
+```ruby
+# Don't
+def publication
+  post.publications.create!(publisher:)
+end
+
+def published_posts_count
+  publisher.increment!(:published_posts_count)
+end
+
+# Do
+def create_publication
+  post.publications.create!(publisher:)
+end
+
+def increment_published_posts_count
+  publisher.increment!(:published_posts_count)
+end
+```
+
 ## Arguments
 
 Pass an action the records it works on, not their IDs, e.g. `Posts::ArchivePost.call(post)`, not `Posts::ArchivePost.call(post.id)`. The caller finds the records, e.g. a controller loads the post, or a job gets it as an argument. The action never looks a record up, so it doesn't have to decide which records the caller is allowed to reach.

@@ -27,7 +27,7 @@ module Posts
 
         mark_published
         create_publication
-        count_published_post
+        increment_published_posts_count
       end
     end
 
@@ -43,7 +43,7 @@ module Posts
       post.publications.create!(publisher:)
     end
 
-    def count_published_post
+    def increment_published_posts_count
       publisher.increment!(:published_posts_count)
     end
   end
