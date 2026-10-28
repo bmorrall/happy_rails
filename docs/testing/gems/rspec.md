@@ -162,6 +162,8 @@ You MUST NOT check for the text alone.
 expect(response.body).to include("Hello World")
 ```
 
+You MUST NOT compare the whole body, e.g. with `eq` or a snapshot. It breaks on every change to the markup, and doesn't say which part the example is about. Check each value with its own matcher.
+
 When you check a select's options with `with_options:`, check one option on each line. A failure then names the option that's missing. With every option in one list, the failure only says the list didn't match.
 
 ```ruby
@@ -452,7 +454,21 @@ end
 
 ## Traits
 
-> **TODO:** Describe how you handle this.
+Give a factory a trait for each state a page shows differently. Name it after the state the app uses, e.g. `:published` or `:archived`. When a job or an action adds values to the record, add a trait for the record after that work, named after what happened, e.g. `:sent_to_subscribers`.
+
+The trait only gets the record into its state. Set what the record needs to be valid in that state, e.g. the status. Pass every value the example checks in the spec, e.g. `create(:post, :published, published_at: Time.zone.local(2026, 10, 1, 9, 0))`. See [Values you check](#values-you-check).
+
+```ruby
+FactoryBot.define do
+  factory :post do
+    # ...
+
+    trait :published do
+      status { :published }
+    end
+  end
+end
+```
 
 ### Persona traits
 

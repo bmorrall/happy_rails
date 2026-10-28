@@ -467,6 +467,44 @@ RSpec.describe "Posts" do
 end
 ```
 
+The POST and PATCH examples check that the record changed. The GET examples check that a page shows it. Between them, the GET examples SHOULD check each value a page shows at least once, e.g. on `GET /posts/:id`. Aim for every value to be covered somewhere, not for every combination of state and persona. Set the values in the example, and check each one with an element matcher. A value no page shows needs no GET example.
+
+Some values only show once the record is in a state, e.g. the published date after an action publishes a post, or values a job or an action adds, e.g. after a post is sent to subscribers. Build the record in that state with the factory's trait, e.g. `create(:post, :published)`, and check those values. See [RSpec: Traits](../gems/rspec/#traits).
+
+You MUST NOT make the PATCH or POST request in the GET example to get the record into its state. The request already has its own example, and the trait shows the state the page is about.
+
+```ruby
+RSpec.describe "Posts" do
+  describe "GET /posts/:id", :aggregate_failures do
+    context "as a user" do
+      let(:user) { create(:user) }
+
+      before { sign_in user }
+
+      it "shows the post" do
+        draft = create(:post, title: "Hello World")
+
+        get post_path(draft)
+
+        expect(response).to have_http_status(:ok)
+
+        expect(response.body).to have_css("h1", text: "Hello World")
+      end
+
+      it "shows when a published post was published" do
+        published_post = create(:post, :published, published_at: Time.zone.local(2026, 10, 1, 9, 0))
+
+        get post_path(published_post)
+
+        expect(response).to have_http_status(:ok)
+
+        expect(response.body).to have_css("p", text: "Published October 01, 2026")
+      end
+    end
+  end
+end
+```
+
 You MUST NOT stub the models, forms, actions, services or other classes the action calls, e.g. with `allow_any_instance_of(Post).to receive(:publish)` or `allow(Posts::ArchivePost).to receive(:call)`. Check what the action does instead: the records it changes, the response, the flash and the jobs it enqueues. Then the spec fails when any part of the action breaks, not only the controller's own lines. To test how the controller handles an action's `Error`, set up records that make the action fail for real. You MUST NOT test the action's argument checks, e.g. `unmodified:`, because every request that calls the action already runs them. See [Actions: Specs for callers](../actions/#specs-for-callers).
 
 Check that the action enqueues each job, with its arguments, using `have_enqueued_job`. You MUST NOT run the job in the request spec. The job spec checks what the job does, and a feature spec runs it. See [Testing: Jobs](../jobs/).
