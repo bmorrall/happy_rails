@@ -964,6 +964,18 @@ You MUST NOT check a status with `be_successful`, `be_ok`, `be_redirect`, `be_no
 
 When the action redirects, check where it redirects to with `redirect_to`, e.g. `expect(response).to redirect_to(post_path(draft))`. On the next line, check the flash with the matcher for its key, e.g. `expect(flash).to have_flash_notice("Post was updated.")`. Each one checks the whole flash, not one key. If the action sets any other flash, e.g. an `alert` as well as the `notice`, the spec fails and the failure message shows the flash it got. You MUST NOT check a single flash key, e.g. `flash[:notice]`, or compare the flash hash by hand. You MUST NOT check a redirect with `have_http_status(:found)` or `be_redirect`. `redirect_to` checks the status and where it goes.
 
+You SHOULD NOT follow the redirect with `follow_redirect!`. Check the redirect and the flash, and check the page it goes to in that page's own GET example, with the record set up in the state the action leaves it in. Each example then makes one request, and a failure points at the action that broke. Follow the redirect only when the spec can't set up the next request's session beforehand, e.g. a Devise route that signs the user in or stores where to send them.
+
+```ruby
+# Don't do this
+patch post_path(draft), params: { post: { title: "New title" } }
+follow_redirect!
+
+expect(response.body).to have_css("h1", text: "New title")
+```
+
+In the example below, `PATCH /posts/:id` checks the redirect, and `GET /posts/:id` checks the page.
+
 ```ruby
 RSpec.describe "Posts" do
   describe "GET /posts/:id", :aggregate_failures do
