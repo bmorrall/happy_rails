@@ -106,6 +106,56 @@ RSpec.describe "Posts" do
 end
 ```
 
+### JSON
+
+Request each route the way its clients do. When JSON is another format, the route has an extension, e.g. `GET /posts/:id.json`. Pass the format to the path helper, e.g. `get post_path(published_post, format: :json)`, so the request matches the route in the `describe` block. When JSON is the controller's default format, as in an API, clients don't add the extension. Leave the format out, e.g. `post api_v1_posts_path`.
+
+Send params to a JSON endpoint with `as: :json`. It encodes the params as JSON, and sets the `Content-Type` and `Accept` headers, the way a JSON client sends them. You SHOULD NOT encode the params yourself, e.g. `params: { post: { title: "Hello World" } }.to_json`, or set those headers by hand.
+
+Read the body with `response.parsed_body`. You MUST NOT parse it yourself, e.g. `JSON.parse(response.body)`. `parsed_body` only parses JSON when the response says it's JSON. When the action responds with HTML by mistake, the check fails.
+
+Check the whole body with `match`, as for [API endpoints](../gems/rspec/#api-endpoints). Use RSpec's composable matchers for values the spec can't know in advance, e.g. `an_instance_of(Integer)` for a new ID. Check the body in the happy path, and in each example where the body changes, e.g. the error a failed request returns.
+
+You MUST NOT check the body against JSON the app builds, e.g. `eq(published_post.to_json)` or the output of the serializer. The spec then uses the same code as the action, so it passes when that code drops a field or changes its type. Write out the fields the client gets, with the values you set.
+
+```ruby
+RSpec.describe "Posts" do
+  describe "GET /posts/:id.json", :aggregate_failures do
+    it "responds with the post" do
+      published_post = create(:post, title: "Hello World")
+
+      get post_path(published_post, format: :json)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to match(
+        "id" => published_post.id,
+        "title" => "Hello World"
+      )
+    end
+  end
+end
+```
+
+```ruby
+RSpec.describe "Api::V1::Posts" do
+  describe "POST /api/v1/posts", :aggregate_failures do
+    context "with an access token" do
+      let(:headers) { { "Authorization" => "Bearer #{Rails.application.credentials.api_token}" } }
+
+      it "responds with the new post" do
+        post api_v1_posts_path, params: { post: { title: "Hello World" } }, headers: headers, as: :json
+
+        expect(response).to have_http_status(:created)
+        expect(response.parsed_body).to match(
+          "id" => an_instance_of(Integer),
+          "title" => "Hello World"
+        )
+      end
+    end
+  end
+end
+```
+
 ### Turbo Streams
 
 Turbo asks for a stream with the `Accept` header, not a format extension, so a Turbo Stream gets no `describe` block of its own. In the request spec, add a `context "with a Turbo Stream"` inside the route's `describe` block, and send the `Accept` header in that context.
