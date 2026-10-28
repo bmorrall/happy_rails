@@ -181,14 +181,16 @@ class PostsController < ApplicationController
 end
 ```
 
-Publishing a post has no form, so a failure redirects back to the post.
+Publishing a post has no page of its own to show again, so a failure redirects back to the post.
 
 ```ruby
 module Posts
   class PublicationsController < BaseController
     # POST /posts/:post_id/publication
     def create
-      if @post.publish
+      @publish_post_form = PublishPostForm.new(@post, current_user)
+
+      if @publish_post_form.submit
         redirect_to @post,
           notice: "Post was published."
       else

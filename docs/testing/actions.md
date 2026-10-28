@@ -123,7 +123,7 @@ RSpec.describe Posts::PublishPost do
 end
 ```
 
-When the action enqueues a job, stub the job's class method and check its arguments, e.g. `PublishScheduledPostJob.perform_later_for` in `Posts::EnqueuePublishes`. The job spec checks when the job runs.
+When the action enqueues a job, expect the call that enqueues it, with its arguments, e.g. `expect(PublishScheduledPostJob).to receive(:perform_later_for).with(post)` in `Posts::EnqueuePublishes`. Stub the method the action calls, `perform_later` or a class method on the job, e.g. `perform_later_for`. Always pass the arguments with `with`. When the action enqueues more than one job, write one expectation for each. The job spec checks when the job runs. You MUST NOT check the queue in an action spec, e.g. with `have_enqueued_job`. Request and job specs check the queue instead, as in [RSpec: Enqueued jobs](../gems/rspec/#enqueued-jobs).
 
 ```ruby
 RSpec.describe Posts::EnqueuePublishes do

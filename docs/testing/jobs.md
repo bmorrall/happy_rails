@@ -45,7 +45,9 @@ end
 
 Rails tests `perform_later` itself. Your job adds declarations that change what it does: `queue_as`, `discard_on ActiveJob::DeserializationError` and `enqueue_after_transaction_commit`. In a `describe ".perform_later"` block, test each declaration the job has. Everything the job does when it runs goes in `describe ".perform_now"`, e.g. the requests it makes and the records it changes.
 
-`retry_on`, `rescue_from` and any other `discard_on` act when the job runs, so test them in `.perform_now`. `perform_now` runs the job's error handlers, e.g. a `retry_on` example can check that the job is enqueued again with `have_enqueued_job(described_class)`.
+`retry_on`, `rescue_from` and any other `discard_on` act when the job runs, so test them in `.perform_now`. `perform_now` runs the job's error handlers, e.g. a `retry_on` example can check that the job is enqueued again with `have_enqueued_job(described_class).with(post)`.
+
+When the job enqueues other jobs as it runs, check each one in `.perform_now`, with its arguments, as in [RSpec: Enqueued jobs](../gems/rspec/#enqueued-jobs).
 
 You SHOULD NOT check the job's arguments in `.perform_later`. No declaration changes them, and the request spec already checks that the action enqueues the job with them. See [Controllers: Request specs](../controllers/#request-specs).
 

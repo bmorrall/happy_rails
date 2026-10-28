@@ -510,14 +510,16 @@ end
 
 You MUST NOT stub the models, forms, actions, services or other classes the action calls, e.g. with `allow_any_instance_of(Post).to receive(:publish)` or `allow(Posts::ArchivePost).to receive(:call)`. Check what the action does instead: the records it changes, the response, the flash and the jobs it enqueues. Then the spec fails when any part of the action breaks, not only the controller's own lines. To test how the controller handles an action's `Error`, set up records that make the action fail for real. You MUST NOT test the action's argument checks, e.g. `unmodified:`, because every request that calls the action already runs them. See [Actions: Specs for callers](../actions/#specs-for-callers).
 
-Check that the action enqueues each job, with its arguments, using `have_enqueued_job`. You MUST NOT run the job in the request spec. The job spec checks what the job does, and a feature spec runs it. See [Testing: Jobs](../jobs/).
+Check that the action enqueues each job, with its arguments, as in [RSpec: Enqueued jobs](../gems/rspec/#enqueued-jobs). You MUST NOT run the job in the request spec. The job spec checks what the job does, and a feature spec runs it. See [Testing: Jobs](../jobs/).
 
 ```ruby
 module Posts
   class PublicationsController < BaseController
     # POST /posts/:post_id/publication
     def create
-      if @post.publish
+      @publish_post_form = PublishPostForm.new(@post, current_user)
+
+      if @publish_post_form.submit
         redirect_to @post,
           notice: "Post was published."
       else
@@ -528,6 +530,8 @@ module Posts
   end
 end
 ```
+
+`PublishPostForm#submit` publishes the post and enqueues `NotifySubscribersJob`, as in [Forms: Calling actions](../../guide/forms/#calling-actions). The request spec checks both.
 
 ```ruby
 RSpec.describe "Posts::Publications" do
@@ -543,6 +547,7 @@ RSpec.describe "Posts::Publications" do
 
       expect(draft.reload).to be_published
       expect(response).to redirect_to(post_path(draft))
+      expect(flash).to have_flash_notice("Post was published.")
     end
   end
 end

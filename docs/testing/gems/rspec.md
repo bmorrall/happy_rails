@@ -722,6 +722,25 @@ expect(WebMock).to have_requested_newsletter_create(
 )
 ```
 
+## Enqueued jobs
+
+When a request or a job enqueues a job, check each job it enqueues, with its arguments. Action specs stub the call that enqueues the job instead, as in [Testing: Actions](../../actions/). Always pass the arguments with `with`, so the spec fails when the code enqueues the job for the wrong record.
+
+When the code enqueues one job, wrap the call in an `expect` block and check it with `have_enqueued_job(...).with`, e.g. `expect { post post_publication_path(draft) }.to have_enqueued_job(NotifySubscribersJob).with(draft)`. When it enqueues more than one, make the call on its own, then check each job on its own line with `have_been_enqueued.with`. Each line names one job and its arguments, so a failure says which job is missing.
+
+```ruby
+it "publishes the post" do
+  draft = create(:post)
+
+  post post_publication_path(draft)
+
+  expect(NotifySubscribersJob).to have_been_enqueued.with(draft)
+  expect(BackupPostJob).to have_been_enqueued.with(draft)
+  expect(NotifyMobileAppJob).to have_been_enqueued.with(draft)
+  expect(response).to redirect_to(post_path(draft))
+end
+```
+
 ## Request specs
 
 Write a request spec for every controller. See [Controllers and Routes: Request specs](../../controllers/#request-specs) for where to put it and how to lay out its `describe` blocks.
