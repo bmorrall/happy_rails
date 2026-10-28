@@ -1170,6 +1170,68 @@ it "shows the form again when the post can't be rejected" do
 end
 ```
 
+### Records on the page
+
+When a page shows several records, e.g. the comments on a post, check each value about one of them inside that record's element. A check on the whole body passes when the text is in another record's element.
+
+Write a matcher for each resource, named `have_<resource>`, that takes the record and passes Capybara's options through, e.g. `have_comment(comment, text: "Great post!")`. It wraps `have_css` with the record's `dom_id`. Check that a record isn't shown with `not_to`, e.g. `expect(response.body).not_to have_comment(hidden_comment)`. Put it in the resource's spec helpers module, e.g. `CommentSpecHelpers`, so feature specs can use it too.
+
+You SHOULD check a record with its matcher. When the check is about an element inside the record's, e.g. a button, you MAY find the record's element with a helper named `find_<resource>`. Assign the element to a local variable, then check it on the next line, e.g. `comment_element = find_comment(comment)` then `expect(comment_element).to have_button("Approve")`. `find` raises when the element is missing, so the failure says the record isn't on the page. The helper reads `response.body`, so put it in a module named after the resource with a `RequestSpecHelpers` suffix, e.g. `CommentRequestSpecHelpers`, and include it only in request specs. Feature specs use `within_<resource>` instead, as in [Scoping to a record](#scoping-to-a-record).
+
+You MUST NOT write the record's selector out, e.g. `have_css("#comment_#{comment.id}")`.
+
+```ruby
+# spec/support/comment_spec_helpers.rb
+module CommentSpecHelpers
+  def have_comment(comment, **options)
+    have_css("##{dom_id(comment)}", **options)
+  end
+end
+
+module CommentRequestSpecHelpers
+  def find_comment(comment)
+    Capybara.string(response.body).find("##{dom_id(comment)}")
+  end
+end
+
+RSpec.configure do |config|
+  config.include CommentSpecHelpers, type: :request
+  config.include CommentSpecHelpers, type: :feature
+  config.include CommentRequestSpecHelpers, type: :request
+end
+```
+
+```ruby
+RSpec.describe "Posts" do
+  describe "GET /posts/:id", :aggregate_failures do
+    context "as a user", "with a post as the author" do
+      let(:user) { create(:user) }
+
+      let(:published_post) { create(:post, :published, author: user) }
+
+      before { sign_in user }
+
+      it "shows the comments with a button to approve each new one" do
+        comment = create(:comment, post: published_post, body: "Great post!")
+        approved_comment = create(:comment, :approved, post: published_post)
+
+        get post_path(published_post)
+
+        expect(response).to have_http_status(:ok)
+
+        expect(response.body).to have_comment(comment, text: "Great post!")
+
+        comment_element = find_comment(comment)
+        expect(comment_element).to have_button("Approve")
+
+        approved_comment_element = find_comment(approved_comment)
+        expect(approved_comment_element).not_to have_button("Approve")
+      end
+    end
+  end
+end
+```
+
 ### Several checks per request
 
 Request specs are slow, because each one goes through routing, the controller and the views. Make one request in each example, and check as much as you can about it there: the records it changed, the status or redirect, the flash and the body. You MUST NOT repeat the same request in several examples, each with one check.
