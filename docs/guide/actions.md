@@ -117,11 +117,72 @@ module Posts
 end
 ```
 
-Rescue the other action's error outside the transaction block. Its writes join your transaction. If you rescue its error inside the block and carry on, nothing rolls back, and its half-done writes commit with yours. See [Rolling back](#rolling-back).
+Rescue the other action's error outside the transaction block. Its writes join your transaction. If you rescue its error inside the block and carry on, nothing rolls back, and its half-done writes commit with yours. See [Rolling back](#rolling-back). The exception is an action that opens its own savepoint, as in [Carrying on when another action fails](#carrying-on-when-another-action-fails). Its writes roll back on their own, so you can rescue its error inside the block.
 
 Raise the error for the same cause. When the other action raises its class for one cause, raise your own class for that cause, not your plain `Error`, e.g. `rescue Posts::SendNewsletter::ServiceError` then `raise ServiceError, e.message`. Put that `rescue` before the one for the other action's `Error`. A controller that rescues your class for the service failing then still sees it, as in [Controllers and Routes: Other services failing](../controllers/#other-services-failing). See [Error handling](#error-handling) for error classes for each cause.
 
-If your action needs to carry on when the other action fails, the other action isn't part of your task. Run it as a separate step from a job instead.
+### Carrying on when another action fails
+
+Sometimes your action can still do its task when another action it calls fails, e.g. `Posts::AddCoauthors` adds the co-authors it can, and skips an email whose legacy user won't import. Your action MAY carry on, when every caller wants the other action tried and the task is still done without it. Rescue the other action's `Error` alone, and carry on, instead of raising your own. Any other error is a bug, so let it raise. The other action opens its own savepoint, as below, so add one if it doesn't.
+
+You SHOULD report the error you rescue. Nothing else shows that the other action failed: the user doesn't see it, and the job doesn't fail. This differs from an expected outcome that a form shows the user, which you don't have to report. When the failure is an outcome the app expects, e.g. a legacy user whose data won't import, you SHOULD tag the report `low_priority`, e.g. `tags: ["low_priority"]`, as for any expected outcome. See [Honeybadger: Reporting errors](../gems/honeybadger/#reporting-errors).
+
+```ruby
+module Posts
+  class AddCoauthors < ApplicationAction
+    # ...
+
+    def call
+      emails.each do |email|
+        user = User.find_or_initialize_by_any_email(email)
+        import_user(user)
+        next unless user.persisted?
+
+        post.coauthorships.find_or_create_by!(user:)
+      end
+    end
+
+    private
+
+    attr_reader :post, :emails
+
+    def import_user(user)
+      Users::ImportLegacyUser.call(user)
+    rescue Users::ImportLegacyUser::Error => e
+      Honeybadger.notify(e, context: { post: post.to_honeybadger_context }, tags: ["low_priority"])
+    end
+  end
+end
+```
+
+The action that callers carry on past keeps its writes to itself. Wrap its writes in `ActiveRecord::Base.transaction(requires_new: true)`, even when it writes once, and rescue errors to raise its `Error` outside that block. Its caller might have a transaction open. Rails joins a plain nested transaction block to the one around it, so a failure rolls nothing back until the outermost transaction does. If the caller rescues the error and carries on, the half-done writes commit with the caller's. One `save!` can run several statements, e.g. callbacks and autosaved associations, so this applies to an action that writes once too. If the action's `Error` wraps a database error, e.g. `ActiveRecord::RecordNotUnique`, PostgreSQL has aborted the whole transaction, and the caller's next write fails too. `requires_new: true` adds a savepoint when a transaction is open, and opens a transaction when none is. When the action fails, only its own writes roll back, and its caller can rescue the error anywhere, even inside its own transaction.
+
+```ruby
+module Users
+  class ImportLegacyUser < ApplicationAction
+    class Error < StandardError; end
+
+    # ...
+
+    def call
+      return if user.persisted?
+
+      legacy_user = LegacyUser.find_by(email: user.email)
+      return if legacy_user.nil?
+
+      ActiveRecord::Base.transaction(requires_new: true) do
+        user.update!(name: legacy_user.full_name)
+      end
+    rescue ActiveRecord::RecordInvalid => e
+      raise Error, e.message
+    end
+  end
+end
+```
+
+You MUST NOT pass `requires_new: true` in any other action's transaction. Without it, the action's writes commit or roll back with the caller's. When a caller starts carrying on past an action, add the savepoint to that action. A `Record` action commits on its own, so it needs no savepoint, as in [Records that survive a rollback](#records-that-survive-a-rollback).
+
+When only some callers want to carry on, the other action isn't part of your task. Run it as a separate step, as in [Patterns: Multi-Step Processes](../../patterns/multi-step-processes/).
 
 ## Naming
 
@@ -751,7 +812,7 @@ Rescue errors to raise them again as the action's `Error` outside the transactio
 
 You MUST NOT rescue a database error inside a `transaction` or `with_lock` block and carry on, e.g. `ActiveRecord::StatementInvalid` or its subclass `ActiveRecord::RecordNotUnique`. In PostgreSQL, a failed statement aborts the transaction, and every later statement in it fails until it rolls back. Let the error leave the block, so the whole transaction rolls back.
 
-You MAY rescue other errors inside the block, when the action can recover from them, e.g. `Post::UnreadableDataError` from a stored report that no longer parses. Nothing failed in the database, so the transaction carries on as normal. Writes made in the block before the error still commit, so rescue inside the block only when they need to stay saved. Rescue another action's errors outside the block, as in [Errors from other actions](#errors-from-other-actions), because its half-done writes would commit with yours.
+You MAY rescue other errors inside the block, when the action can recover from them, e.g. `Post::UnreadableDataError` from a stored report that no longer parses. Nothing failed in the database, so the transaction carries on as normal. Writes made in the block before the error still commit, so rescue inside the block only when they need to stay saved. Rescue another action's errors outside the block, as in [Errors from other actions](#errors-from-other-actions), because its half-done writes would commit with yours. You MAY rescue them inside the block when the other action opens its own savepoint, as in [Carrying on when another action fails](#carrying-on-when-another-action-fails).
 
 ### Records that survive a rollback
 

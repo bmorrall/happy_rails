@@ -70,6 +70,27 @@ it "raises an Error when the post can't be unpublished" do
 end
 ```
 
+When the action carries on without another action that fails, stub the other action to raise its `Error`. Check that the action reports it, and skips the work that needed it. See [Actions: Carrying on when another action fails](../../guide/actions/#carrying-on-when-another-action-fails), and [Honeybadger](../gems/honeybadger/) for checking the report.
+
+```ruby
+it "skips an email whose legacy user can't be imported", :honeybadger do
+  post = instance_double(Post, to_honeybadger_context: { id: 1 })
+  user = instance_double(User, persisted?: false)
+  allow(User).to receive(:find_or_initialize_by_any_email).with("ada@example.com").and_return(user)
+  allow(Users::ImportLegacyUser).to receive(:call).with(user).and_raise(Users::ImportLegacyUser::Error)
+
+  expect(post).not_to receive(:coauthorships)
+
+  described_class.call(post, emails: ["ada@example.com"])
+
+  expect(Honeybadger).to have_received(:notify).with(
+    an_instance_of(Users::ImportLegacyUser::Error),
+    context: { post: { id: 1 } },
+    tags: ["low_priority"]
+  )
+end
+```
+
 When the action writes to a relation, stub the method that returns it, e.g. `post.unlocked_comments` or `Comment.on_posts(posts)`, to return an `instance_double(ActiveRecord::Relation)`. Then expect the write on it. Pass a relation double in as the records, e.g. `posts` for `Posts::ArchivePosts`.
 
 ```ruby

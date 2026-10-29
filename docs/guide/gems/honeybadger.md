@@ -43,7 +43,7 @@ end
 
 A `rescue_from` handler gets the error as its argument when the method takes one. See [Controllers and Routes: Other services failing](../../controllers/#other-services-failing).
 
-Reporting an error that the app handles as an expected outcome is optional, e.g. a form that rescues `Posts::SendNewsletter::RejectedError` and shows it to the user. Nothing needs fixing, so you don't have to report it. It helps most while you build a new integration: the reports show how the other service fails, and what it sends back. Once you know, you can stop reporting it. When you do report it, tag it as low priority, e.g. `tags: ["low_priority"]`, so you can filter it out from the errors that need fixing. Honeybadger splits tags on spaces and commas, so use an underscore.
+Reporting an error that the app handles as an expected outcome is optional, e.g. a form that rescues `Posts::SendNewsletter::RejectedError` and shows it to the user. Nothing needs fixing, so you don't have to report it. It helps most while you build a new integration: the reports show how the other service fails, and what it sends back. Once you know, you can stop reporting it. When you do report it, you SHOULD tag it as low priority, e.g. `tags: ["low_priority"]`, so you can filter it out from the errors that need fixing. Honeybadger splits tags on spaces and commas, so use an underscore.
 
 ```ruby
 rescue Posts::SendNewsletter::RejectedError => e

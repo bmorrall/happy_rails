@@ -64,6 +64,8 @@ After the call, `user.persisted?` says whether the user was found in either data
 
 This is the guide's way to get a value from an action: save it on a record the caller holds. The action takes a record with unsaved changes, which [Actions: Arguments](../../guide/actions/#arguments) allows for an action whose task is to save a new record the caller built. Don't check its arguments with `unmodified:`, because the record is meant to be new.
 
+When a caller carries on after the import fails, e.g. `Posts::AddCoauthors` skipping an email, the action needs its own `Error` and a savepoint. See [Actions: Carrying on when another action fails](../../guide/actions/#carrying-on-when-another-action-fails).
+
 Two requests for the same user at once can both find no user, and both import one. Add a unique index on `users.email`, so the second insert raises `ActiveRecord::RecordNotUnique` instead of saving a copy. That's rare enough to let the request fail, and a retry finds the saved user.
 
 ## Raise when it's missing

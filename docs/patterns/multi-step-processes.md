@@ -124,13 +124,13 @@ The status also shows the process's progress, e.g. on the post's page. This is t
 
 ## An action that calls the other actions
 
-When the form needs every step done before it responds, and the steps must commit or roll back together, one action can call the others. This is the rare case where an action calls other actions. Follow [Actions: Errors from other actions](../../guide/actions/#errors-from-other-actions):
+When the form needs every step done before it responds, and the steps must commit or roll back together, one action can call the others. Follow [Actions: Errors from other actions](../../guide/actions/#errors-from-other-actions):
 
 - Rescue each inner action's error, and raise your own.
 - Rescue outside the transaction block, so the inner writes roll back with yours.
 - Call any other service before the transaction, never inside it.
 
-If you find yourself rescuing an inner action's error and carrying on, that step isn't part of the task. Use [A job that runs the steps](#a-job-that-runs-the-steps) instead.
+When every caller wants a step tried, and the task is still done without it, the action MAY rescue that step's error and carry on. See [Actions: Carrying on when another action fails](../../guide/actions/#carrying-on-when-another-action-fails). When only some callers want to carry on, that step isn't part of the task. Use [A job that runs the steps](#a-job-that-runs-the-steps) instead.
 
 ## Choosing a pattern
 
