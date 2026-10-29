@@ -686,7 +686,7 @@ def call
 end
 ```
 
-You SHOULD open the transaction on the model whose records it writes, e.g. `Post.transaction`, not `ActiveRecord::Base.transaction`. Each model's class knows which database connection it uses, and its `transaction` opens on that connection. `ActiveRecord::Base` always uses the app's default connection, which might not be the one the writes go to. When the writes are to more than one model, use the model the task is about, e.g. `Post` for archiving a post and locking its comments.
+The examples open the transaction on the model the task is about, e.g. `Post.transaction`, which uses that model's database connection. `ActiveRecord::Base.transaction` works too, e.g. in shared code that wraps `call` and doesn't know the model.
 
 A form or a job can still wrap several actions in one transaction. Rails joins a nested `transaction` block to the one around it, so the action's writes commit or roll back with the caller's. Open a transaction in a form or a job only to combine several writes into one unit, e.g. two actions, or an action and the form's own save.
 

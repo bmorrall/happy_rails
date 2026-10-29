@@ -61,7 +61,6 @@ applyTo: "app/actions/**/*.rb"
 - Rescue shared errors by the base class's name, e.g. `rescue Posts::NewsletterAction::RejectedError`, not by the name of the action you called.
 - Share errors only when no caller needs to know which action in the group failed. Actions that share errors MUST NOT call each other. Call them in turn from a form or a job.
 - When an action writes more than once, wrap the writes in a transaction inside the action, e.g. `post.update!(archived_at: Time.zone.now)` and `post.comments.update_all(locked: true, updated_at: Time.zone.now)` in `Posts::ArchivePost`. You MUST NOT open a transaction in an action that writes once, unless callers carry on past it, e.g. `User.transaction(requires_new: true)` in `Users::ImportLegacyUser`.
-- You SHOULD open a transaction on the model whose records it writes, e.g. `Post.transaction`, not `ActiveRecord::Base.transaction`. When the writes are to more than one model, use the model the task is about, e.g. `Post` in `Posts::ArchivePost`.
 - When an action relies on a lock, take it inside the action with `with_lock`, e.g. `post.with_lock do ... end` in `Posts::PublishPost`. You MUST NOT take the lock in the caller.
 - When an action that locks a record needs new values, set them inside the `with_lock` block, not before it.
 - You MAY check a condition before taking a lock, to skip the lock when the work is not needed, e.g. `return if post.published?`. Always check it again inside the lock, e.g. `next if post.published?` as the first line of the `with_lock` block.
