@@ -123,7 +123,7 @@ Raise the error for the same cause. When the other action raises its class for o
 
 ### Carrying on when another action fails
 
-Sometimes your action can still do its task when another action it calls fails, e.g. `Posts::AddCoauthors` adds the co-authors it can, and skips an email whose legacy user won't import. Your action MAY carry on, when every caller wants the other action tried and the task is still done without it. Rescue the other action's `Error` alone, and carry on, instead of raising your own. Any other error is a bug, so let it raise. The other action opens its own savepoint, as below, so add one if it doesn't.
+Sometimes your action can still do its task when another action it calls fails, e.g. `Posts::AddCoauthors` adds the co-authors it can, and skips an email whose legacy user won't import. Your action MAY carry on, when every caller of your action wants the other action tried and the task is still done without it. The other action's own callers don't matter: another caller can still let its error raise. Rescue the other action's `Error`, or one of its classes for a cause, as in [Error handling](#error-handling), and carry on, instead of raising your own. You MUST NOT rescue `StandardError`. Any other error is a bug, so let it raise. When the other action writes, it opens its own savepoint, as below, so add one if it doesn't.
 
 You SHOULD report the error you rescue. Nothing else shows that the other action failed: the user doesn't see it, and the job doesn't fail. This differs from an expected outcome that a form shows the user, which you don't have to report. When the failure is an outcome the app expects, e.g. a legacy user whose data won't import, you SHOULD tag the report `low_priority`, e.g. `tags: ["low_priority"]`, as for any expected outcome. See [Honeybadger: Reporting errors](../gems/honeybadger/#reporting-errors).
 
@@ -180,9 +180,9 @@ module Users
 end
 ```
 
-You MUST NOT pass `requires_new: true` in any other action's transaction. Without it, the action's writes commit or roll back with the caller's. When a caller starts carrying on past an action, add the savepoint to that action. A `Record` action commits on its own, so it needs no savepoint, as in [Records that survive a rollback](#records-that-survive-a-rollback).
+You MUST NOT pass `requires_new: true` in any other action's transaction. Without it, the action's writes commit or roll back with the caller's. When a caller starts carrying on past an action, add the savepoint to that action. An action that doesn't write has nothing to roll back, so it needs no savepoint. A `Record` action commits on its own, so it needs none either, as in [Records that survive a rollback](#records-that-survive-a-rollback).
 
-When only some callers want to carry on, the other action isn't part of your task. Run it as a separate step, as in [Patterns: Multi-Step Processes](../../patterns/multi-step-processes/).
+Run the other action as a separate step instead when only some of your action's callers want to carry on, when it calls another service, when a failure needs a retry, or when your action doesn't use what it does. Then it isn't part of your task. See [Patterns: Multi-Step Processes](../../patterns/multi-step-processes/).
 
 ## Naming
 

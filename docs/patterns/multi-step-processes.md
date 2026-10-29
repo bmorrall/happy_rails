@@ -130,7 +130,7 @@ When the form needs every step done before it responds, and the steps must commi
 - Rescue outside the transaction block, so the inner writes roll back with yours.
 - Call any other service before the transaction, never inside it.
 
-When every caller wants a step tried, and the task is still done without it, the action MAY rescue that step's error and carry on. See [Actions: Carrying on when another action fails](../../guide/actions/#carrying-on-when-another-action-fails). When only some callers want to carry on, that step isn't part of the task. Use [A job that runs the steps](#a-job-that-runs-the-steps) instead.
+When every caller of the action wants a step tried, and the task is still done without it, the action MAY rescue that step's error and carry on. See [Actions: Carrying on when another action fails](../../guide/actions/#carrying-on-when-another-action-fails). When only some of the action's callers want to carry on, that step isn't part of the task. Use [A job that runs the steps](#a-job-that-runs-the-steps) instead.
 
 ## Choosing a pattern
 
