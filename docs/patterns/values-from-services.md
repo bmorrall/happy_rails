@@ -22,13 +22,13 @@ Read the value in a private method, and assign it to an instance variable in the
 class PostsController < ApplicationController
   # GET /posts/:id
   def show
-    @newsletter_stats = fetch_newsletter_stats
+    @newsletter_stats = fetch_newsletter_stats(@post)
   end
 
   private
 
-  def fetch_newsletter_stats
-    NewsletterClient.new.fetch_stats(@post.newsletter_id) if @post.newsletter_id?
+  def fetch_newsletter_stats(post)
+    NewsletterClient.new.fetch_stats(post.newsletter_id) if post.newsletter_id?
   end
 end
 ```
@@ -78,7 +78,7 @@ class PostsController < ApplicationController
 
   # GET /posts/:id
   def show
-    @newsletter_stats = fetch_newsletter_stats
+    @newsletter_stats = fetch_newsletter_stats(@post)
   end
 
   # ...

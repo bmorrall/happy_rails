@@ -86,6 +86,49 @@ end
 
 You SHOULD NOT add a `helper_method` to a controller. The view reads instance variables, and a partial gets them as locals, e.g. `render "form", post: @post`. Then the template shows where each value comes from.
 
+### Private methods
+
+An action can call a private method to do some work that has nowhere else to live, e.g. call a service, or query the database and build a lookup hash. Pass it the values it needs as arguments. You MUST NOT read instance variables in it. Treat it like a utility method: values go in, and a result comes out.
+
+The action then shows what each call depends on. The method works the same from any action, and you can move it to a concern or a class of its own without changing it.
+
+```ruby
+class PostsController < ApplicationController
+  # GET /posts
+  def index
+    @posts = Post.all
+    @comment_counts = count_comments(@posts)
+  end
+
+  private
+
+  def count_comments(posts)
+    Comment.where(post: posts).group(:post_id).count
+  end
+end
+```
+
+When the method reads `@posts` itself, the action no longer shows what the query depends on, and the method only works after `@posts` is set:
+
+```ruby
+class PostsController < ApplicationController
+  # GET /posts
+  def index
+    @posts = Post.all
+    @comment_counts = count_comments
+  end
+
+  private
+
+  # Don't do this
+  def count_comments
+    Comment.where(post: @posts).group(:post_id).count
+  end
+end
+```
+
+This covers private methods an action calls. A `set_` callback has no arguments, so it reads the records earlier callbacks set, e.g. `@post` in `set_newsletter_stats`. A helper method returns a value the action set, e.g. `@newsletter_stats[post.newsletter_id]` in `newsletter_stats_for(post)`.
+
 ## Values from services
 
 When a page shows a value read from another service, e.g. a newsletter's open rate, read it in the action or a `set_` callback, before the view renders. Call the service from a private method, and assign the value to an instance variable.
@@ -96,13 +139,13 @@ The action then shows every request the page makes. An error from the service is
 class PostsController < ApplicationController
   # GET /posts/:id
   def show
-    @newsletter_stats = fetch_newsletter_stats
+    @newsletter_stats = fetch_newsletter_stats(@post)
   end
 
   private
 
-  def fetch_newsletter_stats
-    NewsletterClient.new.fetch_stats(@post.newsletter_id) if @post.newsletter_id?
+  def fetch_newsletter_stats(post)
+    NewsletterClient.new.fetch_stats(post.newsletter_id) if post.newsletter_id?
   end
 end
 ```
@@ -115,7 +158,7 @@ class PostsController < ApplicationController
 
   # GET /posts/:id
   def show
-    @newsletter_stats = fetch_newsletter_stats
+    @newsletter_stats = fetch_newsletter_stats(@post)
   end
 
   private
