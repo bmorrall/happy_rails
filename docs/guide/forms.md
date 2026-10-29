@@ -489,7 +489,7 @@ class PublishPostForm < ApplicationForm
   def submit
     return false unless valid?
 
-    ActiveRecord::Base.transaction do
+    Post.transaction do
       post.update!(status: :published)
       post.publications.create!(publisher: current_user)
     end
@@ -530,13 +530,13 @@ class PublishPostForm < ApplicationForm
 end
 ```
 
-An action that writes more than once has its own transaction. Open a transaction in `submit` only to combine several actions, or an action and the form's own save, into one unit. Call any `Record` action before or after that transaction, not inside it. To record that the transaction failed, call the `Record` action in a `rescue` or `ensure` on `submit`. See [Actions: Transactions](../actions/#transactions).
+An action that writes more than once has its own transaction. Open a transaction in `submit` only to combine several actions, or an action and the form's own save, into one unit. You SHOULD open it on the model, e.g. `Post.transaction`, not `ActiveRecord::Base.transaction`. Call any `Record` action before or after that transaction, not inside it. To record that the transaction failed, call the `Record` action in a `rescue` or `ensure` on `submit`. See [Actions: Transactions](../actions/#transactions).
 
 ```ruby
 def submit
   return false unless valid?
 
-  ActiveRecord::Base.transaction do
+  Post.transaction do
     Posts::PublishPost.call(post, publisher: current_user)
     Posts::ArchivePost.call(previous_post)
   end

@@ -61,7 +61,7 @@ module Posts
     end
 
     def call
-      ActiveRecord::Base.transaction do
+      Post.transaction do
         post.update!(status: :published)
         post.publications.create!(publisher:)
       end

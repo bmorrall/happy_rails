@@ -140,7 +140,7 @@ RSpec.describe NotifySubscribersJob do
       post = build_stubbed(:post)
 
       expect do
-        ActiveRecord::Base.transaction do
+        Post.transaction do
           described_class.perform_later(post)
 
           expect(described_class).not_to have_been_enqueued
@@ -152,7 +152,7 @@ RSpec.describe NotifySubscribersJob do
       post = build_stubbed(:post)
 
       expect do
-        ActiveRecord::Base.transaction do
+        Post.transaction do
           described_class.perform_later(post)
           raise ActiveRecord::Rollback
         end

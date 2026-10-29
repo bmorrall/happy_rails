@@ -105,7 +105,7 @@ module Posts
     # ...
 
     def call
-      ActiveRecord::Base.transaction do
+      Post.transaction do
         Posts::UnpublishPost.call(post) if post.published?
         post.update!(archived_at: Time.zone.now)
         post.comments.update_all(locked: true, updated_at: Time.zone.now)
@@ -155,7 +155,7 @@ module Posts
 end
 ```
 
-The action that callers carry on past keeps its writes to itself. Wrap its writes in `ActiveRecord::Base.transaction(requires_new: true)`, even when it writes once, and rescue errors to raise its `Error` outside that block. Its caller might have a transaction open. Rails joins a plain nested transaction block to the one around it, so a failure rolls nothing back until the outermost transaction does. If the caller rescues the error and carries on, the half-done writes commit with the caller's. One `save!` can run several statements, e.g. callbacks and autosaved associations, so this applies to an action that writes once too. If the action's `Error` wraps a database error, e.g. `ActiveRecord::RecordNotUnique`, PostgreSQL has aborted the whole transaction, and the caller's next write fails too. `requires_new: true` adds a savepoint when a transaction is open, and opens a transaction when none is. When the action fails, only its own writes roll back, and its caller can rescue the error anywhere, even inside its own transaction.
+The action that callers carry on past keeps its writes to itself. Wrap its writes in a transaction with `requires_new: true`, e.g. `User.transaction(requires_new: true)`, even when it writes once, and rescue errors to raise its `Error` outside that block. Its caller might have a transaction open. Rails joins a plain nested transaction block to the one around it, so a failure rolls nothing back until the outermost transaction does. If the caller rescues the error and carries on, the half-done writes commit with the caller's. One `save!` can run several statements, e.g. callbacks and autosaved associations, so this applies to an action that writes once too. If the action's `Error` wraps a database error, e.g. `ActiveRecord::RecordNotUnique`, PostgreSQL has aborted the whole transaction, and the caller's next write fails too. `requires_new: true` adds a savepoint when a transaction is open, and opens a transaction when none is. When the action fails, only its own writes roll back, and its caller can rescue the error anywhere, even inside its own transaction.
 
 ```ruby
 module Users
@@ -170,7 +170,7 @@ module Users
       legacy_user = LegacyUser.find_by(email: user.email)
       return if legacy_user.nil?
 
-      ActiveRecord::Base.transaction(requires_new: true) do
+      User.transaction(requires_new: true) do
         user.update!(name: legacy_user.full_name)
       end
     rescue ActiveRecord::RecordInvalid => e
@@ -219,7 +219,7 @@ module Posts
     end
 
     def call
-      ActiveRecord::Base.transaction do
+      Post.transaction do
         post.update!(archived_at: Time.zone.now)
         post.comments.update_all(locked: true, updated_at: Time.zone.now)
       end
@@ -388,7 +388,7 @@ module Posts
     def call
       now = Time.zone.now
 
-      ActiveRecord::Base.transaction do
+      Post.transaction do
         Comment.on_posts(posts).update_all(locked: true, updated_at: now)
         posts.update_all(archived_at: now, updated_at: now)
       end
@@ -493,7 +493,7 @@ module Posts
     # ...
 
     def call
-      ActiveRecord::Base.transaction do
+      Post.transaction do
         post.update!(archived_at: Time.zone.now)
         post.comments.update_all(locked: true, updated_at: Time.zone.now)
       end
@@ -675,16 +675,18 @@ Actions that share errors MUST NOT call each other. They do related tasks with t
 
 ## Transactions
 
-When an action writes more than once, wrap the writes in a transaction, so either they all save or none do. Then the action is safe whoever calls it, and no caller has to remember to wrap it. An action that writes once doesn't need a transaction.
+When an action writes more than once, wrap the writes in a transaction, so either they all save or none do. Then the action is safe whoever calls it, and no caller has to remember to wrap it. An action that writes once doesn't need a transaction, unless callers carry on past it, as in [Carrying on when another action fails](#carrying-on-when-another-action-fails).
 
 ```ruby
 def call
-  ActiveRecord::Base.transaction do
+  Post.transaction do
     post.update!(archived_at: Time.zone.now)
     post.comments.update_all(locked: true, updated_at: Time.zone.now)
   end
 end
 ```
+
+You SHOULD open the transaction on the model whose records it writes, e.g. `Post.transaction`, not `ActiveRecord::Base.transaction`. Each model's class knows which database connection it uses, and its `transaction` opens on that connection. `ActiveRecord::Base` always uses the app's default connection, which might not be the one the writes go to. When the writes are to more than one model, use the model the task is about, e.g. `Post` for archiving a post and locking its comments.
 
 A form or a job can still wrap several actions in one transaction. Rails joins a nested `transaction` block to the one around it, so the action's writes commit or roll back with the caller's. Open a transaction in a form or a job only to combine several writes into one unit, e.g. two actions, or an action and the form's own save.
 
@@ -692,7 +694,7 @@ A form or a job can still wrap several actions in one transaction. Rails joins a
 def submit
   return false unless valid?
 
-  ActiveRecord::Base.transaction do
+  Post.transaction do
     Posts::PublishPost.call(post, publisher: current_user)
     Posts::ArchivePost.call(previous_post)
   end
@@ -742,7 +744,7 @@ You MUST NOT call another service inside a transaction. The transaction keeps it
 def call
   response = NewsletterClient.new.create_newsletter(title: post.title, body: post.body)
 
-  ActiveRecord::Base.transaction do
+  Post.transaction do
     post.update!(newsletter_id: response.id)
     post.publications.create!(publisher:)
   end
@@ -793,7 +795,7 @@ For a job, set `enqueue_after_transaction_commit` in the job class, as in [Jobs:
 
 ```ruby
 def call
-  ActiveRecord::Base.transaction do
+  Post.transaction do
     post.update!(archived_at: Time.zone.now)
     post.comments.update_all(locked: true, updated_at: Time.zone.now)
   end
@@ -842,7 +844,7 @@ class PublishPostForm < ApplicationForm
     Posts::RecordLinkCheck.call(post)
     return false if post.link_check_failed?
 
-    ActiveRecord::Base.transaction do
+    Post.transaction do
       Posts::PublishPost.call(post, publisher: current_user)
       Posts::ArchivePost.call(previous_post)
     end

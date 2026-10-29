@@ -34,7 +34,7 @@ class PublishPostForm < ApplicationForm
   def submit
     return false unless valid?
 
-    ActiveRecord::Base.transaction do
+    Post.transaction do
       post.update!(status: :published)
       post.publications.create!(publisher: current_user)
     end
@@ -58,7 +58,7 @@ module Posts
     # ...
 
     def call
-      ActiveRecord::Base.transaction do
+      Post.transaction do
         post.update!(archived_at: Time.zone.now)
         post.comments.update_all(locked: true, updated_at: Time.zone.now)
       end

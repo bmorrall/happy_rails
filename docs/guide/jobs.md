@@ -127,7 +127,7 @@ A job might run more than once, e.g. when it retries. Write the action so a seco
 
 A job that calls another service does only that, so a retry repeats only the call. Run the steps before it in another job, or in the caller. See [Actions: Other services](../actions/#other-services).
 
-An action that writes more than once has its own transaction. Open a transaction in `perform` only to combine several actions into one unit. Call any `Record` action before or after that transaction, not inside it. To record that the transaction failed, call the `Record` action in a `rescue` or `ensure` on `perform`. See [Actions: Transactions](../actions/#transactions).
+An action that writes more than once has its own transaction. Open a transaction in `perform` only to combine several actions into one unit. You SHOULD open it on the model, e.g. `Post.transaction`, not `ActiveRecord::Base.transaction`. Call any `Record` action before or after that transaction, not inside it. To record that the transaction failed, call the `Record` action in a `rescue` or `ensure` on `perform`. See [Actions: Transactions](../actions/#transactions).
 
 ### Jobs that run at a set time
 
