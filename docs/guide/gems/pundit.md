@@ -156,7 +156,7 @@ Lay out every policy the same way, so you know where to find a rule:
 
 Keeping an association's checks together shows everything a user can do with it, e.g. who can comment on a post and who can approve the comments.
 
-Leave out any permission or heading the policy doesn't need. Leave out the `Scope` class too when nothing lists the model's records. See [Principles: Only build what's used](../../principles/#only-build-whats-used). Private methods go last, after `private`.
+Leave out any permission or heading the policy doesn't need. Leave out the `Scope` class too when nothing calls `policy_scope` for the model, e.g. a controller or a form. See [Principles: Only build what's used](../../principles/#only-build-whats-used). Private methods go last, after `private`.
 
 ```ruby
 class PostPolicy < ApplicationPolicy
