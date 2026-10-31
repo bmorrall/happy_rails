@@ -33,7 +33,7 @@ MUST NOT, SHOULD, SHOULD NOT and MAY are read as described in [BCP 14](https://w
 
 ## Only build what's used
 
-Write code only when something calls it. You MUST NOT add a method, scope, permission, route or option that nothing uses yet, e.g. `PostPolicy#destroy?` when no controller has a `destroy` action.
+Write code only when something calls it. You MUST NOT add a method, scope, permission, route or option that nothing uses yet, e.g. `PostPolicy#destroy?` when no controller, form, view or decorator checks it.
 
 Unused code still has to be read, tested and kept up to date, and nothing shows when it breaks. It also guesses at what a later change will need. When that change comes, the code that calls it shows what it needs.
 
@@ -52,7 +52,7 @@ class PostPolicy < ApplicationPolicy
     # ...
   end
 
-  # No action calls this yet
+  # Nothing checks this yet
   def destroy?
     user.app_admin?
   end

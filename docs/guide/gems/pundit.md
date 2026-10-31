@@ -56,7 +56,7 @@ end
 
 ## Policies
 
-Write one policy for each model, named after it, e.g. `PostPolicy` in `app/policies/post_policy.rb`. Inherit it from `ApplicationPolicy`.
+Write one policy for each model the app checks permissions on, e.g. in a controller, a form, a view or a decorator. Name it after the model, e.g. `PostPolicy` in `app/policies/post_policy.rb`. Inherit it from `ApplicationPolicy`.
 
 Generate `ApplicationPolicy` with `bin/rails generate pundit:install`, and keep its defaults. Every permission returns `false`, so a policy only allows what it defines. `new?` calls `create?`, and `edit?` calls `update?`. Leave `new?` and `edit?` out of a policy unless they differ from `create?` and `update?`.
 
@@ -156,7 +156,7 @@ Lay out every policy the same way, so you know where to find a rule:
 
 Keeping an association's checks together shows everything a user can do with it, e.g. who can comment on a post and who can approve the comments.
 
-Leave out any permission or heading the policy doesn't need. Private methods go last, after `private`.
+Leave out any permission or heading the policy doesn't need. Leave out the `Scope` class too when nothing lists the model's records. See [Principles: Only build what's used](../../principles/#only-build-whats-used). Private methods go last, after `private`.
 
 ```ruby
 class PostPolicy < ApplicationPolicy
