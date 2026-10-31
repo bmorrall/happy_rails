@@ -140,6 +140,8 @@ Pass the matcher a record, an array or a relation, e.g. `expect(drafts).to grant
 
 Put the `grant_user_access` examples straight in the `describe "UserAccess"` block, in role rank order. You MUST NOT group them in a `describe` block for a role or a method, e.g. `describe "copy editor"`. Each example covers two methods, so no one method names it. Any other method in the block gets its own `describe` block as usual, as in [Spec layout](#spec-layout). Name each one after what it grants or denies, and to whom, e.g. `"grants drafts to a copy editor"`.
 
+The matcher calls both methods, so it only works for a role that has both. When a role has only one, test that method in its own `describe` block inside `describe "UserAccess"`, e.g. `describe "#user_is_coauthor?"`.
+
 For each role, write an example that grants it, and one that denies it to a user without the role. When a role has a condition, test a record on each side of it, e.g. a draft and a published post for a copy editor.
 
 The matcher queries the scope, so create the records with factories, as for a scope.

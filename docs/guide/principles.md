@@ -31,6 +31,34 @@ MUST NOT, SHOULD, SHOULD NOT and MAY are read as described in [BCP 14](https://w
 
 > **TODO:** Describe how you handle this.
 
+## Only build what's used
+
+Write code only when something calls it. You MUST NOT add a method, scope, permission, route or option that nothing uses yet, e.g. `PostPolicy#destroy?` when no controller has a `destroy` action.
+
+Unused code still has to be read, tested and kept up to date, and nothing shows when it breaks. It also guesses at what a later change will need. When that change comes, the code that calls it shows what it needs.
+
+```ruby
+class PostPolicy < ApplicationPolicy
+  def update?
+    # ...
+  end
+end
+```
+
+```ruby
+# Don't do this
+class PostPolicy < ApplicationPolicy
+  def update?
+    # ...
+  end
+
+  # No action calls this yet
+  def destroy?
+    user.app_admin?
+  end
+end
+```
+
 ## The signed-in user
 
 Only the code that handles a request knows who is signed in. That is controllers, forms, views and helpers. Everything else has no signed-in user, e.g. models, actions, jobs, mailers and view components.

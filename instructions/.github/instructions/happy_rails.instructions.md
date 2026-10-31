@@ -21,6 +21,7 @@ Follow these rules for all changes. Area-specific rules are in `.github/instruct
 
 - TODO: State the guiding principles in short imperative sentences, e.g. "Prefer Rails defaults over extra gems."
 - Match the style of the surrounding code.
+- You MUST NOT add a method, scope, permission, route or option that nothing uses yet, e.g. `PostPolicy#destroy?` when no controller has a `destroy` action.
 
 ## The signed-in user
 

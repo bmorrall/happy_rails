@@ -370,12 +370,14 @@ Comment.where(post: posts).update_all(locked: true, updated_at: Time.zone.now)
 
 ## User access
 
-Give each role a user can hold on one record two methods, in a `concerning :UserAccess` block:
+Give each role a user can hold on one record up to two methods, in a `concerning :UserAccess` block:
 
 - `user_is_<role>?(user)` checks the role on one record, e.g. `post.user_is_author?(user)`.
 - `for_user_as_<role>(user)`, a scope, lists the records the user holds the role on, e.g. `Post.for_user_as_author(user)`. Define it with `scope` in the block's `included` block.
 
 Then each role is written once. A policy's permissions and scope call these methods, and so does a form that only offers the records a user holds a role on, e.g. the posts they wrote. See [Pundit: Roles on the record](../gems/pundit/#roles-on-the-record).
+
+Only write the methods the app calls, as in [Principles: Only build what's used](../principles/#only-build-whats-used). A permission calls `user_is_<role>?`, and a policy scope or a form calls `for_user_as_<role>`. You MUST NOT write `for_user_as_coauthor` if nothing lists the posts a user co-authors.
 
 Keep a role on the whole app on `User` when it covers every record, e.g. `user.app_admin?`. When it only covers some records, give it `UserAccess` methods too, and put the condition in them. For example, a Copy Editor can only edit draft posts, so `user_is_copy_editor?` checks that the post is a draft, and `for_user_as_copy_editor` lists drafts for a Copy Editor and none for anyone else.
 
