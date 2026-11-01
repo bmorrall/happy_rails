@@ -278,7 +278,22 @@ Guard each such field with a permission check. Leave the field out, or render it
 
 ## CSS and assets
 
-> **TODO:** Describe how you handle this.
+You SHOULD NOT write the classes that style a theme element in a template or partial, e.g. a button, a badge or a panel. Call a helper or a component that holds them instead, e.g. `theme_button`. See [Theme Elements](../../patterns/theme-elements/) for ways to build them.
+
+Each element's classes are then written in one place. A change to the theme only changes the theme, not every page, and pages don't drift apart as some are updated and others are missed.
+
+```erb
+<%# app/views/posts/show.html.erb %>
+<%= theme_button "Edit", edit_post_path(@post), variant: :secondary %>
+```
+
+Don't write the classes in place:
+
+```erb
+<%# app/views/posts/show.html.erb %>
+<%# Don't do this %>
+<%= link_to "Edit", edit_post_path(@post), class: "btn btn-outline-secondary" %>
+```
 
 ## Testing
 
