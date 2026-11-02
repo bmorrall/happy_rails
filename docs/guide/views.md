@@ -278,7 +278,7 @@ Guard each such field with a permission check. Leave the field out, or render it
 
 ## CSS and assets
 
-You SHOULD NOT write the classes that style a theme element in a template or partial, e.g. a button, a badge or a panel. Call a helper or a component that holds them instead, e.g. `theme_button`. See [Theme Elements](../../patterns/theme-elements/) for ways to build them.
+You SHOULD NOT write the classes that style a theme element in a template or partial, e.g. a button, a badge or a panel. A layout that pages repeat is a theme element too, e.g. a grid of cards, or the spacing around each section of a page. Call a helper or a component that holds the classes instead, named with your theme's prefix, e.g. `theme_button`. See [Theme Elements](../../patterns/theme-elements/) for ways to build them.
 
 Each element's classes are then written in one place. A change to the theme only changes the theme, not every page, and pages don't drift apart as some are updated and others are missed.
 
@@ -294,6 +294,8 @@ Don't write the classes in place:
 <%# Don't do this %>
 <%= link_to "Edit", edit_post_path(@post), class: "btn btn-outline-secondary" %>
 ```
+
+You MAY write the classes for an element that only one page uses in its template, e.g. a banner on the home page or the margin around one form. Not every element needs a shared helper. It becomes a theme element when a second page needs it.
 
 ## Testing
 

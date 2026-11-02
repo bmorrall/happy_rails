@@ -7,7 +7,7 @@ nav_order: 11
 
 # Turbo
 
-Live updates with [Turbo Rails](https://github.com/hotwired/turbo-rails).
+Live updates and frames with [Turbo Rails](https://github.com/hotwired/turbo-rails).
 
 ## Broadcasting
 
@@ -42,6 +42,27 @@ module Posts
   end
 end
 ```
+
+## Frames
+
+Wrap part of a page in a frame only when something loads into it, e.g. its `src:`, or a link or a form inside it. You SHOULD NOT wrap content in a frame that nothing loads into. A frame changes how every link and form inside it works, so a frame with no use only adds ways for them to break.
+
+Give every link and form inside a frame a page to load that has a frame with the same id. When a link leaves the frame, e.g. for a page of its own, set `data: { turbo_frame: "_top" }`. Turbo looks for the frame in the response, and shows "Content missing" in its place when it isn't there.
+
+```erb
+<%# app/views/posts/show.html.erb %>
+<%= turbo_frame_tag dom_id(@post, :comments), src: post_comments_path(@post) %>
+```
+
+```erb
+<%# app/views/posts/comments/index.html.erb %>
+<%= turbo_frame_tag dom_id(@post, :comments) do %>
+  <%= render @comments %>
+  <%= link_to "Sign in to comment", new_user_session_path, data: { turbo_frame: "_top" } %>
+<% end %>
+```
+
+The sign in page has no comments frame, so the link breaks out of the frame and loads the whole page.
 
 ## Testing
 

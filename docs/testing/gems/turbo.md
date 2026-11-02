@@ -7,7 +7,7 @@ nav_order: 11
 
 # Turbo
 
-How I test Turbo broadcasts.
+How I test Turbo broadcasts and frames.
 
 For the code itself, see [Turbo](../../../guide/gems/turbo/).
 
@@ -86,7 +86,7 @@ Write feature specs for the app's features, not for Turbo. Live comments are a f
 
 ```ruby
 RSpec.feature "Live Comments" do
-  scenario "User sees a comment appear when the Author approves it" do
+  scenario "User sees a comment appear when the Author approves it", :js do
     # GIVEN I am signed in as a User
     sign_in create(:user)
 
@@ -144,5 +144,27 @@ end
 RSpec.configure do |config|
   # ...
   config.include TurboFeatureSpecHelpers, type: :feature
+end
+```
+
+## Frames
+
+Tag a scenario `:js` when it clicks a link or submits a form inside a frame. Capybara's default driver ignores frames and loads the whole page. The scenario then passes even when the page it loads has no frame with the same id, which shows "Content missing" in a browser. See [RSpec: JavaScript](../rspec/#javascript).
+
+```ruby
+RSpec.feature "Post Comments" do
+  scenario "Guest signs in to comment on a post", :js do
+    # GIVEN there is a published post
+    published_post = create(:post, status: :published)
+
+    # WHEN I open the post
+    visit post_path(published_post)
+
+    # AND I choose to sign in to comment
+    click_link "Sign in to comment"
+
+    # THEN I see the sign in page
+    expect(page).to have_button("Log in")
+  end
 end
 ```

@@ -1318,6 +1318,29 @@ end
 
 You MUST NOT use `let` or `let!` in feature specs. Build every record in the scenario, under its `# GIVEN` and `# AND` comments, e.g. `create(:post, title: "Hello World")` under `# AND there is a draft post` above. The scenario then tells the whole story, setup included.
 
+### JavaScript
+
+Tag a scenario `:js` when a step needs JavaScript, e.g. Turbo or a Stimulus controller. Leave other scenarios on Capybara's default driver, `rack_test`. It doesn't run JavaScript, so it's much faster, but it also ignores Turbo. A scenario that needs Turbo can then pass without it, e.g. when a link loads the whole page instead of a frame. See [Turbo: Frames](../turbo/#frames).
+
+```ruby
+scenario "User sees a comment appear when the Author approves it", :js do
+  # ...
+end
+```
+
+Set the driver for `:js` scenarios in `spec/support/capybara.rb`. Without it, Capybara uses `:selenium`, which opens Firefox. Setting a driver for system specs, e.g. with `driven_by`, doesn't change it for feature specs.
+
+```ruby
+# spec/support/capybara.rb
+Capybara.javascript_driver = :selenium_chrome_headless
+
+RSpec.configure do |config|
+  # ...
+end
+```
+
+A `:js` scenario also talks to the browser and the app's server on localhost. Allow those requests in WebMock and VCR, as in [WebMock and VCR: Setup](../webmock/#setup).
+
 ### Scoping to a record
 
 In feature specs, when a page shows several records, e.g. the comments on a post, scope each step about one of them to that record's element. Write a helper for each resource that wraps Capybara's `within`, named `within_<resource>` and taking the record, e.g. `within_comment(comment)`. The scenario then says which record it acts on, and the step can't click a button on the wrong comment. When the markup changes, change the helper, not every scenario.
@@ -1546,6 +1569,8 @@ end
 Give each helper that builds a simple view element a matcher, named after the helper with a `have_` prefix, e.g. `have_unknown_value_tag` for `unknown_value_tag`. See [Views and Frontend: Helpers](../../views/#helpers). Specs then check for the element the same way on every page, and say what they expect to see, not the markup. When the helper's markup changes, change the matcher next to it.
 
 Put the matchers in a module named after the helper module, with a `SpecHelpers` suffix, e.g. `UnknownValuesSpecHelpers` in `spec/support/unknown_values_spec_helpers.rb` for `UnknownValuesHelper`. Include it in helper specs too. The helper's own spec then checks the helper's output with the matcher, so the two can't drift apart.
+
+Find the element by what it is first: its tag, role, `aria-label` and text, as `have_unknown_value_tag` does below. Add the helper's classes only for what nothing else shows, e.g. a button's variant. You SHOULD NOT add an attribute to the markup only so a matcher can find it, e.g. `data-theme-element="grid"`. It's markup that only specs use, and a matcher that checks a class already changes in one place, next to the helper. See [Theme Elements: Specs for theme elements](../../../patterns/theme-elements/#specs-for-theme-elements).
 
 ```ruby
 # spec/support/unknown_values_spec_helpers.rb

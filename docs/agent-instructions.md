@@ -71,7 +71,7 @@ Each [gem](../guide/gems/) has its own file. If your app does not use a gem, del
 | `happy_mqtt.instructions.md` | MQTT | `app/services/**` |
 | `happy_pundit.instructions.md` | Pundit | `app/policies/**`, `app/controllers/**`, `app/views/**`, `app/forms/**` |
 | `happy_simple_form.instructions.md` | Simple Form | `app/models/**`, `app/views/**`, `app/inputs/**`, `app/helpers/**`, `config/initializers/simple_form.rb` |
-| `happy_turbo.instructions.md` | Turbo | `app/models/**`, `app/actions/**` |
+| `happy_turbo.instructions.md` | Turbo | `app/models/**`, `app/actions/**`, `app/views/**`, `app/components/**` |
 | `happy_view_component.instructions.md` | ViewComponent | `app/components/**` |
 | `happy_wisper.instructions.md` | Wisper | `app/actions/**` |
 
@@ -130,6 +130,7 @@ Ask your agent to set up Happy Rails to run it, e.g. "Set up this app for Happy 
 | `references/shoulda_matchers.md` | `spec/support/shoulda_matchers.rb` |
 | `references/turbo.md` | `config/cable.yml`, `spec/support/turbo.rb` |
 | `references/view_component.md` | `spec/support/view_component.rb` |
+| `references/webmock.md` | `spec/support/webmock.rb`, VCR's `ignore_localhost` |
 
 Claude Code reads skills from `.claude/skills/`, not `.github/skills/`. To use the skill there, link it:
 

@@ -9,6 +9,27 @@ nav_order: 13
 
 Stubbed HTTP requests in specs with [WebMock](https://github.com/bblimke/webmock) and [VCR](https://github.com/vcr/vcr).
 
+## Setup
+
+Load WebMock and allow requests to localhost, in `spec/support/webmock.rb`. A `:js` feature spec talks to the browser and the app's server, both on localhost, and WebMock blocks them by default. Every other request is still blocked.
+
+```ruby
+# spec/support/webmock.rb
+require "webmock/rspec"
+
+WebMock.disable_net_connect!(allow_localhost: true)
+```
+
+When the app uses VCR, set `ignore_localhost` in its `VCR.configure` block too. VCR blocks every request it has no cassette for, including localhost.
+
+```ruby
+# spec/support/vcr.rb
+VCR.configure do |config|
+  # ...
+  config.ignore_localhost = true
+end
+```
+
 ## Stubbing requests
 
 WebMock blocks every real HTTP request in specs. Stub each request the code makes to another service with `stub_request`, inside the service's helpers, as [Other Services](../../other-services/) describes. You MUST NOT call `stub_request` in the specs themselves.
