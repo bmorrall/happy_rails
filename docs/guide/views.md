@@ -295,7 +295,7 @@ Don't write the classes in place:
 <%= link_to "Edit", edit_post_path(@post), class: "btn btn-outline-secondary" %>
 ```
 
-You MAY write the classes for an element that only one page uses in its template, e.g. a banner on the home page or the margin around one form. Not every element needs a shared helper. It becomes a theme element when a second page needs it.
+You MAY write the classes for an element that only one template uses, e.g. a banner on the home page, the margin around one form, or the site header in the app's layout. Not every element needs a shared helper. It becomes a theme element when a second page needs it.
 
 ## Testing
 

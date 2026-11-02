@@ -95,6 +95,7 @@ end
 <% end %>
 ```
 
+A page layout with more than one area, e.g. a sidebar and a main column, needs a slot for each area, so it's a component. See [Components for elements with slots](#components-for-elements-with-slots).
 
 ## Components for elements with slots
 
@@ -225,6 +226,12 @@ end
 ```ruby
 expect(response.body).to have_theme_button("Edit", variant: :secondary)
 ```
+
+## The app's layout
+
+The site header, its menus and the footer are not theme elements. They hold the app's own links, e.g. `posts_path`, and its state, e.g. the signed-in user, and the app's layout renders them once. Write their classes in the layout, or in a component outside the theme's namespace, e.g. `HeaderComponent`. Build their parts from the theme's elements, e.g. `theme_button` for the "New post" link.
+
+To tell them apart, ask what the part needs. A theme element takes values and blocks, and works on any page. When a part needs the app's routes, records or the signed-in user, it belongs to the app.
 
 ## Porting a theme
 
