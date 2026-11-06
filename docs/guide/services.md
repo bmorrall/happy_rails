@@ -522,6 +522,8 @@ Give each service its own errors. Define an `Error` class inside the service. Ca
 
 Rescue the library's or gem's errors inside the service, e.g. `Faraday::Error` in `NewsletterClient` or `Aws::S3::Errors::ServiceError` in `PostBackupBucket`, and raise the service's error instead. Ruby keeps the library's error as the `cause`.
 
+Handle the error in the method that makes the call, even when it is private, e.g. in `find_list_id`. You MUST NOT handle it in another method, e.g. with a `rescue` or a `with_error_handling { ... }` block in `create_public_newsletter`, which calls `find_list_id`. Only the method that makes the call has the values the error records, e.g. the path it sent.
+
 Give the error enough to work out what the service tried to send, and how it failed. For an HTTP call, that is the request method, the URL or path, the response status and the response body. For a call through a gem, it is the call the service made, the arguments that identify it, and what the gem's error says, e.g. `operation: :put_object`, `bucket:`, `key:` and `code:` for `PostBackupBucket`. The service is the only code that has them. With Honeybadger, the error adds them to the report. See [Honeybadger: Errors](../gems/honeybadger/#errors).
 
 Record the values as they were. You MUST NOT build or guess a value for the error. A built value shows what you think was sent, not what the service tried to send. When it is wrong, it sends you looking in the wrong place.
