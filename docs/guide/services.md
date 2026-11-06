@@ -518,15 +518,15 @@ When a view needs a value from a service for the app's own work, a helper calls 
 
 ## Errors
 
-Give each service its own errors. Define an `Error` class inside the service. Callers then rescue the service's errors, not the errors of the HTTP library it happens to use.
+Give each service its own errors. Define an `Error` class inside the service. Callers then rescue the service's errors, not the errors of the library or gem it happens to use.
 
-Rescue the library's errors inside the service, and raise the service's error instead. Ruby keeps the library's error as the `cause`.
+Rescue the library's or gem's errors inside the service, e.g. `Faraday::Error` in `NewsletterClient` or `Aws::S3::Errors::ServiceError` in `PostBackupBucket`, and raise the service's error instead. Ruby keeps the library's error as the `cause`.
 
-Give the error enough to work out what the service tried to send, and how it failed: the request method, the URL or path, the response status and the response body. The service is the only code that has them. With Honeybadger, the error adds them to the report. See [Honeybadger: Errors](../gems/honeybadger/#errors).
+Give the error enough to work out what the service tried to send, and how it failed. For an HTTP call, that is the request method, the URL or path, the response status and the response body. For a call through a gem, it is the call the service made, the arguments that identify it, and what the gem's error says, e.g. `operation: :put_object`, `bucket:`, `key:` and `code:` for `PostBackupBucket`. The service is the only code that has them. With Honeybadger, the error adds them to the report. See [Honeybadger: Errors](../gems/honeybadger/#errors).
 
 Record the values as they were. You MUST NOT build or guess a value for the error. A built value shows what you think was sent, not what the service tried to send. When it is wrong, it sends you looking in the wrong place.
 
-When the rescued error holds the URL, e.g. a Faraday error with a response, you SHOULD record it as `url:`. It is the URL the request used, and it shows the host, which can differ between records, e.g. with `NewsletterClient.for(integration)`. Otherwise, record the path the service passed to its connection as `path:`, e.g. `"#{api_path}/newsletters"`. Treat the connection as a black box: you MUST NOT ask it for the URL, e.g. `connection.build_url(path)` or `connection.url_prefix`.
+When the rescued error holds the URL, e.g. a Faraday error with a response, you SHOULD record it as `url:`. It is the URL the request used, and it shows the host, which can differ between records, e.g. with `NewsletterClient.for(integration)`. Otherwise, record the path the service passed to its connection as `path:`, e.g. `"#{api_path}/newsletters"`. Treat the connection as a black box: you MUST NOT ask it for the URL, e.g. `connection.build_url(path)` or `connection.url_prefix`. Treat a gem's client the same way: you MUST NOT ask it for values the service didn't pass, e.g. `client.config.endpoint`. The service's own settings are values it passed, so you MAY record them, e.g. `bucket:` or `region:`. You MUST NOT record its credentials, e.g. `api_key`.
 
 You SHOULD also record the values that identify the request when the URL or path doesn't show them, e.g. `subdomain:` for a service at `<subdomain>.example.com` when only the path is recorded. Leave out a value the URL or path already shows, e.g. the newsletter's ID in `/newsletters/:id/deliver`.
 
@@ -537,7 +537,7 @@ A service MAY raise a subclass of `Error` for a failure a caller handles on its 
 - `UnavailableError` when the other service can't be reached or is down, e.g. `Faraday::ConnectionFailed` or a 503 reply. A controller can answer with a 503, so the client tries again later.
 - `RateLimitedError` when the other service says the app sent too many requests, e.g. `Faraday::TooManyRequestsError`. A job can retry it later. Give it the reply's `Retry-After` value, e.g. `retry_after:`, so the caller knows how long to wait.
 - `UnauthorizedError` when the other service refuses the credentials, e.g. `Faraday::UnauthorizedError` or `Faraday::ForbiddenError`. A retry fails the same way, so a job can mark the `NewsletterServiceIntegration` as broken instead.
-- `NotFoundError` when the other service doesn't have the resource, e.g. `Faraday::ResourceNotFound` for a newsletter deleted on its side. A job can clear the post's `newsletter_id` instead of failing.
+- `NotFoundError` when the other service doesn't have the resource, e.g. `Faraday::ResourceNotFound` for a newsletter deleted on its side, or `Aws::S3::Errors::NoSuchKey`. A job can clear the post's `newsletter_id` instead of failing.
 
 Rescue the library's specific errors before its base error, because Ruby uses the first `rescue` that matches.
 
@@ -562,6 +562,25 @@ class NewsletterClient
     raise TimeoutError.new(e.message, **details_from(e))
   rescue Faraday::Error => e
     raise Error.new(e.message, **details_from(e))
+  end
+end
+```
+
+A service that calls a gem records the call it made, with the same arguments it passed to the gem.
+
+```ruby
+class PostBackupBucket
+  class Error < StandardError
+    def initialize(message = nil, operation: nil, bucket: nil, key: nil, code: nil)
+      # ...
+    end
+  end
+
+  def upload(post)
+    key = "posts/#{post.id}.json"
+    client.put_object(bucket:, key:, body: post.to_json)
+  rescue Aws::S3::Errors::ServiceError => e
+    raise Error.new(e.message, operation: :put_object, bucket:, key:, code: e.code)
   end
 end
 ```

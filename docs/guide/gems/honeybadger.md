@@ -184,7 +184,7 @@ class NewsletterClient
 end
 ```
 
-Keep the hash flat, and start the keys with `request_` and `response_`, so they don't clash with the records in the report's context. Leave out the details the error doesn't have with `compact`, e.g. the path when it has the URL. You MUST NOT add the request or response headers. They hold API keys and tokens. Cut the body short, e.g. to 1,000 characters, so a large error page doesn't fill the report. Leave out the query string when the service takes a key in it.
+Keep the hash flat, and start the keys with `request_` and `response_`, so they don't clash with the records in the report's context. Leave out the details the error doesn't have with `compact`, e.g. the path when it has the URL. Use the same prefixes for a call through a gem, e.g. `request_operation`, `request_bucket`, `request_key` and `response_code` in `PostBackupBucket::Error`. You MUST NOT add the request or response headers. They hold API keys and tokens. Cut the body short, e.g. to 1,000 characters, so a large error page doesn't fill the report. Leave out the query string when the service takes a key in it.
 
 Honeybadger only reads `to_honeybadger_context` from the error it reports, not from the error's `cause`. An action raises its own error with the client's error as the `cause`, e.g. `Posts::SendNewsletter::ServiceError`, so the details would be lost. Pass them on with a `HoneybadgerCauseContext` concern in `app/models/concerns/honeybadger_cause_context.rb`.
 
