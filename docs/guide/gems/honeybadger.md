@@ -158,10 +158,10 @@ An error from a client for another service is the most useful place for this. Th
 ```ruby
 class NewsletterClient
   class Error < StandardError
-    def initialize(message = nil, http_method: nil, url: nil, status: nil, body: nil)
+    def initialize(message = nil, http_method: nil, path: nil, status: nil, body: nil)
       super(message)
       @http_method = http_method
-      @url = url
+      @path = path
       @status = status
       @body = body
     end
@@ -169,7 +169,7 @@ class NewsletterClient
     def to_honeybadger_context
       {
         request_method: http_method,
-        request_url: url,
+        request_path: path,
         response_status: status,
         response_body: body&.truncate(1_000)
       }
@@ -177,12 +177,14 @@ class NewsletterClient
 
     private
 
-    attr_reader :http_method, :url, :status, :body
+    attr_reader :http_method, :path, :status, :body
   end
 end
 ```
 
-Keep the hash flat, and start the keys with `request_` and `response_`, so they don't clash with the records in the report's context. You MUST NOT add the request or response headers. They hold API keys and tokens. Cut the body short, e.g. to 1,000 characters, so a large error page doesn't fill the report. Leave out the query string when the service takes a key in the URL.
+Report the values the client sent and got back, as they were. You MUST NOT build or guess a value only for the report. When the client passes a path to its connection, e.g. `connection.post("#{api_path}/newsletters", ...)`, report that path as `request_path`, not a URL built from the base URL and the path. The connection builds the URL itself, and a URL you build might not match it. A report that shows the wrong URL sends you looking in the wrong place. When the error you rescue already holds the URL, e.g. a Faraday error, you SHOULD report it as `request_url`. It is the URL the request used, and it shows the host, which can differ between records, e.g. with `NewsletterClient.for(integration)`.
+
+Keep the hash flat, and start the keys with `request_` and `response_`, so they don't clash with the records in the report's context. You MUST NOT add the request or response headers. They hold API keys and tokens. Cut the body short, e.g. to 1,000 characters, so a large error page doesn't fill the report. Leave out the query string when the service takes a key in it.
 
 Honeybadger only reads `to_honeybadger_context` from the error it reports, not from the error's `cause`. An action raises its own error with the client's error as the `cause`, e.g. `Posts::SendNewsletter::ServiceError`, so the details would be lost. Pass them on with a `HoneybadgerCauseContext` concern in `app/models/concerns/honeybadger_cause_context.rb`.
 

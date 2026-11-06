@@ -522,7 +522,7 @@ Give each service its own errors. Define an `Error` class inside the service. Ca
 
 Rescue the library's errors inside the service, and raise the service's error instead. Ruby keeps the library's error as the `cause`.
 
-Give the error everything you'd want to know when the call fails: the request method and URL, the response status and the response body. The service is the only code that has them. With Honeybadger, the error adds them to the report with `to_honeybadger_context`. See [Honeybadger: Errors](../gems/honeybadger/#errors).
+Give the error everything you'd want to know when the call fails: the request method and path, the response status and the response body. The service is the only code that has them. With Honeybadger, the error adds them to the report with `to_honeybadger_context`. See [Honeybadger: Errors](../gems/honeybadger/#errors).
 
 A service MAY raise a subclass of `Error` for a failure a caller handles on its own. Add one only when a caller needs it. Without it, the failure raises the service's `Error` like any other. Name the subclass after its failure, e.g.:
 
@@ -540,7 +540,7 @@ Define the error classes in the service's file, even when its requests and repli
 ```ruby
 class NewsletterClient
   class Error < StandardError
-    def initialize(message = nil, http_method: nil, url: nil, status: nil, body: nil)
+    def initialize(message = nil, http_method: nil, path: nil, status: nil, body: nil)
       # ...
     end
   end
