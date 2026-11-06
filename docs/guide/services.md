@@ -522,7 +522,13 @@ Give each service its own errors. Define an `Error` class inside the service. Ca
 
 Rescue the library's errors inside the service, and raise the service's error instead. Ruby keeps the library's error as the `cause`.
 
-Give the error everything you'd want to know when the call fails: the request method and path, the response status and the response body. The service is the only code that has them. With Honeybadger, the error adds them to the report with `to_honeybadger_context`. See [Honeybadger: Errors](../gems/honeybadger/#errors).
+Give the error enough to work out what the service tried to send, and how it failed: the request method, the URL or path, the response status and the response body. The service is the only code that has them. With Honeybadger, the error adds them to the report. See [Honeybadger: Errors](../gems/honeybadger/#errors).
+
+Record the values as they were. You MUST NOT build or guess a value for the error. A built value shows what you think was sent, not what the service tried to send. When it is wrong, it sends you looking in the wrong place.
+
+When the rescued error holds the URL, e.g. a Faraday error with a response, you SHOULD record it as `url:`. It is the URL the request used, and it shows the host, which can differ between records, e.g. with `NewsletterClient.for(integration)`. Otherwise, record the path the service passed to its connection as `path:`, e.g. `"#{api_path}/newsletters"`. Treat the connection as a black box: you MUST NOT ask it for the URL, e.g. `connection.build_url(path)` or `connection.url_prefix`.
+
+You SHOULD also record the values that identify the request when the URL or path doesn't show them, e.g. `subdomain:` for a service at `<subdomain>.example.com` when only the path is recorded. Leave out a value the URL or path already shows, e.g. the newsletter's ID in `/newsletters/:id/deliver`.
 
 A service MAY raise a subclass of `Error` for a failure a caller handles on its own. Add one only when a caller needs it. Without it, the failure raises the service's `Error` like any other. Name the subclass after its failure, e.g.:
 
@@ -540,7 +546,7 @@ Define the error classes in the service's file, even when its requests and repli
 ```ruby
 class NewsletterClient
   class Error < StandardError
-    def initialize(message = nil, http_method: nil, path: nil, status: nil, body: nil)
+    def initialize(message = nil, http_method: nil, url: nil, path: nil, status: nil, body: nil)
       # ...
     end
   end

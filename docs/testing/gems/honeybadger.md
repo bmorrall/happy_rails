@@ -92,7 +92,7 @@ it "raises an UnprocessableError when the newsletter service rejects the newslet
     .to raise_error(described_class::UnprocessableError) do |error|
       expect(error.to_honeybadger_context).to eq(
         request_method: :post,
-        request_path: "/posts",
+        request_url: "https://newsletter.example.com/posts",
         response_status: 422,
         response_body: ""
       )
@@ -126,7 +126,7 @@ RSpec.describe HoneybadgerCauseContext do
     cause = NewsletterClient::Error.new(
       "Server error",
       http_method: :post,
-      path: "/posts",
+      url: "https://newsletter.example.com/posts",
       status: 500,
       body: "Server error"
     )
@@ -134,7 +134,7 @@ RSpec.describe HoneybadgerCauseContext do
     expect { raise error_class, cause: }.to raise_error(error_class) do |error|
       expect(error.to_honeybadger_context).to eq(
         request_method: :post,
-        request_path: "/posts",
+        request_url: "https://newsletter.example.com/posts",
         response_status: 500,
         response_body: "Server error"
       )

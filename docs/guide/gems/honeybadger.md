@@ -153,14 +153,15 @@ end
 
 An error can carry context too. When an error defines `to_honeybadger_context`, Honeybadger adds its hash to the report. The context you pass to `Honeybadger.notify` wins when both use the same key.
 
-An error from a client for another service is the most useful place for this. The client is the only code that has the request and the response, so give its error the details you'd want when the service fails.
+An error from a client for another service is the most useful place for this. The client is the only code that has the request and the response, and its error records them. See [Services: Errors](../../services/#errors) for what to record. Give the error a `to_honeybadger_context` that puts each of those details under its own key.
 
 ```ruby
 class NewsletterClient
   class Error < StandardError
-    def initialize(message = nil, http_method: nil, path: nil, status: nil, body: nil)
+    def initialize(message = nil, http_method: nil, url: nil, path: nil, status: nil, body: nil)
       super(message)
       @http_method = http_method
+      @url = url
       @path = path
       @status = status
       @body = body
@@ -169,24 +170,21 @@ class NewsletterClient
     def to_honeybadger_context
       {
         request_method: http_method,
+        request_url: url,
         request_path: path,
         response_status: status,
         response_body: body&.truncate(1_000)
-      }
+      }.compact
     end
 
     private
 
-    attr_reader :http_method, :path, :status, :body
+    attr_reader :http_method, :url, :path, :status, :body
   end
 end
 ```
 
-Report the values the client sent and got back, as they were. You MUST NOT build or guess a value only for the report. When the client passes a path to its connection, e.g. `connection.post("#{api_path}/newsletters", ...)`, report that path as `request_path`, not a URL built from the base URL and the path. The connection builds the URL itself, and a URL you build might not match it. A report that shows the wrong URL sends you looking in the wrong place. When the error you rescue already holds the URL, e.g. a Faraday error, you SHOULD report it as `request_url`. It is the URL the request used, and it shows the host, which can differ between records, e.g. with `NewsletterClient.for(integration)`.
-
-You SHOULD also report the values the client puts into the URL that identify the request, when the reported path or URL doesn't show them, e.g. `request_subdomain:` for a service at `<subdomain>.example.com` when the report has only the path. The client already has them, so nothing is built for the report. Leave out a value the path or URL already shows, e.g. the newsletter's ID in `/newsletters/:id/deliver`. It would only repeat what the report says.
-
-Keep the hash flat, and start the keys with `request_` and `response_`, so they don't clash with the records in the report's context. You MUST NOT add the request or response headers. They hold API keys and tokens. Cut the body short, e.g. to 1,000 characters, so a large error page doesn't fill the report. Leave out the query string when the service takes a key in it.
+Keep the hash flat, and start the keys with `request_` and `response_`, so they don't clash with the records in the report's context. Leave out the details the error doesn't have with `compact`, e.g. the path when it has the URL. You MUST NOT add the request or response headers. They hold API keys and tokens. Cut the body short, e.g. to 1,000 characters, so a large error page doesn't fill the report. Leave out the query string when the service takes a key in it.
 
 Honeybadger only reads `to_honeybadger_context` from the error it reports, not from the error's `cause`. An action raises its own error with the client's error as the `cause`, e.g. `Posts::SendNewsletter::ServiceError`, so the details would be lost. Pass them on with a `HoneybadgerCauseContext` concern in `app/models/concerns/honeybadger_cause_context.rb`.
 
