@@ -557,11 +557,11 @@ class NewsletterClient
   def create_newsletter(title:, body:)
     # ...
   rescue Faraday::UnprocessableEntityError => e
-    raise UnprocessableError.new(e.message, **details_from(e))
+    raise UnprocessableError.new(e.message, **error_details(e))
   rescue Faraday::TimeoutError => e
-    raise TimeoutError.new(e.message, **details_from(e))
+    raise TimeoutError.new(e.message, **error_details(e))
   rescue Faraday::Error => e
-    raise Error.new(e.message, **details_from(e))
+    raise Error.new(e.message, **error_details(e))
   end
 end
 ```
