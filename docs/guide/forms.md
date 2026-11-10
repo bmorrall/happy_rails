@@ -224,6 +224,43 @@ class CreatePostForm < ApplicationForm
 end
 ```
 
+### Shared attributes
+
+When several forms share attributes, they can declare them in a concern in `app/forms/concerns/`, e.g. `PostAttributes` for `CreatePostForm` and `UpdatePostForm`. You MUST NOT add a presence validation in the concern. Add it in each form that needs it.
+
+Whether a value is required depends on what the form is for, and the concern can't know that. The concern says what the attribute is, and each form says whether its user has to fill it in. A reader then sees every required value in the form itself.
+
+The concern MAY validate presence when the condition uses only its own attributes, e.g. `validates :latitude, presence: true, if: -> { longitude.present? }`. That checks the values make sense together, so it holds in every form that includes the concern. You MUST NOT make the condition depend on the form, e.g. `if: :publishing?`. Put that validation in the form.
+
+```ruby
+module PostAttributes
+  extend ActiveSupport::Concern
+
+  included do
+    attribute :title, :string
+
+    normalizes :title,
+      with: ->(title) { title.strip }
+
+    validates :title,
+      length: { maximum: Post::TITLE_MAX_LENGTH, allow_blank: true }
+  end
+end
+```
+
+```ruby
+class CreatePostForm < ApplicationForm
+  include PostAttributes
+
+  # ...
+
+  ### Validations ###
+
+  validates :title,
+    presence: true
+end
+```
+
 ### Association ids
 
 For an association id, e.g. `featured_comment_id`, return a scope of the records the user can pick. Validate the id with an inclusion validator that uses the same method. In the validator, limit the collection to the submitted id with `where`, then `pluck` the ids. The validation then loads one id, not every record in the collection.
