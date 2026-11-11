@@ -548,6 +548,16 @@ Call the action after `valid?`, and pass it the records and values it needs. You
 
 The action returns nothing, so `submit` returns the resource itself, as for any resource form. Rescue the action's `Error` in `submit`, add an error to `:base`, and return `false`, so the form shows the failure.
 
+Think of a form as an extension of its controller. It handles the action's errors the way the controller does, by the action's own error classes. You MUST NOT rescue an action's error to raise one of the form's own, as an action does when it calls another action. A form has no error classes. See [Actions: Errors from other actions](../actions/#errors-from-other-actions).
+
+When the action has a class for each cause, rescue only the classes for causes the user can fix, e.g. `Posts::SendNewsletter::RejectedError`. You MUST NOT rescue the action's `Error` then. It would catch the class for the service failing too, e.g. `ServiceError`, and show the user an error they can't fix. Let that one raise, so the controller's `rescue_from` handles it, as in [Controllers and Routes: Other services failing](../controllers/#other-services-failing).
+
+```ruby
+rescue Posts::SendNewsletter::RejectedError
+  errors.add(:base, "Newsletter could not be sent.")
+  false
+```
+
 ```ruby
 class PublishPostForm < ApplicationForm
   # ...
