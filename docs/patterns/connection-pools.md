@@ -8,9 +8,36 @@ nav_order: 5
 
 How to share connections to another service between threads, when a [service object](../../guide/services/) is built many times.
 
-Opening a connection to another service is slow, so reuse connections from a pool. A pool hands each thread its own connection, and takes it back when the thread is done. One pool in an initializer works for a single service with fixed settings. It gets harder when a service is built from a record, e.g. `NewsletterClient.for(integration)`, because each record has its own settings.
+Opening a connection to another service is slow, so reuse connections from a pool. A pool hands each thread its own connection, and takes it back when the thread is done. One pool works for a service with fixed settings. It gets harder when a service is built from a record, e.g. `NewsletterClient.for(integration)`, because each record can have its own host.
 
-The patterns below use the [connection_pool](https://github.com/mperham/connection_pool) gem, and `Concurrent::Map` from concurrent-ruby, which ships with Rails.
+The patterns below use the [connection_pool](https://github.com/mperham/connection_pool) gem. The patterns with more than one pool also use `Concurrent::Map` from concurrent-ruby, which ships with Rails.
+
+## Single pool
+
+When every connection setting comes from `config.x`, the service needs only one pool. Keep it in a private constant on the service, e.g. `POOL`. Ruby loads the class once, so the pool is built once, and you don't need a `Concurrent::Map` or a mutex. Building it is cheap, because `ConnectionPool` opens each connection the first time a thread borrows it. Read the connection settings in the pool's block.
+
+Take the pool as a required first argument to `initialize`, and build the service with `NewsletterClient.default`. You don't need a file in `config/initializers`.
+
+```ruby
+class NewsletterClient
+  POOL = ConnectionPool.new(size: Rails.application.config.x.newsletter_client.pool_size!) do
+    Faraday.new(url: Rails.application.config.x.newsletter_client.base_url!) do |faraday|
+      faraday.adapter :net_http_persistent
+    end
+  end
+  private_constant :POOL
+
+  def self.default
+    new(POOL, api_key: Rails.application.config.x.newsletter_client.api_key!)
+  end
+
+  def initialize(pool, api_key:, api_path: Rails.application.config.x.newsletter_client.api_path!)
+    # ...
+  end
+end
+```
+
+A builder that takes only request settings from a record, e.g. the `api_key`, can still use the single pool. When a connection setting comes from a record, e.g. the `base_url` in `NewsletterClient.for(integration)`, switch to [Pool by host](#pool-by-host).
 
 ## Pool by host
 
@@ -20,7 +47,7 @@ Keep the pools in a `Concurrent::Map`, keyed by host, and create each one the fi
 
 Take the pool as the first argument to `initialize`, and make it required. Then each method borrows from `pool`. Build the service with a class method that finds the pool, e.g. `NewsletterClient.default` for the app-wide settings in `config.x`, or `NewsletterClient.for(integration)` for settings saved on a record. The connection settings, e.g. the `base_url`, go only to `pool_for`, and `initialize` takes the settings sent with each request, e.g. the `api_key`. Only the builders call `pool_for`, so keep it private, with the code that builds a pool.
 
-Never pass a pool from outside the service, because a pool for the wrong host would send requests there. Only specs and the service's own class methods pass one, e.g. `described_class.new(test_pool, api_key: "test-key")` in a spec.
+You MUST NOT pass a pool to `new` from outside the service, because a pool for the wrong host would send requests there. Only specs and the service's own class methods pass one, e.g. `described_class.new(test_pool, api_key: "test-key")` in a spec.
 
 ```ruby
 class NewsletterClient
@@ -75,15 +102,13 @@ class NewsletterClient
 end
 ```
 
-This works for a single service too. With one host, the map holds one pool, and you don't need an initializer. Build it with `NewsletterClient.default`.
-
-connection_pool 2.4 and later reload their pools after a fork, so the pools are safe with Puma in cluster mode. In development, reloading `NewsletterClient` replaces the map, and the next request builds new pools.
+connection_pool 2.4 and later reload their pools after a fork, so the pools are safe with Puma in cluster mode. In development, reloading `NewsletterClient` replaces the constant, and the next request builds new pools.
 
 ## What goes in the connection
 
-Put only the settings the connection needs in the pool's block, e.g. the host, timeouts, SSL options or a proxy. Send everything else with each request, e.g. the credentials, the `api_path` and other headers. Do this even with a single pool and fixed settings. A setting built into a pooled connection is read once, when the pool is created. A spec that builds the service with its own API key would still send the key from the pooled connection.
+Put only the settings the connection needs in the pool's block, e.g. the host, timeouts, SSL options or a proxy. Send everything else with each request, e.g. the API key, the `api_path` and other headers. Do this even with a single pool and fixed settings. A setting built into a pooled connection is read once, when the pool is created. A spec that builds the service with its own API key would still send the key from the pooled connection.
 
-Pass the connection settings to `pool_for` as keywords, with `config.x` defaults for the app-wide ones, e.g. `timeout_seconds:`. `initialize` never takes them, so a service and its pool can't disagree about them. Key the map on every keyword, so different settings never share a pool.
+With a [single pool](#single-pool), read the connection settings from `config.x` in the pool's block. With more than one pool, pass the connection settings to `pool_for` as keywords, with `config.x` defaults for the app-wide ones, e.g. `timeout_seconds:`. `initialize` never takes them, so a service and its pool can't disagree about them. Key the map on every keyword, so different settings never share a pool.
 
 ```ruby
 class NewsletterClient
@@ -152,11 +177,11 @@ The old pool stays in the map, with its connections open. Remove it when you add
 
 ## The library's own pool
 
-Some client gems pool their own connections, e.g. WaterDrop for Kafka, or an HTTP client with a persistent adapter. Use the library's pool, and don't wrap it in another one. Set it up in an initializer, as the library's docs describe, because the library manages the connections.
+Some client gems pool their own connections, e.g. WaterDrop for Kafka, or an HTTP client with a persistent adapter. Use the library's pool on its own, not inside another one. Set it up in an initializer, as the library's docs describe, because the library manages the connections.
 
 ## Pool size
 
-Size a pool for the threads that use it. Set the size in `config.x`, e.g. from `RAILS_MAX_THREADS`, which Puma uses for the web process. A job worker may run a different number of threads, so set the size for each kind of process.
+Size a pool for the threads that use it. Set the size in `config.x`, e.g. from `RAILS_MAX_THREADS`, which Puma uses for the web process. A job worker might run a different number of threads, so set the size for each kind of process.
 
 ```ruby
 # config/application.rb

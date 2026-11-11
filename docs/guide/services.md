@@ -377,7 +377,7 @@ end
 
 ### Timeouts
 
-Give a service a timeout when a request can call it, and set it in `config.x` like its other settings, e.g. `config.x.newsletter_client.timeout_seconds`. Pass it to the HTTP library, e.g. Faraday's `timeout`. Without it, Faraday waits for a reply as long as the other service takes. When the service keeps a connection pool, the timeouts are connection settings, so pass them to the pool, not to `initialize`. See [Patterns: Connection Pools](../../patterns/connection-pools/).
+Give a service a timeout when a request can call it, and set it in `config.x` like its other settings, e.g. `config.x.newsletter_client.timeout_seconds`. Pass it to the HTTP library, e.g. Faraday's `timeout`. Without it, Faraday waits for a reply as long as the other service takes.
 
 A service that only jobs call MAY leave out its timeout, e.g. a service that only `SyncNewslettersJob` uses. No request timeout limits a job, so a slow reply holds up only the job. Add the timeout when a request starts calling the service.
 
@@ -485,7 +485,9 @@ Put the class method on the service, not a method on the record, e.g. `integrati
 
 Encrypt the secrets on the record, e.g. `encrypts :api_key`. See [Models: Secrets](../models/#secrets).
 
-When a service keeps connections open, share them through a connection pool on the service, keyed on the connection settings. Take the pool as a required first argument to `initialize`, and build the service with a class method that finds the pool. Use `NewsletterClient.default` when every setting comes from `config.x`, and `NewsletterClient.for(integration)`, or e.g. `for_integration`, when the settings come from a record. The connection settings go only to the pool, and `initialize` takes the settings sent with each request, e.g. `new(pool_for(base_url: integration.base_url), api_key: integration.api_key)`. You MUST NOT let a pooled connection carry one set of credentials to a service built with another: send the credentials with each request, or include them in the key. See [Patterns: Connection Pools](../../patterns/connection-pools/).
+When a service keeps connections open, share them through a connection pool on the service. Build the pool's connections with only the settings a connection needs, e.g. the host, timeouts and SSL options. Send everything else with each request, e.g. API keys and headers. When every connection setting comes from `config.x`, keep one pool in a private constant, e.g. `NewsletterClient::POOL`, and read the settings in its block. When a connection setting comes from a record, keep the pools in a private `Concurrent::Map`, keyed on the connection settings. Find them with a private class method, e.g. `pool_for(base_url:)`, and pass the connection settings only to it.
+
+Take the pool as a required first argument to `initialize`, and borrow from it in each method, e.g. `pool.with { |connection| ... }`. Build the service with a class method that finds the pool, e.g. `NewsletterClient.default` with one pool, `new(POOL, api_key: Rails.application.config.x.newsletter_client.api_key!)`, or `NewsletterClient.for(integration)` (or `for_integration`) with a map of pools, `new(pool_for(base_url: integration.base_url), api_key: integration.api_key)`. You MUST NOT pass a pool to `new` from outside the service, because a pool for the wrong host would send requests there. Only specs and the service's own class methods pass one. You MUST NOT let a pooled connection carry one set of credentials to a service built with another. When the connection itself needs credentials, e.g. a client certificate, include them in the pool's key. See [Patterns: Connection Pools](../../patterns/connection-pools/).
 
 ## Kinds of services
 

@@ -177,7 +177,8 @@ RSpec.configure do |config|
       .and_raise("Use stub_mqtt_connection or stub_mqtt_message")
   end
 
-  config.after { PostNotifier.const_get(:POOLS).clear }
+  # Drop the fake's connections without closing them, so a disconnect stub can't fail the hook.
+  config.after { PostNotifier.const_get(:POOL).reload { nil } }
 end
 ```
 
@@ -235,6 +236,6 @@ end
 
 ## Connections
 
-Clear `PostNotifier`'s pools after each spec, as in the support file above. Otherwise the next spec gets the last spec's fake, and its connect stubs never run.
+Reload `PostNotifier`'s pool after each spec, as in the support file above. Otherwise the next spec gets the last spec's fake, and its connect stubs never run.
 
 Test keepalive timeouts and TLS in one spec for `PostNotifier`'s connection code, against a real broker or the gem's in-process server, `MQTT::FakeServer`. Use the fake in every other spec.

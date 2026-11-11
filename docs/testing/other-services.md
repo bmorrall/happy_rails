@@ -146,7 +146,7 @@ WebMock lists the requests that were made when its matcher fails. Do the same fo
 
 ### Connections for a fake
 
-Give each spec a new fake. Clear the service's cached connections after each spec too, or the next spec gets the last spec's client, and the connect stubs never run.
+Give each spec a new fake. Clear the service's cached connections after each spec too, or the next spec gets the last spec's client, and the connect stubs never run. Reload a single pool, e.g. `PostNotifier.const_get(:POOL).reload { nil }`, or clear a map of pools, e.g. `NewsletterClient.const_get(:POOLS).clear`.
 
 When the service keeps its connections in a [pool](../../patterns/connection-pools/), the pool can be the code that turns the gem's errors into the service's own. In service specs, build the service with its own builder, e.g. `described_class.default`, not with a test pool. The pool's error handling is then under test. See [Testing: Services](../services/#settings-from-a-record).
 
