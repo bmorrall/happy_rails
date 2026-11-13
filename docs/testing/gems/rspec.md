@@ -1488,6 +1488,22 @@ expect(response.body).to have_button("Publish")
 expect(response.body).not_to have_css("form[action='#{post_publication_path(published_post)}']")
 ```
 
+When a request spec checks a matcher with `not_to`, another example has to check the same matcher with `to`, on a page where the element is shown. It can be in the same file or another spec, e.g. a draft's page for `have_publish_button_for_post`. A matcher that finds nothing passes every `not_to` check: there's no publish button on the page, but there's no rainbow unicorn either. The `to` check shows the matcher finds the element when it's there, so the `not_to` check means something. You MUST NOT check a matcher only with `not_to`.
+
+```ruby
+it "shows a button to publish a draft" do
+  get post_path(draft)
+
+  expect(response.body).to have_publish_button_for_post(draft)
+end
+
+it "doesn't show a button to publish a published post" do
+  get post_path(published_post)
+
+  expect(response.body).not_to have_publish_button_for_post(published_post)
+end
+```
+
 A generic matcher checks a generic element, e.g. a banner, a button or a flash message. Give it the arguments the element needs, and pass Capybara's options through, e.g. `have_publish_button(count: 2)`. A matcher for a message takes the message, and requires it, e.g. `have_flash_notice("Post was updated.")`. A matcher for an element that's always the same needs nothing else, e.g. `have_welcome_new_author_banner`.
 
 An argument fills in the element the matcher checks, e.g. the record or the message. You SHOULD NOT pass an argument that picks which element to check, e.g. a symbol for the kind of message. Each value then checks a different element, so the matcher's logic branches on it, and its name doesn't say what it finds. Write a matcher for each element instead, with the choice in its name, e.g. `have_flash_notice` and `have_flash_alert`. When they share code, generate them in a loop, as the flash matchers do. See [Responses](#responses).
