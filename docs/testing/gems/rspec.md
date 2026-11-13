@@ -1481,6 +1481,17 @@ expect(response.body).not_to have_css("form[action='#{post_publication_path(publ
 
 A generic matcher checks a generic element, e.g. a banner, a button or a flash message. Give it the arguments the element needs, and pass Capybara's options through, e.g. `have_publish_button(count: 2)`. A matcher for a message takes the message, and requires it, e.g. `have_flash_notice("Post was updated.")`. A matcher for an element that's always the same needs nothing else, e.g. `have_welcome_new_author_banner`.
 
+An argument fills in the element the matcher checks, e.g. the record or the message. You SHOULD NOT pass an argument that picks which element to check, e.g. a symbol for the kind of message. Each value then checks a different element, so the matcher's logic branches on it, and its name doesn't say what it finds. Write a matcher for each element instead, with the choice in its name, e.g. `have_flash_notice` and `have_flash_alert`. When they share code, generate them in a loop, as the flash matchers do. See [Responses](#responses).
+
+```ruby
+expect(flash).to have_flash_notice("Post was updated.")
+```
+
+```ruby
+# Don't do this
+expect(flash).to have_flash(:notice, "Post was updated.")
+```
+
 When specs check a generic element that acts on one record, add a matcher for it that takes the record and ends in `_for_<resource>`, e.g. `have_publish_button_for_post(post)`. It's a convenience on top of the generic matcher: it calls the generic matcher with the selector for the record filled in. Every spec then checks the element the same way for any record, and the name says which record the element acts on.
 
 Do the same for a message. When more than one spec file checks the same message, you SHOULD add a matcher that calls the generic matcher with the message filled in. Name it after the resource and what happened, then the generic matcher, e.g. `have_post_updated_flash_notice` for `have_flash_notice("Post was updated.")`. The message is then written once, and a change to its wording changes one place.
