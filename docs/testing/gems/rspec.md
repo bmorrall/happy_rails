@@ -1405,6 +1405,17 @@ module PostFeatureSpecHelpers
 end
 ```
 
+When scenarios click the same element in more than one place, you MAY write a `click_` helper for it, named after the element's matcher, e.g. `click_publish_button_for_post(post)` for `have_publish_button_for_post`. It finds the element the same way as its matcher, so the step clicks the element the specs check. Clicking only works in feature specs, so put it in the `FeatureSpecHelpers` module, next to the `within_` helpers.
+
+```ruby
+# spec/support/post_spec_helpers.rb
+module PostFeatureSpecHelpers
+  def click_publish_button_for_post(post)
+    within("form[action='#{post_publication_path(post)}']") { click_button "Publish" }
+  end
+end
+```
+
 You MUST NOT scope a step with the record's selector written out, e.g. `within("#comment_#{comment.id}")`.
 
 ### API endpoints
@@ -1562,6 +1573,17 @@ end
 ```
 
 When a second spec file needs the matcher, move it to a module in `spec/support`. Extend the module with `RSpec::Matchers::DSL` when it defines matchers with `matcher`, and include it in every spec type that checks the element, e.g. request specs and feature specs. Keep all the includes for a module in its own file, in one `RSpec.configure` block. When a gem's specs need the module too, add their type to the same block, e.g. `type: :component` for ViewComponent. See [Support files](#support-files).
+
+Pick the module by what the matcher covers and which spec types can use it:
+
+| Module | Holds | Included for |
+| --- | --- | --- |
+| `<Resource>SpecHelpers`, e.g. `PostSpecHelpers` | Shared matchers for one resource, e.g. `have_publish_button_for_post` | Every spec type that checks them |
+| `<Topic>SpecHelpers`, e.g. `PublishingSpecHelpers` | Generic matchers, named after what they cover, e.g. `have_publish_button` | Every spec type that checks them |
+| `<Name>RequestSpecHelpers`, e.g. `CommentRequestSpecHelpers` | Helpers that read `response.body`, e.g. `find_comment_block`, and the request version of a matcher | `type: :request` only |
+| `<Name>FeatureSpecHelpers`, e.g. `CommentFeatureSpecHelpers` | Helpers that drive the browser, e.g. `within_comment_block` or `click_publish_button_for_post`, and the feature version of a matcher | `type: :feature` only |
+
+Keep a resource's or topic's modules in one file, e.g. `CommentSpecHelpers`, `CommentRequestSpecHelpers` and `CommentFeatureSpecHelpers` in `spec/support/comment_spec_helpers.rb`.
 
 Keep the shared spec code for a resource together, in one module named after the resource with a `SpecHelpers` suffix, e.g. `PostSpecHelpers` in `spec/support/post_spec_helpers.rb`. Put the resource's shared matchers in it. You then find everything the specs share about posts in one file. The suffix keeps it apart from the app's own helpers, e.g. `PostsHelper` in `app/helpers`. Put generic matchers in their own module, named after what they cover, e.g. `OnboardingSpecHelpers` for `have_welcome_new_author_banner`, or `PublishingSpecHelpers` for `have_publish_button`. A convenience for one resource, e.g. `have_publish_button_for_post`, goes in the resource's module. Include the generic module in every spec type that uses the convenience, so it can call the generic matcher.
 
