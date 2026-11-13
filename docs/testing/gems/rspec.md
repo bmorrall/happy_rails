@@ -1649,6 +1649,8 @@ RSpec.configure do |config|
 end
 ```
 
+Use the same name only when both versions take the same arguments, e.g. `form:` and Capybara's options in both `have_tag_picker` versions. A spec, or a `_for_<resource>` convenience, can then call either one the same way. When a version needs an argument the other can't take, e.g. `selected:` for the `select`, give each its own name after what it finds, e.g. `have_tag_select` and `have_tag_search_box`.
+
 Every spec then calls the same matcher, and gets the version for what it can see. You MAY call it from a `_for_<resource>` convenience in the shared module, which then works in both spec types, e.g. `have_tag_picker_for_post(post)` in `PostSpecHelpers`, which calls `have_tag_picker`.
 
 ```ruby
