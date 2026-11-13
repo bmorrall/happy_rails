@@ -1176,7 +1176,7 @@ When a page shows several records, e.g. the comments on a post, check each value
 
 Write a matcher for the element that shows a record. Name it after the record's resource and what the element is, `have_<resource>_<element>`, e.g. `have_comment_block` for the block that shows a comment, or `have_post_card` for `Posts::CardComponent`. The name then says which element it finds, and a page that shows the same record in two ways gets a matcher for each. It takes the record and passes Capybara's options through, e.g. `have_comment_block(comment, text: "Great post!")`. It wraps `have_css` with the element's id, e.g. the record's `dom_id`. Check that a record isn't shown with `not_to`, e.g. `expect(response.body).not_to have_comment_block(hidden_comment)`. When more than one spec file uses it, e.g. a request spec and a feature spec, put it in the resource's spec helpers module, e.g. `CommentSpecHelpers`. See [Where to put matchers](#where-to-put-matchers).
 
-You SHOULD check a record with its matcher. When the check is about an element inside the record's, e.g. a button, you MAY find the record's element with a helper named after the same element, `find_<resource>_<element>`. Assign the element to a local variable, then check it on the next line, e.g. `comment_block = find_comment_block(comment)` then `expect(comment_block).to have_button("Approve")`. `find` raises when the element is missing, so the failure says the record isn't on the page. The helper reads `response.body`, so put it in a module named after the resource with a `RequestSpecHelpers` suffix, e.g. `CommentRequestSpecHelpers`, and include it only in request specs. Feature specs use `within_<resource>_<element>` instead, as in [Scoping to a record](#scoping-to-a-record).
+You SHOULD check a record with its matcher. When the check is about an element inside the record's, e.g. a button, check it with a matcher for that element that takes the record, e.g. `have_approve_button_for_comment(comment)`. See [Custom matchers](#custom-matchers).
 
 You MUST NOT write the record's selector out, e.g. `have_css("#comment_#{comment.id}")`.
 
@@ -1188,16 +1188,9 @@ module CommentSpecHelpers
   end
 end
 
-module CommentRequestSpecHelpers
-  def find_comment_block(comment)
-    Capybara.string(response.body).find("##{dom_id(comment)}")
-  end
-end
-
 RSpec.configure do |config|
   config.include CommentSpecHelpers, type: :request
   config.include CommentSpecHelpers, type: :feature
-  config.include CommentRequestSpecHelpers, type: :request
 end
 ```
 
@@ -1221,11 +1214,8 @@ RSpec.describe "Posts" do
 
         expect(response.body).to have_comment_block(comment, text: "Great post!")
 
-        comment_block = find_comment_block(comment)
-        expect(comment_block).to have_button("Approve")
-
-        approved_comment_block = find_comment_block(approved_comment)
-        expect(approved_comment_block).not_to have_button("Approve")
+        expect(response.body).to have_approve_button_for_comment(comment)
+        expect(response.body).not_to have_approve_button_for_comment(approved_comment)
       end
     end
   end
@@ -1343,7 +1333,7 @@ A `:js` scenario also talks to the browser and the app's server on localhost. Al
 
 ### Scoping to a record
 
-In feature specs, when a page shows several records, e.g. the comments on a post, scope each step about one of them to that record's element. Write a helper named after the record's resource and the element, as for its matcher, `within_<resource>_<element>`, that takes the record and wraps Capybara's `within` with the record's element, e.g. `within_comment_block(comment)`. The scenario then says which record it acts on, and the step can't click a button on the wrong comment. When the markup changes, change the helper, not every scenario.
+In feature specs, when a page shows several records, e.g. the comments on a post, scope each step about one of them to that record's element. You SHOULD scope it with `within`. Write a helper named after the record's resource and the element, as for its matcher, `within_<resource>_<element>`, that takes the record and wraps Capybara's `within` with the record's element, e.g. `within_comment_block(comment)`. The scenario then says which record it acts on, and the step can't click a button on the wrong comment. When the markup changes, change the helper, not every scenario.
 
 `within` only works in feature specs, so keep the helper apart from the matchers that request specs share. Put it in a module named after the resource with a `FeatureSpecHelpers` suffix, e.g. `CommentFeatureSpecHelpers`, and include it only in feature specs. Keep the module in the resource's support file, next to its spec helpers module, e.g. in `spec/support/comment_spec_helpers.rb` with `CommentSpecHelpers`. The name then says the helper is for feature specs, and you still find everything the specs share about comments in one file. See [Where to put matchers](#where-to-put-matchers).
 
@@ -1414,6 +1404,25 @@ module PostFeatureSpecHelpers
     within("form[action='#{post_publication_path(post)}']") { click_button "Publish" }
   end
 end
+```
+
+You MAY find the record's element with a helper named `find_<resource>_<element>` instead, when `within` doesn't work, or when you choose not to write a helper for the element inside it, e.g. a `click_` helper. Use it when a step checks the record's element itself, e.g. its class, which `within` can't check. It wraps Capybara's `find` and returns the element. `find` raises when the element is missing, so the failure says the record isn't on the page. Put it next to the `within_` helper.
+
+```ruby
+# spec/support/comment_spec_helpers.rb
+module CommentFeatureSpecHelpers
+  def find_comment_block(comment)
+    find("##{dom_id(comment)}")
+  end
+end
+```
+
+```ruby
+# WHEN I approve the comment
+find_comment_block(comment).click_button("Approve")
+
+# THEN I see that it was approved
+expect(find_comment_block(comment)).to match_css(".approved")
 ```
 
 You MUST NOT scope a step with the record's selector written out, e.g. `within("#comment_#{comment.id}")`.
@@ -1603,10 +1612,10 @@ Pick the module by what the matcher covers and which spec types can use it:
 | --- | --- | --- |
 | `<Resource>SpecHelpers`, e.g. `PostSpecHelpers` | Shared matchers for one resource, e.g. `have_publish_button_for_post` | Every spec type that checks them |
 | `<Topic>SpecHelpers`, e.g. `PublishingSpecHelpers` | Generic matchers, named after what they cover, e.g. `have_publish_button` | Every spec type that checks them |
-| `<Name>RequestSpecHelpers`, e.g. `CommentRequestSpecHelpers` | Helpers that read `response.body`, e.g. `find_comment_block`, and the request version of a matcher | `type: :request` only |
-| `<Name>FeatureSpecHelpers`, e.g. `CommentFeatureSpecHelpers` | Helpers that drive the browser, e.g. `within_comment_block` or `click_publish_button_for_post`, and the feature version of a matcher | `type: :feature` only |
+| `<Name>RequestSpecHelpers`, e.g. `TagRequestSpecHelpers` | The request version of a matcher, e.g. `have_tag_picker` | `type: :request` only |
+| `<Name>FeatureSpecHelpers`, e.g. `CommentFeatureSpecHelpers` | Helpers that drive the browser, e.g. `within_comment_block`, `find_comment_block` or `click_publish_button_for_post`, and the feature version of a matcher | `type: :feature` only |
 
-Keep a resource's or topic's modules in one file, e.g. `CommentSpecHelpers`, `CommentRequestSpecHelpers` and `CommentFeatureSpecHelpers` in `spec/support/comment_spec_helpers.rb`.
+Keep a resource's or topic's modules in one file, e.g. `CommentSpecHelpers` and `CommentFeatureSpecHelpers` in `spec/support/comment_spec_helpers.rb`.
 
 Keep the shared spec code for a resource together, in one module named after the resource with a `SpecHelpers` suffix, e.g. `PostSpecHelpers` in `spec/support/post_spec_helpers.rb`. Put the resource's shared matchers in it. You then find everything the specs share about posts in one file. The suffix keeps it apart from the app's own helpers, e.g. `PostsHelper` in `app/helpers`. Put generic matchers in their own module, named after what they cover, e.g. `OnboardingSpecHelpers` for `have_welcome_new_author_banner`, or `PublishingSpecHelpers` for `have_publish_button`. A convenience for one resource, e.g. `have_publish_button_for_post`, goes in the resource's module. Include the generic module in every spec type that uses the convenience, so it can call the generic matcher.
 
