@@ -1102,7 +1102,7 @@ expect(response).to be_successful
 expect(response).to have_http_status(200)
 ```
 
-The flash matchers live in `spec/support/flash_spec_helpers.rb`, included for request specs. There's one for each flash key the app uses, named `have_flash_<key>`. List the keys in `FLASH_KEYS`, e.g. add `success` and `error` for an app with `add_flash_types :success, :error`.
+The flash matchers live in `spec/support/flash_spec_helpers.rb`, included for request specs. There's one for each flash key the app uses, named `have_flash_<key>`. List the keys in `FLASH_KEYS`, e.g. add `success` and `error` for an app with `add_flash_types :success, :error`. For a message that several spec files check, add a matcher with the message filled in, e.g. `have_post_updated_flash_notice`. See [Custom matchers](#custom-matchers).
 
 ```ruby
 # spec/support/flash_spec_helpers.rb
@@ -1174,22 +1174,22 @@ end
 
 When a page shows several records, e.g. the comments on a post, check each value about one of them inside that record's element. A check on the whole body passes when the text is in another record's element.
 
-Write a matcher for each resource, named `have_<resource>`, that takes the record and passes Capybara's options through, e.g. `have_comment(comment, text: "Great post!")`. It wraps `have_css` with the record's `dom_id`. Check that a record isn't shown with `not_to`, e.g. `expect(response.body).not_to have_comment(hidden_comment)`. Put it in the resource's spec helpers module, e.g. `CommentSpecHelpers`, so feature specs can use it too.
+Write a matcher for the element that shows a record. Name it after the record's resource and what the element is, `have_<resource>_<element>`, e.g. `have_comment_block` for the block that shows a comment, or `have_post_card` for `Posts::CardComponent`. The name then says which element it finds, and a page that shows the same record in two ways gets a matcher for each. It takes the record and passes Capybara's options through, e.g. `have_comment_block(comment, text: "Great post!")`. It wraps `have_css` with the element's id, e.g. the record's `dom_id`. Check that a record isn't shown with `not_to`, e.g. `expect(response.body).not_to have_comment_block(hidden_comment)`. When more than one spec file uses it, e.g. a request spec and a feature spec, put it in the resource's spec helpers module, e.g. `CommentSpecHelpers`. See [Where to put matchers](#where-to-put-matchers).
 
-You SHOULD check a record with its matcher. When the check is about an element inside the record's, e.g. a button, you MAY find the record's element with a helper named `find_<resource>`. Assign the element to a local variable, then check it on the next line, e.g. `comment_element = find_comment(comment)` then `expect(comment_element).to have_button("Approve")`. `find` raises when the element is missing, so the failure says the record isn't on the page. The helper reads `response.body`, so put it in a module named after the resource with a `RequestSpecHelpers` suffix, e.g. `CommentRequestSpecHelpers`, and include it only in request specs. Feature specs use `within_<resource>` instead, as in [Scoping to a record](#scoping-to-a-record).
+You SHOULD check a record with its matcher. When the check is about an element inside the record's, e.g. a button, you MAY find the record's element with a helper named after the same element, `find_<resource>_<element>`. Assign the element to a local variable, then check it on the next line, e.g. `comment_block = find_comment_block(comment)` then `expect(comment_block).to have_button("Approve")`. `find` raises when the element is missing, so the failure says the record isn't on the page. The helper reads `response.body`, so put it in a module named after the resource with a `RequestSpecHelpers` suffix, e.g. `CommentRequestSpecHelpers`, and include it only in request specs. Feature specs use `within_<resource>_<element>` instead, as in [Scoping to a record](#scoping-to-a-record).
 
 You MUST NOT write the record's selector out, e.g. `have_css("#comment_#{comment.id}")`.
 
 ```ruby
 # spec/support/comment_spec_helpers.rb
 module CommentSpecHelpers
-  def have_comment(comment, **options)
+  def have_comment_block(comment, **options)
     have_css("##{dom_id(comment)}", **options)
   end
 end
 
 module CommentRequestSpecHelpers
-  def find_comment(comment)
+  def find_comment_block(comment)
     Capybara.string(response.body).find("##{dom_id(comment)}")
   end
 end
@@ -1219,13 +1219,13 @@ RSpec.describe "Posts" do
 
         expect(response).to have_http_status(:ok)
 
-        expect(response.body).to have_comment(comment, text: "Great post!")
+        expect(response.body).to have_comment_block(comment, text: "Great post!")
 
-        comment_element = find_comment(comment)
-        expect(comment_element).to have_button("Approve")
+        comment_block = find_comment_block(comment)
+        expect(comment_block).to have_button("Approve")
 
-        approved_comment_element = find_comment(approved_comment)
-        expect(approved_comment_element).not_to have_button("Approve")
+        approved_comment_block = find_comment_block(approved_comment)
+        expect(approved_comment_block).not_to have_button("Approve")
       end
     end
   end
@@ -1343,7 +1343,7 @@ A `:js` scenario also talks to the browser and the app's server on localhost. Al
 
 ### Scoping to a record
 
-In feature specs, when a page shows several records, e.g. the comments on a post, scope each step about one of them to that record's element. Write a helper for each resource that wraps Capybara's `within`, named `within_<resource>` and taking the record, e.g. `within_comment(comment)`. The scenario then says which record it acts on, and the step can't click a button on the wrong comment. When the markup changes, change the helper, not every scenario.
+In feature specs, when a page shows several records, e.g. the comments on a post, scope each step about one of them to that record's element. Write a helper named after the record's resource and the element, as for its matcher, `within_<resource>_<element>`, that takes the record and wraps Capybara's `within` with the record's element, e.g. `within_comment_block(comment)`. The scenario then says which record it acts on, and the step can't click a button on the wrong comment. When the markup changes, change the helper, not every scenario.
 
 `within` only works in feature specs, so keep the helper apart from the matchers that request specs share. Put it in a module named after the resource with a `FeatureSpecHelpers` suffix, e.g. `CommentFeatureSpecHelpers`, and include it only in feature specs. Keep the module in the resource's support file, next to its spec helpers module, e.g. in `spec/support/comment_spec_helpers.rb` with `CommentSpecHelpers`. The name then says the helper is for feature specs, and you still find everything the specs share about comments in one file. See [Where to put matchers](#where-to-put-matchers).
 
@@ -1354,7 +1354,7 @@ module CommentSpecHelpers
 end
 
 module CommentFeatureSpecHelpers
-  def within_comment(comment, &)
+  def within_comment_block(comment, &)
     within("##{dom_id(comment)}", &)
   end
 end
@@ -1382,19 +1382,19 @@ RSpec.feature "Comment Approval" do
     visit post_path(published_post)
 
     # AND I approve the second comment
-    within_comment(comment) do
+    within_comment_block(comment) do
       click_button "Approve"
     end
 
     # THEN I see that it was approved
-    within_comment(comment) do
+    within_comment_block(comment) do
       expect(page).not_to have_button("Approve")
     end
   end
 end
 ```
 
-When a step targets a specific element for the record, e.g. a component, add the element to the name, e.g. `within_post_card(post)` for `Posts::CardComponent`. Use the plain `within_<resource>` name for the record's own element.
+When the element is a component, name the element after the component, e.g. `within_post_card(post)` for `Posts::CardComponent`. You SHOULD find it by the id the component gives its element, e.g. `dom_id(post, :card)`, built with `dom_id` and a prefix. Each card then has its own id, apart from the record's other elements.
 
 ```ruby
 # spec/support/post_spec_helpers.rb
@@ -1468,27 +1468,44 @@ expect(response.body).to have_button("Publish")
 expect(response.body).not_to have_css("form[action='#{post_publication_path(published_post)}']")
 ```
 
-A generic matcher takes no arguments, e.g. `have_welcome_new_author_banner`. A matcher for one record takes the record and ends in `_for_<resource>`, e.g. `have_publish_button_for_post(post)`. The name then says which record the element belongs to. A matcher for a message takes the message, and requires it, e.g. `have_flash_notice("Post was updated.")`.
+A generic matcher checks a generic element, e.g. a banner, a button or a flash message. Give it the arguments the element needs, and pass Capybara's options through, e.g. `have_publish_button(count: 2)`. A matcher for a message takes the message, and requires it, e.g. `have_flash_notice("Post was updated.")`. A matcher for an element that's always the same needs nothing else, e.g. `have_welcome_new_author_banner`.
+
+When specs check a generic element that acts on one record, add a matcher for it that takes the record and ends in `_for_<resource>`, e.g. `have_publish_button_for_post(post)`. It's a convenience on top of the generic matcher: it calls the generic matcher with the selector for the record filled in. Every spec then checks the element the same way for any record, and the name says which record the element acts on.
+
+Do the same for a message. When more than one spec file checks the same message, you SHOULD add a matcher that calls the generic matcher with the message filled in. Name it after the resource and what happened, then the generic matcher, e.g. `have_post_updated_flash_notice` for `have_flash_notice("Post was updated.")`. The message is then written once, and a change to its wording changes one place.
+
+```ruby
+def have_post_updated_flash_notice
+  have_flash_notice("Post was updated.")
+end
+```
+
+A matcher for the element that shows a record isn't generic. Name it `have_<resource>_<element>`, e.g. `have_comment_block(comment)`, as in [Records on the page](#records-on-the-page).
 
 Define a matcher with `matcher`. Make every matcher work with both `to` and `not_to`, with as little code as it needs. Check the element with a Capybara matcher in its `match` block. When the matcher checks one thing, `match` is all it needs. RSpec runs the same block for `not_to`, and flips the result.
 
 ```ruby
-matcher :have_publish_button_for_post do |post|
+matcher :have_publish_button do |form: "form", **options|
   match do |actual|
-    expect(actual).to have_css("form[action='#{post_publication_path(post)}'] button", text: "Publish")
+    expect(actual).to have_css("#{form} button", text: "Publish", **options)
   end
 end
 ```
 
-When a matcher only narrows one Capybara matcher, e.g. adds a filter, write it as a method that returns that Capybara matcher, and pass its arguments through. The matcher then takes every option the Capybara matcher does, e.g. `selected:` or `name:`, and `not_to` and its failure messages come from Capybara. Use `matcher` when the matcher checks more than one thing, or builds its own selector.
+When a matcher only narrows one other matcher, e.g. adds a filter or fills in an argument, write it as a method that returns that matcher, and pass its arguments through. It can narrow a Capybara matcher or a generic matcher. The matcher then takes every option the one it narrows does, e.g. `selected:` or `count:`, and `not_to` and its failure messages come from that matcher. Use `matcher` when the matcher checks more than one thing, or builds its own selector.
 
 ```ruby
+def have_publish_button_for_post(post, **options)
+  have_publish_button(form: "form[action='#{post_publication_path(post)}']", **options)
+end
+
 def have_comment_select(locator = nil, **options)
   have_select(locator, class: "comment_select", **options)
 end
 ```
 
 ```ruby
+expect(response.body).to have_publish_button_for_post(draft)
 expect(page).to have_comment_select("Featured comment", selected: "Great post!")
 ```
 
@@ -1530,7 +1547,7 @@ expect(page).not_to have_welcome_new_author_banner
 
 ### Where to put matchers
 
-When only one spec file uses a matcher, define it at the bottom of that file, inside the top-level `describe` block, after the examples. `matcher` then defines it for that file's specs only, next to the specs that use it.
+A matcher is shared only when more than one spec file uses it. When only one spec file uses a matcher, define it at the bottom of that file, inside the top-level `describe` block, after the examples. `matcher` then defines it for that file's specs only, next to the specs that use it. This holds for every matcher, including the ones other sections and pages put in a module, e.g. a component's matcher that only its component spec uses.
 
 ```ruby
 RSpec.describe "Posts" do
@@ -1544,16 +1561,18 @@ RSpec.describe "Posts" do
 end
 ```
 
-When more than one spec file uses a matcher, move it to a module in `spec/support`. Extend the module with `RSpec::Matchers::DSL` when it defines matchers with `matcher`, and include it in every spec type that checks the element, e.g. request specs and feature specs. Keep all the includes for a module in its own file, in one `RSpec.configure` block. When a gem's specs need the module too, add their type to the same block, e.g. `type: :component` for ViewComponent. See [Support files](#support-files).
+When a second spec file needs the matcher, move it to a module in `spec/support`. Extend the module with `RSpec::Matchers::DSL` when it defines matchers with `matcher`, and include it in every spec type that checks the element, e.g. request specs and feature specs. Keep all the includes for a module in its own file, in one `RSpec.configure` block. When a gem's specs need the module too, add their type to the same block, e.g. `type: :component` for ViewComponent. See [Support files](#support-files).
 
-Keep the shared spec code for a resource together, in one module named after the resource with a `SpecHelpers` suffix, e.g. `PostSpecHelpers` in `spec/support/post_spec_helpers.rb`. Put the resource's matchers in it. You then find everything the specs share about posts in one file. The suffix keeps it apart from the app's own helpers, e.g. `PostsHelper` in `app/helpers`. Name a module for generic matchers after what they cover, e.g. `OnboardingSpecHelpers` for `have_welcome_new_author_banner`.
+When you add a shared matcher for a feature spec, use it in the request spec for the same page too. The request spec then checks the element on every path through the action, and the feature spec only checks it on the way through the story. When JavaScript changes the element, the HTML the server sends differs from the page in the browser. Give the request spec an equivalent matcher for the server's markup instead, e.g. one for the `select` that a Stimulus controller turns into a search box.
+
+A shared matcher that only works in feature specs, e.g. one for the search box the Stimulus controller builds, goes in a module with a `FeatureSpecHelpers` suffix, included only for `type: :feature`. Name the module after the resource, e.g. `PostFeatureSpecHelpers`, or after what it covers for a generic matcher. Keep it in the same file as the module for request and feature specs, e.g. `spec/support/post_spec_helpers.rb`, as for `within_<resource>_<element>` in [Scoping to a record](#scoping-to-a-record). Its request spec equivalent goes in that other module, e.g. `PostSpecHelpers`. Request specs then can't call a matcher for markup they never see.
+
+Keep the shared spec code for a resource together, in one module named after the resource with a `SpecHelpers` suffix, e.g. `PostSpecHelpers` in `spec/support/post_spec_helpers.rb`. Put the resource's shared matchers in it. You then find everything the specs share about posts in one file. The suffix keeps it apart from the app's own helpers, e.g. `PostsHelper` in `app/helpers`. Put generic matchers in their own module, named after what they cover, e.g. `OnboardingSpecHelpers` for `have_welcome_new_author_banner`, or `PublishingSpecHelpers` for `have_publish_button`. A convenience for one resource, e.g. `have_publish_button_for_post`, goes in the resource's module. Include the generic module in every spec type that uses the convenience, so it can call the generic matcher.
 
 ```ruby
 # spec/support/post_spec_helpers.rb
 module PostSpecHelpers
-  extend RSpec::Matchers::DSL
-
-  matcher :have_publish_button_for_post do |post|
+  def have_publish_button_for_post(post, **options)
     # ...
   end
 end
@@ -1564,11 +1583,27 @@ RSpec.configure do |config|
 end
 ```
 
+```ruby
+# spec/support/publishing_spec_helpers.rb
+module PublishingSpecHelpers
+  extend RSpec::Matchers::DSL
+
+  matcher :have_publish_button do |form: "form", **options|
+    # ...
+  end
+end
+
+RSpec.configure do |config|
+  config.include PublishingSpecHelpers, type: :request
+  config.include PublishingSpecHelpers, type: :feature
+end
+```
+
 ### Matchers for helpers
 
 Give each helper that builds a simple view element a matcher, named after the helper with a `have_` prefix, e.g. `have_unknown_value_tag` for `unknown_value_tag`. See [Views and Frontend: Helpers](../../views/#helpers). Specs then check for the element the same way on every page, and say what they expect to see, not the markup. When the helper's markup changes, change the matcher next to it.
 
-Put the matchers in a module named after the helper module, with a `SpecHelpers` suffix, e.g. `UnknownValuesSpecHelpers` in `spec/support/unknown_values_spec_helpers.rb` for `UnknownValuesHelper`. Include it in helper specs too. The helper's own spec then checks the helper's output with the matcher, so the two can't drift apart.
+When more than one spec file uses the matchers, e.g. the helper's spec and a request spec, put them in a module named after the helper module, with a `SpecHelpers` suffix, e.g. `UnknownValuesSpecHelpers` in `spec/support/unknown_values_spec_helpers.rb` for `UnknownValuesHelper`. Include it in helper specs too. The helper's own spec then checks the helper's output with the matcher, so the two can't drift apart.
 
 Find the element by what it is first: its tag, role, `aria-label` and text, as `have_unknown_value_tag` does below. Add the helper's classes only for what nothing else shows, e.g. a button's variant. You SHOULD NOT add an attribute to the markup only so a matcher can find it, e.g. `data-theme-element="grid"`. It's markup that only specs use, and a matcher that checks a class already changes in one place, next to the helper. See [Theme Elements: Specs for theme elements](../../../patterns/theme-elements/#specs-for-theme-elements).
 

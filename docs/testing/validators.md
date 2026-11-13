@@ -67,7 +67,7 @@ A model or form spec checks that an attribute uses the validator, not every case
 
 Check what the validator does, not that it's declared. You MUST NOT look it up with `validators_on`, for the same reason the guide never tests that a callback is registered.
 
-Put the matcher in a module named after the validator, with a `SpecHelpers` suffix, in `spec/support/`. Include it for model specs and form specs, with `type: :model` and `type: :form`. See [RSpec: Form specs](../gems/rspec/#form-specs).
+When more than one spec file uses the matcher, put it in a module named after the validator, with a `SpecHelpers` suffix, in `spec/support/`. Include it for model specs and form specs, with `type: :model` and `type: :form`. See [RSpec: Form specs](../gems/rspec/#form-specs). When only one model or form uses the validator, define the matcher at the bottom of its spec, as in [RSpec: Where to put matchers](../gems/rspec/#where-to-put-matchers).
 
 ```ruby
 # spec/support/isbn_format_validator_spec_helpers.rb

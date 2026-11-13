@@ -19,7 +19,7 @@ You MUST NOT write specs for inputs. An input spec has to build a form builder a
 
 Give each custom select input a matcher, named after the input with a `have_` prefix, e.g. `have_comment_select` for `CommentSelectInput`. Simple Form adds the input's type as a class on the select, e.g. `comment_select`. Wrap `have_select` with that class, and pass the arguments through, so the matcher takes every option `have_select` does, e.g. `selected:`, `with_options:` or `name:`. Specs then check that the field is built with the custom input, not a plain select. See [RSpec: Custom matchers](../rspec/#custom-matchers).
 
-Put the matcher in the module for the input's resource, e.g. `CommentSpecHelpers` in `spec/support/comment_spec_helpers.rb`, and include it in request specs and feature specs.
+When more than one spec file uses the matcher, put it in the module for the input's resource, e.g. `CommentSpecHelpers` in `spec/support/comment_spec_helpers.rb`, and include it in request specs and feature specs. See [RSpec: Where to put matchers](../rspec/#where-to-put-matchers).
 
 ```ruby
 # spec/support/comment_spec_helpers.rb

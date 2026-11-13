@@ -100,19 +100,19 @@ RSpec.feature "Live Comments" do
     wait_for_turbo
 
     # THEN I don't see the comment
-    expect(page).not_to have_css("##{dom_id(comment)}")
+    expect(page).not_to have_comment_block(comment)
 
     # WHEN the Author approves the comment
     using_session(:author) do
       sign_in author
       visit post_path(published_post)
-      within_comment(comment) do
+      within_comment_block(comment) do
         click_button "Approve"
       end
     end
 
     # THEN I see the comment without reloading the page
-    within_comment(comment) do
+    within_comment_block(comment) do
       expect(page).to have_text("Great post!")
     end
   end

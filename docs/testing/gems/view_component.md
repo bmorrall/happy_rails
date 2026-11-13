@@ -78,7 +78,7 @@ matcher :have_posts_publishing_section_component do
 end
 ```
 
-Put the matcher in the module for the component's resource, e.g. `PostSpecHelpers` for a component in `Posts::`, and add component specs to the module's includes. See [RSpec: Where to put matchers](../rspec/#where-to-put-matchers). The component's own spec then checks that it renders with the matcher, so the two can't drift apart. Check the inside of the component in the same spec, alongside the matcher. Use a shared matcher for a part that other specs also check, e.g. `have_publish_button_for_post(post)`, so every spec checks it the same way.
+When a request or feature spec also uses the matcher, put it in the module for the component's resource, e.g. `PostSpecHelpers` for a component in `Posts::`, and add component specs to the module's includes. When only the component spec uses it, define it at the bottom of the component spec. See [RSpec: Where to put matchers](../rspec/#where-to-put-matchers). The component's own spec then checks that it renders with the matcher, so the two can't drift apart. Check the inside of the component in the same spec, alongside the matcher. Use a shared matcher for a part that other specs also check, e.g. `have_publish_button_for_post(post)`, so every spec checks it the same way. Add component specs to the includes of the generic module it calls too, e.g. `PublishingSpecHelpers`.
 
 ```ruby
 RSpec.describe Posts::PublishingSectionComponent do
