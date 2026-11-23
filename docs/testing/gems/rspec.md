@@ -257,6 +257,25 @@ Only write a `context` when several examples share setup that the other examples
 
 The contexts that request specs require are the exception: a context for each persona, for each way the request can be authenticated, and for a Turbo Stream. Write them even when they hold one example. Define the user and the records each persona needs in its own context, as described in [Personas](#personas).
 
+Write the names of `describe` and `context` blocks and examples in the third person, as facts about the code and its setup. You MUST NOT write them in the first person, e.g. `context "with a draft post where I am the author"`.
+
+A first-person name doesn't say who "I" is, so the reader can't tell which persona the examples run as. In a request spec, name the persona and its role on the record instead, as in [Personas](#personas).
+
+```ruby
+context "as a user", "with a draft post as the author" do
+  # ...
+end
+```
+
+```ruby
+# Don't do this
+context "with a draft post where I am the author" do
+  # ...
+end
+```
+
+Feature specs are the exception. They tell a user story, so their `GIVEN`, `WHEN` and `THEN` comments are in the first person, see [Feature specs](#feature-specs).
+
 ### let and let!
 
 Only declare a `let` for the setup a `context` is about. Every example in the context runs with that setup, even one that doesn't read it. That setup is:
