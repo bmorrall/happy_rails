@@ -691,6 +691,84 @@ end
 
 RSpec doesn't support `to` after `not_to change`, e.g. `not_to change { draft.reload.title }.to("New title")`. It raises an error.
 
+## Conditional logic
+
+Keep each example to one path, so a reader can tell what it checks. You MUST NOT write conditional logic in an example, or in a `let` or `before` block in a spec file, such as `if`, `unless`, `case` or a ternary. A branch on a value the code returns checks whatever the code did, so the example passes when the code is wrong. A branch on the setup hides which path ran, and a path no example runs is never checked.
+
+Write an example for each case instead, with the setup that makes it happen, and check the one outcome it has.
+
+```ruby
+# Don't do this
+let(:published_post) { create(:post, :published) }
+
+it "shows the post's status" do
+  get post_path(published_post)
+
+  if published_post.published?
+    expect(response.body).to have_css(".badge", text: "Published")
+  else
+    expect(response.body).to have_css(".badge", text: "Draft")
+  end
+end
+```
+
+```ruby
+it "shows a Published badge for a published post" do
+  published_post = create(:post, :published)
+
+  get post_path(published_post)
+
+  expect(response.body).to have_css(".badge", text: "Published")
+end
+
+it "shows a Draft badge for a draft" do
+  draft = create(:post, published_at: nil)
+
+  get post_path(draft)
+
+  expect(response.body).to have_css(".badge", text: "Draft")
+end
+```
+
+### Helpers and hooks
+
+A helper or matcher MAY branch on its own arguments to build what it looks for, wherever it's defined, e.g. `target.is_a?(String) ? target : dom_id(target)` in the [Turbo](../turbo/) matchers. A shared hook MAY branch on the example's tags, e.g. the hook that reads `:honeybadger` in [Honeybadger](../honeybadger/).
+
+You MUST NOT branch to work out the outcome a check expects, e.g. `post.published? ? "Published" : "Draft"` in `have_status_badge_for_post(post)`. The branch repeats the code under test, so it shares the code's bugs, and the example doesn't say which badge it expects. Write a matcher for each outcome instead, e.g. `have_published_badge` and `have_draft_badge`.
+
+### Values with more than one outcome
+
+You SHOULD set up the example so the code has one right answer. When it can't, e.g. the code picks a record at random, the value has more than one right outcome. Check it with one `expect`, and combine a matcher for each outcome with `or`, e.g. `eq(first_comment).or eq(second_comment)`. The `or` matcher checks the value against every outcome, and its failure message lists them all.
+
+```ruby
+# Don't do this
+it "returns one of the approved comments" do
+  post = create(:post)
+  first_comment = create(:comment, :approved, post:)
+  second_comment = create(:comment, :approved, post:)
+
+  featured_comment = post.decorate.featured_comment
+
+  if featured_comment == first_comment
+    expect(featured_comment).to eq(first_comment)
+  else
+    expect(featured_comment).to eq(second_comment)
+  end
+end
+```
+
+```ruby
+it "returns one of the approved comments" do
+  post = create(:post)
+  first_comment = create(:comment, :approved, post:)
+  second_comment = create(:comment, :approved, post:)
+
+  featured_comment = post.decorate.featured_comment
+
+  expect(featured_comment).to eq(first_comment).or eq(second_comment)
+end
+```
+
 ## Generated values
 
 When the code generates a value, e.g. a token or a key, match it as closely as the spec can. A loose match still passes when the code builds the value wrongly.
