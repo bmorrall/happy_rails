@@ -139,11 +139,13 @@ end
 ```ruby
 RSpec.describe "Api::V1::Posts" do
   describe "POST /api/v1/posts", :aggregate_failures do
+    let(:valid_params) { { title: "Hello World", body: "My first post." } }
+
     context "with an access token" do
       let(:headers) { { "Authorization" => "Bearer #{Rails.application.credentials.api_token}" } }
 
       it "responds with the new post" do
-        post api_v1_posts_path, params: { post: { title: "Hello World" } }, headers: headers, as: :json
+        post api_v1_posts_path, params: { post: valid_params }, headers: headers, as: :json
 
         expect(response).to have_http_status(:created)
 
@@ -151,7 +153,7 @@ RSpec.describe "Api::V1::Posts" do
 
         expect(response.parsed_body).to match(
           "id" => an_instance_of(Integer),
-          "title" => "Hello World"
+          "title" => valid_params[:title]
         )
       end
     end
@@ -166,11 +168,13 @@ Turbo asks for a stream with the `Accept` header, not a format extension, so a T
 ```ruby
 RSpec.describe "Posts::Comments" do
   describe "POST /posts/:post_id/comments" do
+    let(:valid_params) { { body: "Hello" } }
+
     context "with a published post" do
       let(:published_post) { create(:post, published_at: Time.zone.now) }
 
       it "redirects to the post" do
-        post post_comments_path(published_post), params: { comment: { body: "Hello" } }
+        post post_comments_path(published_post), params: { comment: valid_params }
 
         expect(response).to redirect_to(post_path(published_post))
         expect(flash).to have_flash_notice("Comment was created.")
@@ -179,7 +183,7 @@ RSpec.describe "Posts::Comments" do
       context "with a Turbo Stream" do
         it "responds with a Turbo Stream" do
           post post_comments_path(published_post),
-            params: { comment: { body: "Hello" } },
+            params: { comment: valid_params },
             headers: { "Accept" => Mime[:turbo_stream].to_s }
 
           expect(response).to have_http_status(:ok)
@@ -196,13 +200,63 @@ end
 
 Send params in the request spec the same way the controller reads them, nested under the resource's singular name.
 
+You MAY declare the attributes an action expects in `let(:valid_params)`. Leave out the resource's key, e.g. `post`, and nest `valid_params` under it in each request, e.g. `params: { post: valid_params }`. List every attribute the action permits, and no others, so it matches the action's params method, e.g. `post_params`. Each request then sends what the form sends, and it still passes when the app raises on [unpermitted parameters](#unpermitted-parameters).
+
+You MUST NOT build `valid_params` from all of a factory's attributes, e.g. `attributes_for(:post)`. A factory holds the model's attributes, not the action's, so it sends attributes the action doesn't permit, e.g. `featured`. You MAY slice the factory's attributes down to the ones the action permits instead, e.g. `attributes_for(:comment).slice(:body)`. Write the values out when an example checks them, because you MUST NOT check against a factory's default, see [RSpec: Values you check](../gems/rspec/#values-you-check).
+
+For a sad path, change only the value it's about with `merge`, e.g. `params: { post: valid_params.merge(title: "") }`. The rest of the request stays valid, so the example fails for the one value it names.
+
+When every context in the route's `describe` block sends the same attributes, declare `valid_params` once, on the first line of the `describe` block.
+
 ```ruby
 RSpec.describe "Posts" do
-  describe "POST /posts" do
-    it "creates a post" do
+  describe "POST /posts", :aggregate_failures do
+    let(:valid_params) { { title: "Hello World", body: "My first post." } }
+
+    it "creates the post" do
       expect {
-        post posts_path, params: { post: { title: "Hello", body: "World" } }
+        post posts_path, params: { post: valid_params }
       }.to change(Post, :count).by(1)
+    end
+
+    it "shows the form again with a blank title" do
+      expect {
+        post posts_path, params: { post: valid_params.merge(title: "") }
+      }.not_to change(Post, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+  end
+end
+```
+
+When contexts send different attributes, declare `valid_params` in each context instead, with the attributes it sends. For example, a Publishing Manager can feature a post and an Author can't, so each persona's context has its own `valid_params`. You MUST NOT declare it in the `describe` block as well, because a context would then override it. See [Pundit: Strong parameters](../../guide/gems/pundit/#strong-parameters).
+
+```ruby
+RSpec.describe "Posts" do
+  describe "PATCH /posts/:id", :aggregate_failures do
+    context "as a publishing manager", "with a draft post" do
+      let(:user) { create(:user, :publishing_manager) }
+
+      let(:draft) { create(:post) }
+
+      let(:valid_params) { { title: "New title", body: "My first post.", featured: true } }
+
+      before { sign_in user }
+
+      # ...
+    end
+
+    context "as a user", "with a post as the author" do
+      let(:user) { create(:user) }
+
+      let(:draft) { create(:post, author: user) }
+
+      let(:valid_params) { { title: "New title", body: "My first post." } }
+
+      before { sign_in user }
+
+      # ...
     end
   end
 end
@@ -222,11 +276,13 @@ RSpec.describe "Posts" do
 
       let(:draft) { create(:post, author: user) }
 
+      let(:valid_params) { { title: "New title", body: "My first post." } }
+
       before { sign_in user }
 
       it "responds with bad request for featured" do
         expect {
-          patch post_path(draft), params: { post: { featured: true } }
+          patch post_path(draft), params: { post: valid_params.merge(featured: true) }
         }.not_to change { draft.reload.featured }
 
         expect(response).to have_http_status(:bad_request)
@@ -403,6 +459,8 @@ end
 ```ruby
 RSpec.describe "Posts" do
   describe "POST /posts", :aggregate_failures do
+    let(:valid_params) { { title: "Hello World", body: "My first post." } }
+
     context "as a user" do
       let(:user) { create(:user) }
 
@@ -410,7 +468,7 @@ RSpec.describe "Posts" do
 
       it "creates the post" do
         expect {
-          post posts_path, params: { post: { title: "Hello World" } }
+          post posts_path, params: { post: valid_params }
         }.to change(Post, :count).by(1)
 
         expect(response).to redirect_to(post_path(Post.last))
@@ -419,7 +477,7 @@ RSpec.describe "Posts" do
 
       it "shows the form again with a blank title" do
         expect {
-          post posts_path, params: { post: { title: "" } }
+          post posts_path, params: { post: valid_params.merge(title: "") }
         }.not_to change(Post, :count)
 
         expect(response).to have_http_status(:unprocessable_content)

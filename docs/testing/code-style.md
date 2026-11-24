@@ -85,11 +85,15 @@ end
 
 In a persona context, leave a blank line between the persona's `let`s and the `let`s for the records it acts on. The persona's `let`s are the signed-in `user` and the records that give it its role on the whole app or through a membership, e.g. the magazine a Magazine Editor edits. The record `let`s build what the context's second argument describes, including the record the persona holds a role on. The two groups then match the two parts of the context's name, e.g. `"as a user"` and `"with a draft post as the author"`.
 
+When the context declares `valid_params`, put it in a group of its own, after the record `let`s and a blank line. It holds the request, not a record the context's name describes. See [Controllers and Routes: Strong parameters](../controllers/#strong-parameters).
+
 ```ruby
 context "as a user", "with a draft post as the author" do
   let(:user) { create(:user) }
 
   let!(:draft) { create(:post, author: user) }
+
+  let(:valid_params) { { title: "New title", body: "My first post." } }
 
   before { sign_in user }
 

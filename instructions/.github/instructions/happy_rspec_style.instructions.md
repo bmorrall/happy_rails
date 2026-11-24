@@ -12,4 +12,4 @@ applyTo: "spec/**/*.rb"
 - Give a spec helper that sets up state a verb name, e.g. `publish_post(post)`, or `stub_newsletter_client_for(integration)`, which also returns the double it stubs. You MUST NOT give it the `a_` prefix.
 - Define `a_` helpers at the bottom of the spec file, inside the top-level `describe` or `feature` block, after the examples.
 - In a persona context, leave a blank line between the persona's `let`s, i.e. the signed-in `user` and the records that give it its role on the whole app or through a membership, e.g. `let!(:magazine) { create_magazine_with_magazine_editor(user) }`, and the `let`s for the records the context's second argument describes, e.g. `let(:user) { create(:user) }`, a blank line, then `let!(:draft) { create(:post, author: user) }` in `context "as a user", "with a draft post as the author"`.
-
+- In a persona context that declares `valid_params`, put it in a group of its own, after the record `let`s and a blank line, e.g. `let!(:draft) { create(:post, author: user) }`, a blank line, then `let(:valid_params) { { title: "New title", body: "My first post." } }`.

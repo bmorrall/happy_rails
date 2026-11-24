@@ -331,7 +331,7 @@ context "as a user" do
 end
 ```
 
-Declare a `let` in the `context` it's for. You MUST NOT declare a `let` in a `describe` block. A `describe` names the method or route under test, not the setup its examples run with. There are three exceptions: `let(:current_time)` at the top of the spec, see [The current time](#the-current-time), a stubbed service double in an action spec, see [Actions](../../actions/), and the stand-in record in a validator spec, see [Validators](../../validators/). This rule doesn't cover `subject`, e.g. `subject(:post)` in a model spec, see [Models](../../models/#spec-layout).
+Declare a `let` in the `context` it's for. You MUST NOT declare a `let` in a `describe` block. A `describe` names the method or route under test, not the setup its examples run with. There are four exceptions: `let(:current_time)` at the top of the spec, see [The current time](#the-current-time), `let(:valid_params)` in a request spec, see [Controllers and Routes: Strong parameters](../../controllers/#strong-parameters), a stubbed service double in an action spec, see [Actions](../../actions/), and the stand-in record in a validator spec, see [Validators](../../validators/). This rule doesn't cover `subject`, e.g. `subject(:post)` in a model spec, see [Models](../../models/#spec-layout).
 
 You SHOULD use `let!` for a record that an example checks with `expect { }.to change` or `not_to change`. A lazy `let` that's first read inside the block creates its record there, so the change could come from the factory, not from the code under test. E.g. with a lazy `let(:draft)`, `delete post_path(draft)` creates the post and deletes it inside the block, so `Post.count` doesn't change.
 
@@ -527,7 +527,11 @@ You MUST NOT add a trait for a role on a record, e.g. the Author of a post. Buil
 
 ## Values you check
 
-Set every value an example checks in the spec, where the reader can see it, e.g. in the example or in its context's `let`. You MUST NOT check against a default from a factory or a stub helper. That includes the records a factory builds for you, e.g. the author of `build_stubbed(:post)`, and the reply a stub helper sends when you don't pass one, e.g. the ID from `stub_newsletter_create`. Leave the values the example doesn't check to the defaults.
+Set every value an example checks in the spec, where the reader can see it: in the example, or in a `let` the example runs with.
+
+When the value is in a `let` that holds a value, not a record, e.g. a request spec's `valid_params` or `let(:newsletter_id)`, check it against the `let` by name, e.g. `"title" => valid_params[:title]`. The check then shows where the value comes from, and you don't have to match two values by eye. A record's `let` MAY set a value the example checks, e.g. `let(:draft) { create(:post, author: user, title: "Hello World") }` in a persona's context, then `have_css("h1", text: "Hello World")`.
+
+You MUST NOT check against a default from a factory or a stub helper. That includes the records a factory builds for you, e.g. the author of `build_stubbed(:post)`, and the reply a stub helper sends when you don't pass one, e.g. the ID from `stub_newsletter_create`. Leave the values the example doesn't check to the defaults.
 
 You SHOULD give factories and stub helpers a default for every value they need, e.g. `id: "newsletter-1"` in `stub_newsletter_create`. A spec then passes only the values it's about, and `create(:post)` or `stub_newsletter_create` works with no arguments. Require an argument only when the helper can't pick a default, e.g. the integration in `stub_newsletter_client_for(integration)`, which the stub is built from.
 
