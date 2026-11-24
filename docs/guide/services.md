@@ -82,7 +82,7 @@ When the app saves that reply, e.g. to skip the lookup next time, it is no longe
 
 ### Private methods
 
-Start the name of a private method with a verb that says what it does, e.g. `find_list_id`. You MUST NOT name it like a value, e.g. `list_id` or `newsletter_body`. A service's public methods are its operations, and its readers are its settings. A verb sets the steps inside the service apart from both.
+Start the name of a private method with a verb that says what it does, e.g. `find_list_id`. A memoised method is the exception: name it like a variable, as below. You MUST NOT name any other private method like a value, e.g. `list_id` or `newsletter_body`. A service's public methods are its operations, and its readers are its settings. A verb sets the steps inside the service apart from both.
 
 Use `build_` for a method that builds a new value each time it's called, e.g. `build_newsletter_body` for the hash the service sends, or `build_connection` for a new Faraday connection. Each call gives a new value, and the name says so. You MUST NOT memoise a `build_` method. When the service keeps one value and gives it back on every call, name it like a variable, e.g. `connection` for `@connection ||= Faraday.new(...)`.
 
