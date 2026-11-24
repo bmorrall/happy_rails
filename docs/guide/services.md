@@ -72,13 +72,41 @@ class NewsletterClient
   private
 
   def find_list_id(name)
-    response = connection.get("#{api_path}/lists", name:)
+    response = build_connection.get("#{api_path}/lists", name:)
     response.body["lists"].first["id"]
   end
 end
 ```
 
 When the app saves that reply, e.g. to skip the lookup next time, it is no longer only for the other request. Move it to an action, as above.
+
+### Private methods
+
+Start the name of a private method with a verb that says what it does, e.g. `find_list_id`. You MUST NOT name it like a value, e.g. `list_id` or `newsletter_body`. A service's public methods are its operations, and its readers are its settings. A verb sets the steps inside the service apart from both.
+
+Use `build_` for a method that builds a new value each time it's called, e.g. `build_newsletter_body` for the hash the service sends, or `build_connection` for a new Faraday connection. Each call gives a new value, and the name says so. You MUST NOT memoise a `build_` method. When the service keeps one value and gives it back on every call, name it like a variable, e.g. `connection` for `@connection ||= Faraday.new(...)`.
+
+A `build_` method only builds its value and returns it, so it is always safe to call. You MUST NOT change state in it, e.g. save a record, enqueue a job, send a request that changes something in the other service, or set an instance variable. Calling it twice then changes nothing, and a reader can skip it when following what a method does. Put a step that changes something in a method named after the change, e.g. `reserve_slot`.
+
+```ruby
+# Don't
+def newsletter_body(title:, body:)
+  { title:, body:, visibility: "public" }
+end
+
+def build_connection
+  @connection ||= Faraday.new(url: @base_url)
+end
+
+# Do
+def build_newsletter_body(title:, body:)
+  { title:, body:, visibility: "public" }
+end
+
+def build_connection
+  Faraday.new(url: @base_url)
+end
+```
 
 ## Calling a service
 
@@ -128,7 +156,7 @@ You SHOULD NOT pass a record to a method that makes a request. The service then 
 # Don't do this
 class ExampleClient
   def create_item(record)
-    connection.post("/items", { name: record.name, owner_name: record.owner.name })
+    build_connection.post("/items", { name: record.name, owner_name: record.owner.name })
   end
 end
 ```
@@ -140,23 +168,23 @@ You MUST NOT make the caller pass a value the service can fill in itself, e.g. t
 
 Build the request body in the service, as a hash. The body's format belongs to the other service. When its API changes, only the service changes, and every action that calls it gets the new format.
 
-When the body takes more than a line, build it in a private method on the service, named after what it builds, e.g. `newsletter_body`. Kept with the service, it's easy to find, and you delete it with the service. A class your app uses for its own work stays with the rest of your app's code, e.g. in `app/models/` or `app/serializers/`, even when a service sends it.
+When the body takes more than a line, build it in a private method on the service, named `build_` then what it builds, e.g. `build_newsletter_body`. See [Private methods](#private-methods). Kept with the service, it's easy to find, and you delete it with the service. A class your app uses for its own work stays with the rest of your app's code, e.g. in `app/models/` or `app/serializers/`, even when a service sends it.
 
 ```ruby
 class NewsletterClient
   def create_public_newsletter(title:, body:)
-    response = connection.post("#{api_path}/newsletters", newsletter_body(title:, body:, visibility: "public"))
+    response = build_connection.post("#{api_path}/newsletters", build_newsletter_body(title:, body:, visibility: "public"))
     # ...
   end
 
   def create_private_newsletter(title:, body:)
-    response = connection.post("#{api_path}/newsletters", newsletter_body(title:, body:, visibility: "private"))
+    response = build_connection.post("#{api_path}/newsletters", build_newsletter_body(title:, body:, visibility: "private"))
     # ...
   end
 
   private
 
-  def newsletter_body(title:, body:, visibility:)
+  def build_newsletter_body(title:, body:, visibility:)
     {
       title:,
       body:,
@@ -189,18 +217,18 @@ class NewsletterClient
   )
 
   def create_public_newsletter(request)
-    response = connection.post("#{api_path}/newsletters", newsletter_body(request, visibility: "public"))
+    response = build_connection.post("#{api_path}/newsletters", build_newsletter_body(request, visibility: "public"))
     # ...
   end
 
   def create_private_newsletter(request)
-    response = connection.post("#{api_path}/newsletters", newsletter_body(request, visibility: "private"))
+    response = build_connection.post("#{api_path}/newsletters", build_newsletter_body(request, visibility: "private"))
     # ...
   end
 
   private
 
-  def newsletter_body(request, visibility:)
+  def build_newsletter_body(request, visibility:)
     request.to_h.merge(visibility:)
   end
 end
@@ -237,7 +265,7 @@ class NewsletterClient
   Newsletter = Data.define(:id, :status)
 
   def create_newsletter(title:, body:)
-    response = connection.post("#{api_path}/newsletters", newsletter_body(title:, body:))
+    response = build_connection.post("#{api_path}/newsletters", build_newsletter_body(title:, body:))
     Newsletter.new(id: response.body["id"], status: response.body["status"])
   end
 
@@ -337,7 +365,7 @@ class NewsletterClient
 
   private
 
-  def connection
+  def build_connection
     Faraday.new(url: @base_url) do |faraday|
       faraday.request :json
       faraday.response :json
@@ -406,7 +434,7 @@ class NewsletterClient
 
   private
 
-  def connection
+  def build_connection
     Faraday.new(url: @base_url, request: { timeout: @timeout_seconds }) do |faraday|
       # ...
     end
@@ -561,11 +589,11 @@ class NewsletterClient
   def create_newsletter(title:, body:)
     # ...
   rescue Faraday::UnprocessableEntityError => e
-    raise UnprocessableError.new(e.message, **error_details(e))
+    raise UnprocessableError.new(e.message, **build_error_details(e))
   rescue Faraday::TimeoutError => e
-    raise TimeoutError.new(e.message, **error_details(e))
+    raise TimeoutError.new(e.message, **build_error_details(e))
   rescue Faraday::Error => e
-    raise Error.new(e.message, **error_details(e))
+    raise Error.new(e.message, **build_error_details(e))
   end
 end
 ```

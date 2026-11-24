@@ -314,6 +314,8 @@ def newsletter_client
 end
 ```
 
+A `build_` method only builds its object and returns it, so it is always safe to call. You MUST NOT change state in it, e.g. save a record, enqueue a job, call another service, or set an instance variable. Calling it twice then changes nothing. A method that saves the record it builds is a `create_` method.
+
 ## Arguments
 
 Pass an action the records it works on, not their IDs, e.g. `Posts::ArchivePost.call(post)`, not `Posts::ArchivePost.call(post.id)`. The caller finds the records, e.g. a controller loads the post, or a job gets it as an argument. The action never looks a record up, so it doesn't have to decide which records the caller is allowed to reach.

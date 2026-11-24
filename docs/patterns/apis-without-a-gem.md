@@ -26,13 +26,13 @@ class NewsletterClient
   # ...
 
   def create_public_newsletter(title:, body:)
-    response = connection.post("#{@api_path}/newsletters", { title:, body:, visibility: "public" })
+    response = build_connection.post("#{@api_path}/newsletters", { title:, body:, visibility: "public" })
     Newsletter.new(id: response.body["id"], status: response.body["status"])
   end
 
   private
 
-  def connection
+  def build_connection
     Faraday.new(url: @base_url) do |faraday|
       # ...
     end
@@ -65,7 +65,7 @@ class NewsletterGateway
   # ...
 
   def create_newsletter(request)
-    response = connection.post("#{@api_path}/newsletters", request.to_h)
+    response = build_connection.post("#{@api_path}/newsletters", request.to_h)
     Newsletter.new(id: response.body["id"], status: response.body["status"])
   end
 end
@@ -105,7 +105,7 @@ class NewsletterGateway
   # ...
 
   def list_newsletters(cursor: nil)
-    response = connection.get("#{@api_path}/newsletters", cursor:)
+    response = build_connection.get("#{@api_path}/newsletters", cursor:)
     newsletters = response.body["newsletters"].map do |item|
       Newsletter.new(id: item["id"], status: item["status"])
     end

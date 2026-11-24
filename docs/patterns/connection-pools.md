@@ -94,7 +94,7 @@ class NewsletterClient
     pool.with do |connection|
       connection.post(
         "#{api_path}/newsletters",
-        newsletter_body(title:, body:),
+        build_newsletter_body(title:, body:),
         "Authorization" => "Bearer #{api_key}"
       )
     end
