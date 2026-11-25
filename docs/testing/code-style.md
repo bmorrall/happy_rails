@@ -55,7 +55,7 @@ A `build_` helper builds a new value each time it's called, from the arguments t
 
 A `build_` helper only builds its value and returns it, so it is always safe to call. You MUST NOT change state in it, e.g. create a record, stub a request, or set an instance variable. A helper that does is a setup helper, as below.
 
-Name a helper that builds a hash `build_<thing>_hash`, e.g. `build_newsletter_body_hash` for the body `NewsletterClient` sends, or `build_post_payload_hash` for the JSON body a spec posts to `POST /api/v1/posts`. You MUST NOT name it after the thing alone, e.g. `newsletter_body` or `post_payload`. Name every helper in the spec that returns a hash this way, including one that only builds input and is never matched on, so the names in a file stay consistent.
+Name a helper that builds a hash `build_<thing>_hash`, e.g. `build_newsletter_body_hash` for the body `NewsletterClient` sends, or `build_post_payload_hash` for the JSON body a spec posts to `POST /api/v1/posts`. You MUST NOT name it after the thing alone, e.g. `newsletter_body` or `post_payload`. Name every helper in the spec that returns a hash this way, including one that only builds input and is never matched on, so the names in a file stay consistent. A helper that sets up state and returns a hash is the exception: it keeps its verb, as below.
 
 Name a helper that builds an object `build_` then the object's type, e.g. `build_newsletter_client_error` for a `NewsletterClient::Error`.
 

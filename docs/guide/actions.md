@@ -276,7 +276,7 @@ end
 
 ### Private methods
 
-Name a private method that builds, creates or changes a record after the action it takes, starting with a verb. You MUST NOT name it like a variable, e.g. `publication`. A name like that reads as a value, so you can't tell from `call` that the step writes to the database. A verb says what the step does, and which steps need to run inside the transaction or the lock.
+Name a private method that builds, creates or changes a record after the action it takes, starting with a verb. A memoised method that only builds and never saves is the exception: name it like a variable, as below. You MUST NOT name any other one like a variable, e.g. `publication`. A name like that reads as a value, so you can't tell from `call` that the step writes to the database. A verb says what the step does, and which steps need to run inside the transaction or the lock.
 
 Use `build_` for a method that builds a record without saving it, e.g. `build_publication`, `create_` for one that saves a new record, e.g. `create_publication`, and `update_` for one that changes a saved record, e.g. `update_post`. Use another verb when it says more, e.g. `increment_published_posts_count` for a method that calls `increment!`.
 
