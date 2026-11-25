@@ -415,7 +415,7 @@ An API's default format is JSON, so its route comments have no extension.
 ```ruby
 module Api
   module V1
-    class PostsController < BaseController
+    class PostsController < ApiController
       # POST /api/v1/posts
       def create
         @post = Post.new(post_params)
@@ -576,7 +576,9 @@ class PostsController < ApplicationController
 end
 ```
 
-An API that authenticates differently has its own base controller, e.g. `Api::V1::BaseController`. Put the check in the top-most controller that every API controller inherits from, not in each API controller.
+An API that authenticates differently has its own root controller, one per root API namespace, named `ApiController`, e.g. `Api::V1::ApiController` in `app/controllers/api/v1/api_controller.rb`. It inherits from `ActionController::API`, not `ApplicationController`. Put the check in this controller, not in each API controller.
+
+You MUST NOT name it `BaseController`. A `BaseController` belongs to a nested resource. It inherits from `ApplicationController` and adds to it, e.g. it loads the parent record. The root controller starts its own chain, so a different name shows that it does not. It also keeps lookups clear. Inside `Api::V1::Posts`, `BaseController` finds `Api::V1::Posts::BaseController`, while `ApiController` always finds the root.
 
 When you use a built-in method, follow the Rails best practices for it:
 
@@ -587,7 +589,7 @@ When you use a built-in method, follow the Rails best practices for it:
 ```ruby
 module Api
   module V1
-    class BaseController < ActionController::API
+    class ApiController < ActionController::API
       include ActionController::HttpAuthentication::Token::ControllerMethods
 
       before_action :authenticate
@@ -607,7 +609,7 @@ end
 ```ruby
 module Api
   module V1
-    class PostsController < BaseController
+    class PostsController < ApiController
     end
   end
 end
@@ -640,12 +642,12 @@ A handler that only one controller uses doesn't need a path method. Redirect in 
 
 Use `rescue_from` only for errors that aren't part of the app's normal flow, e.g. a record that isn't found, or a request the user isn't allowed to make. When an error is an outcome the app expects, handle it where the work is done, in a form or a job. Either one can recover from the error, or add the error. A form adds it to its errors and returns `false`, so the controller takes its normal failure path. A job adds it to the record it works on, e.g. it marks a subscription as failed when its payment fails. The action then shows every outcome the user can expect as a normal path, and its request spec covers each one.
 
-An API renders its own response for each error a client can get, e.g. a record that isn't found, or a param the action doesn't permit. Rescue the error in the top-most controller that every API controller inherits from, e.g. `Api::V1::BaseController`, and render the same JSON shape as the API's other errors, e.g. `{ error: "Not found." }`. You MUST NOT leave an API's errors to Rails' default response. Rails picks its error page from the request's format, so a client that doesn't ask for JSON gets the HTML 404 page. The JSON Rails renders has its own shape, not the API's, so a client can't handle every error the same way.
+An API renders its own response for each error a client can get, e.g. a record that isn't found, or a param the action doesn't permit. Rescue the error in the top-most controller that every API controller inherits from, e.g. `Api::V1::ApiController`, and render the same JSON shape as the API's other errors, e.g. `{ error: "Not found." }`. You MUST NOT leave an API's errors to Rails' default response. Rails picks its error page from the request's format, so a client that doesn't ask for JSON gets the HTML 404 page. The JSON Rails renders has its own shape, not the API's, so a client can't handle every error the same way.
 
 ```ruby
 module Api
   module V1
-    class BaseController < ActionController::API
+    class ApiController < ActionController::API
       rescue_from ActiveRecord::RecordNotFound,
         with: :handle_record_not_found
       rescue_from ActionController::UnpermittedParameters,
@@ -922,7 +924,7 @@ end
 ```ruby
 module Api
   module V1
-    class PostsController < BaseController
+    class PostsController < ApiController
       # GET /api/v1/posts
       def index
       end
